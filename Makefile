@@ -5,11 +5,11 @@ ROOT_DIR=${CURDIR}
 PREFIX?=/opt/wasi-sdk
 CLANG_VERSION=8.0.0
 
-VERSION=0.2
-DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)
+VERSION=$(shell version.sh)
+DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
 default: build
-	echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)"
+	echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
 clean:
 	rm -rf build $(PREFIX)
@@ -125,8 +125,8 @@ strip: build/llvm.BUILT
 
 package: build/package.BUILT
 
-build/package.BUILT: build
-	./package.sh
+build/package.BUILT: build strip
+	./deb_from_installation.sh
 	touch build/package.BUILT
 
 .PHONY: default clean build strip package
