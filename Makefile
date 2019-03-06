@@ -5,7 +5,7 @@ ROOT_DIR=${CURDIR}
 PREFIX?=/opt/wasi-sdk
 CLANG_VERSION=8.0.0
 
-VERSION=$(shell version.sh)
+VERSION:=$(shell ./version.sh)
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
 default: build
@@ -49,7 +49,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt; cmake -G "Unix Makefiles" \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
-		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasmi-sdk.cmake \
+		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DCOMPILER_RT_BAREMETAL_BUILD=On \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
@@ -126,7 +126,8 @@ strip: build/llvm.BUILT
 package: build/package.BUILT
 
 build/package.BUILT: build strip
-	./deb_from_installation.sh
+	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh || true
+	./tar_from_installation.sh
 	touch build/package.BUILT
 
 .PHONY: default clean build strip package

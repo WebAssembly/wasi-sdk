@@ -6,4 +6,5 @@ RUN apt-get update \
 	clang \
 	cmake \
 	python \
+	git \
  && rm -rf /var/lib/apt/lists/*
