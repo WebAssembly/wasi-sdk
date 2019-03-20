@@ -55,7 +55,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
-		-DWASM_SDK_PREFIX=$(PREFIX) \
+		-DWASI_SDK_PREFIX=$(PREFIX) \
 		-DCMAKE_C_FLAGS="-O1 $(DEBUG_PREFIX_MAP)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=wasi \
@@ -81,7 +81,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/reference-sys
 		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(ROOT_DIR)/src/llvm-project/libcxxabi/include \
 		-DLIBCXX_HAS_MUSL_LIBC:BOOL=ON \
 		-DLIBCXX_ABI_VERSION=2 \
-		-DWASM_SDK_PREFIX=$(PREFIX) \
+		-DWASI_SDK_PREFIX=$(PREFIX) \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		--debug-trycompile \
@@ -107,7 +107,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DLIBCXXABI_LIBCXX_INCLUDES=$(PREFIX)/share/sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
-		-DWASM_SDK_PREFIX=$(PREFIX) \
+		-DWASI_SDK_PREFIX=$(PREFIX) \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DUNIX:BOOL=ON \
