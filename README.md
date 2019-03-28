@@ -11,7 +11,7 @@ git submodules to pull in the upstream Clang and LLVM tree, as well as the
 WASI reference-sysroot tree.
 
 The Sysroot portion of this SDK is the
-[WASI reference-sysroot](https://github.com/CraneStation/reference-sysroot).
+[WASI reference-sysroot](https://github.com/CraneStation/wasi-sysroot).
 
 Upstream Clang and LLVM 8.0 can compile for WASI out of the box, and WebAssembly
 support is included in them by default. So, all that's done here is to provide
