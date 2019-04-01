@@ -39,11 +39,11 @@ build/llvm.BUILT:
 		llvm-config
 	touch build/llvm.BUILT
 
-build/reference-sysroot.BUILT: build/llvm.BUILT
-	make -C $(ROOT_DIR)/src/reference-sysroot \
+build/wasi-sysroot.BUILT: build/llvm.BUILT
+	make -C $(ROOT_DIR)/src/wasi-sysroot \
 		WASM_CC=$(PREFIX)/bin/clang \
 		SYSROOT=$(PREFIX)/share/sysroot
-	touch build/reference-sysroot.BUILT
+	touch build/wasi-sysroot.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
 	mkdir -p build/compiler-rt
@@ -66,7 +66,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(PREFIX)/lib/
 	touch build/compiler-rt.BUILT
 
-build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/reference-sysroot.BUILT
+build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-sysroot.BUILT
 	mkdir -p build/libcxx
 	cd build/libcxx; cmake -G "Unix Makefiles" \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
@@ -118,7 +118,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	mv $(PREFIX)/share/sysroot/lib/libc++abi.a $(PREFIX)/share/sysroot/lib/wasm32-wasi/
 	touch build/libcxxabi.BUILT
 
-build: build/llvm.BUILT build/reference-sysroot.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT
+build: build/llvm.BUILT build/wasi-sysroot.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT
 
 strip: build/llvm.BUILT
 	cd $(PREFIX)/bin; strip clang-8 llc lld llvm-ar
