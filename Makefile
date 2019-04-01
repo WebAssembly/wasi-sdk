@@ -17,6 +17,8 @@ clean:
 build/llvm.BUILT:
 	mkdir -p build/llvm
 	cd build/llvm; cmake -G "Unix Makefiles" \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
