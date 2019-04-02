@@ -3,4 +3,4 @@
 	url = https://github.com/llvm/llvm-project
 [submodule "src/wasi-sysroot"]
 	path = src/wasi-sysroot
-	url = git@github.com:CraneStation/wasi-sysroot
+	url = https://github.com/CraneStation/wasi-sysroot
