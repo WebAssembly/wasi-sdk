@@ -2,9 +2,10 @@
 # http://creativecommons.org/publicdomain/zero/1.0/
 
 ROOT_DIR=${CURDIR}
+LLVM_PROJ_DIR?=$(ROOT_DIR)/src/llvm-project
 PREFIX?=/opt/wasi-sdk
-CLANG_VERSION=8.0.0
 
+CLANG_VERSION=$(shell ./llvm_version.sh $(LLVM_PROJ_DIR))
 VERSION:=$(shell ./version.sh)
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
@@ -21,11 +22,11 @@ build/llvm.BUILT:
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-unknown-wasi \
-		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/clang \
-		-DLLVM_EXTERNAL_LLD_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/lld \
+		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(LLVM_PROJ_DIR)/clang \
+		-DLLVM_EXTERNAL_LLD_SOURCE_DIR=$(LLVM_PROJ_DIR)/lld \
 		-DLLVM_ENABLE_PROJECTS="lld;clang" \
 		-DDEFAULT_SYSROOT=$(PREFIX)/share/sysroot \
-		$(ROOT_DIR)/src/llvm-project/llvm
+		$(LLVM_PROJ_DIR)/llvm
 	cd build/llvm; $(MAKE) -j 8 \
 		install-clang \
 		install-lld \
@@ -33,7 +34,7 @@ build/llvm.BUILT:
 		install-llvm-ar \
 		install-llvm-ranlib \
 		install-llvm-dwarfdump \
-		install-clang-headers \
+		$(if $(patsubst 8.%,,$(CLANG_VERSION)),install-clang-resource-headers,install-clang-headers) \
 		install-llvm-nm \
 		install-llvm-size \
 		llvm-config
@@ -61,7 +62,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCOMPILER_RT_OS_DIR=wasi \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-		$(ROOT_DIR)/src/llvm-project/compiler-rt/lib/builtins
+		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
 	cd build/compiler-rt; make -j 8 install
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(PREFIX)/lib/
 	touch build/compiler-rt.BUILT
@@ -77,15 +78,16 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-sysroot.
 		-DLIBCXX_ENABLE_SHARED:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
+		-DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
 		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(ROOT_DIR)/src/llvm-project/libcxxabi/include \
+		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(LLVM_PROJ_DIR)/libcxxabi/include \
 		-DLIBCXX_HAS_MUSL_LIBC:BOOL=ON \
 		-DLIBCXX_ABI_VERSION=2 \
 		-DWASI_SDK_PREFIX=$(PREFIX) \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		--debug-trycompile \
-		$(ROOT_DIR)/src/llvm-project/libcxx
+		$(LLVM_PROJ_DIR)/libcxx
 	cd build/libcxx; make -j 8 install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
 	mv $(PREFIX)/share/sysroot/lib/libc++.a $(PREFIX)/share/sysroot/lib/wasm32-wasi/
@@ -103,7 +105,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DCXX_SUPPORTS_CXX11=ON \
 		-DLLVM_COMPILER_CHECKED=ON \
 		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
-		-DLIBCXXABI_LIBCXX_PATH=$(ROOT_DIR)/src/llvm-project/libcxx \
+		-DLIBCXXABI_LIBCXX_PATH=$(LLVM_PROJ_DIR)/libcxx \
 		-DLIBCXXABI_LIBCXX_INCLUDES=$(PREFIX)/share/sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
@@ -112,7 +114,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
-		$(ROOT_DIR)/src/llvm-project/libcxxabi
+		$(LLVM_PROJ_DIR)/libcxxabi
 	cd build/libcxxabi; make -j 8 install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
 	mv $(PREFIX)/share/sysroot/lib/libc++abi.a $(PREFIX)/share/sysroot/lib/wasm32-wasi/
