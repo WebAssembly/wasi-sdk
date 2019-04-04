@@ -118,8 +118,8 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DWASI_SDK_PREFIX=$(PREFIX) \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/sysroot/include" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/sysroot/include/c++/v1" \
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxxabi
