@@ -10,7 +10,7 @@ VERSION:=$(shell ./version.sh)
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
 default: build
-	echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
+	@echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
 clean:
 	rm -rf build $(PREFIX)
