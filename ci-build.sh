@@ -11,4 +11,4 @@ sudo apt install -y --no-install-recommends \
 	ninja-build
 # we're sudo'ing since we need to write to /opt
 sudo make package
-cp build/wasi-sdk-*.tar.gz build/wasi-sdk-*.deb "$BUILD_ARTIFACTSTAGINGDIRECTORY/"
+cp build/wasi-sdk-*.tar.gz build/wasi-sdk_*.deb "$BUILD_ARTIFACTSTAGINGDIRECTORY/"

@@ -16,3 +16,10 @@ jobs:
     inputs:
       pathtoPublish: $(Build.ArtifactStagingDirectory)
       artifactName: wasm-sdk
+  - task: GitHubRelease@0
+    inputs:
+      gitHubConnection: github-release
+      tagSource: manual
+      tag: $(Build.BuildNumber)
+      assets: |
+        $(Build.ArtifactStagingDirectory)/*
