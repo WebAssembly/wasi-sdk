@@ -1,0 +1,18 @@
+trigger:
+- swiftwasm
+
+
+jobs:
+- job: Build
+  timeoutInMinutes: 0
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  steps:
+  - script: |
+      ./ci-build.sh
+    displayName: 'ci-build'
+    timeoutInMinutes: 0
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)
+      artifactName: wasm-sdk
