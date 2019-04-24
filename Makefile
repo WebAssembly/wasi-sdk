@@ -128,7 +128,12 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	mv $(PREFIX)/share/sysroot/lib/libc++abi.a $(PREFIX)/share/sysroot/lib/wasm32-wasi/
 	touch build/libcxxabi.BUILT
 
-build: build/llvm.BUILT build/wasi-sysroot.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT
+build/config.BUILT:
+	mkdir -p $(PREFIX)/share/misc
+	cp src/config/config.sub src/config/config.guess $(PREFIX)/share/misc
+	touch build/config.BUILT
+
+build: build/llvm.BUILT build/wasi-sysroot.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT build/config.BUILT
 
 strip: build/llvm.BUILT
 	cd $(PREFIX)/bin; strip clang-8 llc lld llvm-ar
