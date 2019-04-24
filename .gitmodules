@@ -4,3 +4,6 @@
 [submodule "src/wasi-sysroot"]
 	path = src/wasi-sysroot
 	url = https://github.com/CraneStation/wasi-sysroot
+[submodule "src/config"]
+	path = src/config
+	url = https://git.savannah.gnu.org/git/config.git

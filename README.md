@@ -20,3 +20,12 @@ builds configured to set the default target and sysroot for convenience.
 One could also use a standard Clang 8.0, build a sysroot from the sources
 mentioned above, and compile with
 "--target=wasm32-unknown-wasi --sysroot=/path/to/sysroot".
+
+## Notes for Autoconf
+
+Upstream autoconf now
+[recognizes WASI](http://lists.gnu.org/archive/html/config-patches/2019-04/msg00001.html).
+
+For convenience when building packages that aren't yet updated, updated
+config.sub and config.guess files are installed at share/misc/config.\*
+in the install directory.
