@@ -19,4 +19,6 @@ esac
 rm -rf $PKGDIR
 mkdir -p $PKGDIR/opt
 cp -R /opt/wasi-sdk $PKGDIR/opt/
-cd build && tar czf wasi-sdk-$VERSION\-$MACHINE.tar.gz wasi-sdk-$VERSION
+cd build &&
+tar czf wasi-sdk-$VERSION\-$MACHINE.tar.gz wasi-sdk-$VERSION &&
+tar cz -C compiler-rt -f libclang_rt.builtins-wasm32-wasi-$VERSION.tar.gz lib/wasi
