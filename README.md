@@ -19,7 +19,7 @@ builds configured to set the default target and sysroot for convenience.
 
 One could also use a standard Clang 8.0, build a sysroot from the sources
 mentioned above, and compile with
-"--target=wasm32-unknown-wasi --sysroot=/path/to/sysroot".
+"--target=wasm32-wasi --sysroot=/path/to/sysroot".
 
 ## Notes for Autoconf
 
