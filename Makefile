@@ -88,14 +88,13 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(LLVM_PROJ_DIR)/libcxxabi/include \
 		-DLIBCXX_HAS_MUSL_LIBC:BOOL=ON \
 		-DLIBCXX_ABI_VERSION=2 \
+		-DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
 		-DWASI_SDK_PREFIX=$(PREFIX) \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxx
 	ninja -v -C build/libcxx install
-	# libc++abi.a doesn't do a multiarch install, so fix it up.
-	mv $(PREFIX)/share/wasi-sysroot/lib/libc++.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxx.BUILT
 
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
@@ -120,6 +119,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DLIBCXXABI_LIBCXX_INCLUDES=$(PREFIX)/share/wasi-sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
+		-DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi \
 		-DWASI_SDK_PREFIX=$(PREFIX) \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/wasi-sysroot/include" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/wasi-sysroot/include/c++/v1" \
@@ -127,8 +127,6 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxxabi
 	ninja -v -C build/libcxxabi install
-	# libc++abi.a doesn't do a multiarch install, so fix it up.
-	mv $(PREFIX)/share/wasi-sysroot/lib/libc++abi.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxxabi.BUILT
 
 build/config.BUILT:
