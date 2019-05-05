@@ -25,7 +25,7 @@ build/llvm.BUILT:
 		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(LLVM_PROJ_DIR)/clang \
 		-DLLVM_EXTERNAL_LLD_SOURCE_DIR=$(LLVM_PROJ_DIR)/lld \
 		-DLLVM_ENABLE_PROJECTS="lld;clang" \
-		-DDEFAULT_SYSROOT=$(PREFIX)/share/sysroot \
+		-DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot \
 		$(LLVM_PROJ_DIR)/llvm
 	cd build/llvm; $(MAKE) -j 8 \
 		install-clang \
@@ -43,7 +43,7 @@ build/llvm.BUILT:
 build/wasi-libc.BUILT: build/llvm.BUILT
 	make -C $(ROOT_DIR)/src/wasi-libc \
 		WASM_CC=$(PREFIX)/bin/clang \
-		SYSROOT=$(PREFIX)/share/sysroot
+		SYSROOT=$(PREFIX)/share/wasi-sysroot
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
@@ -94,7 +94,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		$(LLVM_PROJ_DIR)/libcxx
 	cd build/libcxx; make -j 8 install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
-	mv $(PREFIX)/share/sysroot/lib/libc++.a $(PREFIX)/share/sysroot/lib/wasm32-wasi/
+	mv $(PREFIX)/share/wasi-sysroot/lib/libc++.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxx.BUILT
 
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
@@ -115,18 +115,18 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DLLVM_COMPILER_CHECKED=ON \
 		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
 		-DLIBCXXABI_LIBCXX_PATH=$(LLVM_PROJ_DIR)/libcxx \
-		-DLIBCXXABI_LIBCXX_INCLUDES=$(PREFIX)/share/sysroot/include/c++/v1 \
+		-DLIBCXXABI_LIBCXX_INCLUDES=$(PREFIX)/share/wasi-sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DWASI_SDK_PREFIX=$(PREFIX) \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/sysroot/include" \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/sysroot/include/c++/v1" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/wasi-sysroot/include" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/wasi-sysroot/include/c++/v1" \
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxxabi
 	cd build/libcxxabi; make -j 8 install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
-	mv $(PREFIX)/share/sysroot/lib/libc++abi.a $(PREFIX)/share/sysroot/lib/wasm32-wasi/
+	mv $(PREFIX)/share/wasi-sysroot/lib/libc++abi.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxxabi.BUILT
 
 build/config.BUILT:
