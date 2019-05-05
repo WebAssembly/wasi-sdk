@@ -18,8 +18,8 @@ set(CMAKE_C_FLAGS "-v" CACHE STRING "wasi-sdk build")
 set(CMAKE_CXX_FLAGS "-v -std=c++11" CACHE STRING "wasi-sdk build")
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--no-threads" CACHE STRING "wasi-sdk build")
 
-set(CMAKE_SYSROOT ${WASI_SDK_PREFIX}/share/sysroot CACHE STRING "wasi-sdk build")
-set(CMAKE_STAGING_PREFIX ${WASI_SDK_PREFIX}/share/sysroot CACHE STRING "wasi-sdk build")
+set(CMAKE_SYSROOT ${WASI_SDK_PREFIX}/share/wasi-sysroot CACHE STRING "wasi-sdk build")
+set(CMAKE_STAGING_PREFIX ${WASI_SDK_PREFIX}/share/wasi-sysroot CACHE STRING "wasi-sdk build")
 
 # Don't look in the sysroot for executables to run during the build
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
