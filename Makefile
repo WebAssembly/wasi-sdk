@@ -27,7 +27,7 @@ build/llvm.BUILT:
 		-DLLVM_ENABLE_PROJECTS="lld;clang" \
 		-DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot \
 		$(LLVM_PROJ_DIR)/llvm
-	cd build/llvm; $(MAKE) -j 8 \
+	cd build/llvm; $(MAKE) \
 		install-clang \
 		install-lld \
 		install-llc \
@@ -64,7 +64,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
-	cd build/compiler-rt; make -j 8 install
+	cd build/compiler-rt; $(MAKE) install
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(PREFIX)/lib/
 	touch build/compiler-rt.BUILT
 
@@ -93,7 +93,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxx
-	cd build/libcxx; make -j 8 install
+	cd build/libcxx; $(MAKE) install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
 	mv $(PREFIX)/share/wasi-sysroot/lib/libc++.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxx.BUILT
@@ -126,7 +126,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxxabi
-	cd build/libcxxabi; make -j 8 install
+	cd build/libcxxabi; $(MAKE) install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
 	mv $(PREFIX)/share/wasi-sysroot/lib/libc++abi.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxxabi.BUILT
