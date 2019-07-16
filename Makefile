@@ -17,7 +17,7 @@ clean:
 
 build/llvm.BUILT:
 	mkdir -p build/llvm
-	cd build/llvm; cmake -G "Unix Makefiles" \
+	cd build/llvm; cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
@@ -27,7 +27,7 @@ build/llvm.BUILT:
 		-DLLVM_ENABLE_PROJECTS="lld;clang" \
 		-DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot \
 		$(LLVM_PROJ_DIR)/llvm
-	cd build/llvm; $(MAKE) \
+	ninja -v -C build/llvm \
 		install-clang \
 		install-lld \
 		install-llc \
@@ -48,7 +48,7 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
 	mkdir -p build/compiler-rt
-	cd build/compiler-rt; cmake -G "Unix Makefiles" \
+	cd build/compiler-rt; cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DCOMPILER_RT_BAREMETAL_BUILD=On \
@@ -64,13 +64,13 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
-	cd build/compiler-rt; $(MAKE) install
+	ninja -v -C build/compiler-rt install
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(PREFIX)/lib/
 	touch build/compiler-rt.BUILT
 
 build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
 	mkdir -p build/libcxx
-	cd build/libcxx; cmake -G "Unix Makefiles" \
+	cd build/libcxx; cmake -G Ninja \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
@@ -93,14 +93,14 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxx
-	cd build/libcxx; $(MAKE) install
+	ninja -v -C build/libcxx install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
 	mv $(PREFIX)/share/wasi-sysroot/lib/libc++.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxx.BUILT
 
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	mkdir -p build/libcxxabi
-	cd build/libcxxabi; cmake -G "Unix Makefiles" \
+	cd build/libcxxabi; cmake -G Ninja \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		-DCMAKE_CXX_COMPILER_WORKS=ON \
 		-DCMAKE_C_COMPILER_WORKS=ON \
@@ -126,7 +126,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxxabi
-	cd build/libcxxabi; $(MAKE) install
+	ninja -v -C build/libcxxabi install
 	# libc++abi.a doesn't do a multiarch install, so fix it up.
 	mv $(PREFIX)/share/wasi-sysroot/lib/libc++abi.a $(PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/
 	touch build/libcxxabi.BUILT

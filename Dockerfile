@@ -7,4 +7,5 @@ RUN apt-get update \
 	cmake \
 	python \
 	git \
+	ninja-build \
  && rm -rf /var/lib/apt/lists/*
