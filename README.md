@@ -1,5 +1,7 @@
 # WASI SDK
 
+[![Build Status](https://dev.azure.com/CraneStation/wasi-sdk/_apis/build/status/CraneStation.wasi-sdk?branchName=master)](https://dev.azure.com/CraneStation/wasi-sdk/_build/latest?definitionId=2&branchName=master)
+
 ## Quick Start
 
 [Download SDK packages here.](https://github.com/CraneStation/wasi-sdk/releases)
