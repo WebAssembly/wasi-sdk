@@ -31,3 +31,25 @@ Upstream autoconf now
 For convenience when building packages that aren't yet updated, updated
 config.sub and config.guess files are installed at share/misc/config.\*
 in the install directory.
+
+## Notable Limitations
+
+This repository does not yet support C++ exceptions. C++ code is
+supported only with -fno-exceptions for now. Work on support for
+[exception handling] is underway at the language level.
+
+[exception handling]: https://github.com/WebAssembly/exception-handling/
+
+This repository does not yet support [threads]. Specifically, WASI does
+not yet have an API for creating and managing threads yet, and WASI libc
+does not yet have pthread support.
+
+[threads]: https://github.com/WebAssembly/threads
+
+This repository does not yet support dynamic libraries. While there are
+[some efforts](https://github.com/WebAssembly/tool-conventions/blob/master/DynamicLinking.md)
+to design a system for dynamic libraries in wasm, it is still in development
+and not yet generally usable.
+
+There is no support for networking. It is a goal of WASI to support networking
+in the future though.
