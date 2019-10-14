@@ -4,3 +4,4 @@ Architecture: amd64
 Priority: optional
 Description: Clang toolchain with wasm32-wasi default target, and the wasi sysroot
 Maintainer: Pat Hickey <phickey@fastly.com>
+Depends: libxml2
