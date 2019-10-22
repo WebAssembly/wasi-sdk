@@ -1,6 +1,6 @@
 [submodule "src/llvm-project"]
 	path = src/llvm-project
-	url = https://github.com/llvm/llvm-project
+	url = https://github.com/swiftwasm/llvm-project
 [submodule "src/wasi-libc"]
 	path = src/wasi-libc
 	url = https://github.com/swiftwasm/wasi-sysroot
