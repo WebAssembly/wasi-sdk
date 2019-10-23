@@ -24,19 +24,37 @@ build/llvm.BUILT:
 		-DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi \
 		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(LLVM_PROJ_DIR)/clang \
 		-DLLVM_EXTERNAL_LLD_SOURCE_DIR=$(LLVM_PROJ_DIR)/lld \
-		-DLLVM_ENABLE_PROJECTS="lld;clang" \
+		-DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR=$(LLVM_PROJ_DIR)/clang-tools-extra \
+		-DLLVM_ENABLE_PROJECTS="lld;clang;clang-tools-extra" \
 		-DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot \
+		-DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE \
 		$(LLVM_PROJ_DIR)/llvm
 	ninja -v -C build/llvm \
 		install-clang \
+		install-libclang \
+		install-clang-format \
+		install-clang-tidy \
+		install-clangQuery \
+		install-clang-apply-replacements \
 		install-lld \
 		install-llc \
 		install-llvm-ar \
 		install-llvm-ranlib \
+		install-llvm-strip \
 		install-llvm-dwarfdump \
 		$(if $(patsubst 8.%,,$(CLANG_VERSION)),install-clang-resource-headers,install-clang-headers) \
 		install-llvm-nm \
 		install-llvm-size \
+		install-llvm-objdump \
+		install-llvm-objcopy \
+		install-ar \
+		install-ranlib \
+		install-strip \
+		install-nm \
+		install-size \
+		install-objdump \
+		install-objcopy \
+		install-c++filt \
 		llvm-config
 	touch build/llvm.BUILT
 
