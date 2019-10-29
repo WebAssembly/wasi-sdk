@@ -150,7 +150,8 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 build/config.BUILT:
 	mkdir -p $(PREFIX)/share/misc
 	cp src/config/config.sub src/config/config.guess $(PREFIX)/share/misc
-	cp wasi-sdk.cmake $(PREFIX)
+	mkdir -p $(PREFIX)/share/cmake
+	cp wasi-sdk.cmake $(PREFIX)/share/cmake
 	touch build/config.BUILT
 
 build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT build/config.BUILT
