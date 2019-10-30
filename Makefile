@@ -32,6 +32,7 @@ build/llvm.BUILT:
 	ninja -v -C build/llvm \
 		install-clang \
 		install-libclang \
+		install-libclang-headers \
 		install-clang-format \
 		install-clang-tidy \
 		install-clangQuery \
