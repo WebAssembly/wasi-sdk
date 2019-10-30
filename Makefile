@@ -47,7 +47,8 @@ build/llvm.BUILT:
 		install-strings \
 		install-objdump \
 		install-objcopy \
-		install-c++filt
+		install-c++filt \
+		llvm-config
 	touch build/llvm.BUILT
 
 build/wasi-libc.BUILT: build/llvm.BUILT
