@@ -37,25 +37,20 @@ build/llvm.BUILT:
 		install-clangQuery \
 		install-clang-apply-replacements \
 		install-lld \
-		install-llc \
-		install-llvm-ar \
 		install-llvm-ranlib \
 		install-llvm-strip \
 		install-llvm-dwarfdump \
 		$(if $(patsubst 8.%,,$(CLANG_VERSION)),install-clang-resource-headers,install-clang-headers) \
-		install-llvm-nm \
-		install-llvm-size \
-		install-llvm-objdump \
-		install-llvm-objcopy \
 		install-ar \
 		install-ranlib \
 		install-strip \
 		install-nm \
 		install-size \
+		install-strings \
 		install-objdump \
 		install-objcopy \
 		install-c++filt \
-		llvm-config
+		install-llvm-config
 	touch build/llvm.BUILT
 
 build/wasi-libc.BUILT: build/llvm.BUILT
