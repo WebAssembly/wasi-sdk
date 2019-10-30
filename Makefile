@@ -31,11 +31,8 @@ build/llvm.BUILT:
 		$(LLVM_PROJ_DIR)/llvm
 	ninja -v -C build/llvm \
 		install-clang \
-		install-libclang \
-		install-libclang-headers \
 		install-clang-format \
 		install-clang-tidy \
-		install-clangQuery \
 		install-clang-apply-replacements \
 		install-lld \
 		install-llvm-ranlib \
@@ -50,8 +47,7 @@ build/llvm.BUILT:
 		install-strings \
 		install-objdump \
 		install-objcopy \
-		install-c++filt \
-		install-llvm-config
+		install-c++filt
 	touch build/llvm.BUILT
 
 build/wasi-libc.BUILT: build/llvm.BUILT
