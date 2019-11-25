@@ -40,3 +40,7 @@ jobs:
       - run: sudo make -j4 package
         shell: bash
         name: Build
+      - uses: actions/upload-artifact@v1
+        with:
+          name: ${{ format( 'packages-{0}.tgz', matrix.os) }}
+          path: dist
