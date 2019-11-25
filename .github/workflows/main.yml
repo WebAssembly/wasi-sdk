@@ -1,0 +1,42 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          # llvm 9 build is broken on windows for now. Re-enable this when it is fixed:
+          # - windows-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: true
+      - run: |
+          # Windows releases of LLVM don't include the llvm-nm tool, which is needed for building
+          # wasi-libc. Rust's llvm-tools include llvm-nm, and Rust is installed on Azure's Windows
+          # images, so we can use that to make llvm-nm available without too much overhead.
+          rustup update stable
+          rustup default stable
+          rustup component add llvm-tools-preview
+          echo "::set-env name=WASM_NM::$(rustc --print sysroot|sed 's|C:|/c|'|sed 's|\\|/|g')/lib/rustlib/x86_64-pc-windows-msvc/bin/llvm-nm.exe"
+        shell: bash
+        name: Install llvm-nm (Windows)
+        if: matrix.os == 'windows-latest'
+      - run: choco install ninja
+        name: Install Ninja (Windows)
+        if: matrix.os == 'windows-latest'
+      - run: brew install ninja
+        name: Install Ninja (macOS)
+        if: matrix.os == 'macos-latest'
+      - run: sudo apt install ninja-build
+        name: Install Ninja (Linux)
+        if: matrix.os == 'ubuntu-latest'
+      - run: sudo make -j4 package
+        shell: bash
+        name: Build
