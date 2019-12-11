@@ -14,7 +14,7 @@ jobs:
           # llvm 9 build is broken on windows for now. Re-enable this when it is fixed:
           # - windows-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v1
         with:
           submodules: true
       - run: |
