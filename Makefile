@@ -149,11 +149,12 @@ build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libc
 strip: build/llvm.BUILT
 	cd $(PREFIX)/bin; strip clang-9 lld llvm-ar
 
-package: dist
+package: build/package.BUILT
 
-dist: build strip
+build/package.BUILT: build strip
 	mkdir -p dist
 	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh $(shell pwd)/dist || true
 	./tar_from_installation.sh $(shell pwd)/dist
+	touch built/package.BUILT
 
 .PHONY: default clean build strip package

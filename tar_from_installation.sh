@@ -3,7 +3,7 @@ set -ex
 if [ -n "$1" ]; then
     OUTDIR=$1
 else
-    OUTDIR=$PWD/build
+    OUTDIR=$PWD/dist
 fi
 
 if [ -n "$2" ]; then
