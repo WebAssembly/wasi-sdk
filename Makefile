@@ -155,6 +155,6 @@ build/package.BUILT: build strip
 	mkdir -p dist
 	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh $(shell pwd)/dist || true
 	./tar_from_installation.sh $(shell pwd)/dist
-	touch built/package.BUILT
+	touch build/package.BUILT
 
 .PHONY: default clean build strip package
