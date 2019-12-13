@@ -42,5 +42,6 @@ jobs:
         name: Build
       - uses: actions/upload-artifact@v1
         with:
-          name: ${{ format( 'packages-{0}.tgz', matrix.os) }}
+          # Upload the dist folder. Give it a name according to the OS it was built for.
+          name: ${{ format( 'dist-{0}.tgz', matrix.os) }}
           path: dist
