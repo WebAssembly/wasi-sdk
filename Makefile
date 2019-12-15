@@ -152,8 +152,9 @@ strip: build/llvm.BUILT
 package: build/package.BUILT
 
 build/package.BUILT: build strip
-	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh || true
-	./tar_from_installation.sh
+	mkdir -p dist
+	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh $(shell pwd)/dist || true
+	./tar_from_installation.sh $(shell pwd)/dist
 	touch build/package.BUILT
 
 .PHONY: default clean build strip package
