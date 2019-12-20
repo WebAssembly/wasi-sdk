@@ -4,7 +4,7 @@ set -ueo pipefail
 # A simple testcase runner that runs a command, captures all its command-line
 # outputs, and compares them against expected outputs.
 
-runwasm="$1"
+runwasi="$1"
 clang="$2"
 options="$3"
 input="$4"
@@ -29,7 +29,7 @@ else
 fi
 
 exit_status=0
-"$runwasm" "$wasm" \
+"$runwasi" "$wasm" \
     < "$stdin" \
     > "$stdout_observed" \
     2> "$stderr_observed" \
