@@ -40,16 +40,11 @@ jobs:
       - run: sudo make -j4 package
         shell: bash
         name: Build
+      - run: make check
+        name: Run the testsuite
+        if: matrix.os == 'ubuntu-latest'
       - uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-{0}.tgz', matrix.os) }}
           path: dist
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-      with:
-        submodules: true
-    - run: make check
