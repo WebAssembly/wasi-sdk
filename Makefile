@@ -12,6 +12,9 @@ DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 default: build
 	@echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
+check:
+	cd tests && PATH="$(PREFIX)/bin:$$PATH" ./run.sh
+
 clean:
 	rm -rf build $(PREFIX)
 
@@ -157,4 +160,4 @@ build/package.BUILT: build strip
 	./tar_from_installation.sh $(shell pwd)/dist
 	touch build/package.BUILT
 
-.PHONY: default clean build strip package
+.PHONY: default clean build strip package check
