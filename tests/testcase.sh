@@ -26,8 +26,15 @@ fi
 
 echo "Testing $input..."
 
-# Determine the input file to write to stdin.
+# Compile the testcase.
 "$clang" $options $file_options "$input" -o "$wasm"
+
+# If we don't have a runwasi command, we're just doing compile-only testing.
+if [ "$runwasi" == "" ]; then
+    exit 0
+fi
+
+# Determine the input file to write to stdin.
 if [ -e "$input.stdin" ]; then
   stdin="$input.stdin"
 else
