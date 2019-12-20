@@ -1,6 +1,9 @@
 #!/bin/bash
 set -ueo pipefail
 
+# Top-level test runner. Usage is "run.sh <runwasi>" where <runwasi> is a
+# WASI-capable runtime.
+
 runwasi="$1"
 
 cd compile-only
