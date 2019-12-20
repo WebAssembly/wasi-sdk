@@ -45,3 +45,11 @@ jobs:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-{0}.tgz', matrix.os) }}
           path: dist
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - run: make check
