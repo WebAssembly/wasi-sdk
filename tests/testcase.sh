@@ -4,7 +4,7 @@ set -ueo pipefail
 # A simple testcase runner that runs a command, captures all its command-line
 # outputs, and compares them against expected outputs.
 
-# Command-line parsing; this script is meant to be run from a # higher-level
+# Command-line parsing; this script is meant to be run from a higher-level
 # script, so don't do anything fancy.
 runwasi="$1"
 clang="$2"
