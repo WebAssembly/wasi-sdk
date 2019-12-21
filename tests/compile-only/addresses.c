@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <limits.h>
+#include <errno.h>
+extern char **environ;
 
 extern void __dso_handle;
 #if !defined(__clang_major__) || __clang_major__ >= 10
@@ -19,5 +21,7 @@ int main(int argc, char *argv[]) {
     printf("__builtin_frame_address(0)=%p\n", __builtin_frame_address(0));
     printf("__builtin_alloca(0)=%p\n", __builtin_alloca(0));
     printf("__builtin_wasm_memory_size(0)=%p\n", (void *)(__builtin_wasm_memory_size(0) * PAGE_SIZE));
+    printf("&errno=%p\n", (void *)&errno);
+    printf("&environ=%p\n", (void *)&environ);
     return 0;
 }
