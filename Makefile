@@ -29,7 +29,7 @@ build/llvm.BUILT:
 		-DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot \
 		-DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE \
 		$(LLVM_PROJ_DIR)/llvm
-	ninja -v -C build/llvm \
+	ninja $(NINJA_FLAGS) -v -C build/llvm \
 		install-clang \
 		install-clang-format \
 		install-clang-tidy \
@@ -75,7 +75,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
-	ninja -v -C build/compiler-rt install
+	ninja $(NINJA_FLAGS) -v -C build/compiler-rt install
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(PREFIX)/lib/
 	touch build/compiler-rt.BUILT
 
@@ -105,7 +105,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxx
-	ninja -v -C build/libcxx install
+	ninja $(NINJA_FLAGS) -v -C build/libcxx install
 	touch build/libcxx.BUILT
 
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
@@ -137,7 +137,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
 		$(LLVM_PROJ_DIR)/libcxxabi
-	ninja -v -C build/libcxxabi install
+	ninja $(NINJA_FLAGS) -v -C build/libcxxabi install
 	touch build/libcxxabi.BUILT
 
 build/config.BUILT:
