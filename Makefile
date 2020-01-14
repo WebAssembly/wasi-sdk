@@ -52,13 +52,14 @@ build/llvm.BUILT:
 	touch build/llvm.BUILT
 
 build/wasi-libc.BUILT: build/llvm.BUILT
-	cmake -G Ninja -B build/wasi-libc \
+	cmake -G Ninja \
+		--build \
 		-DCMAKE_SYSTEM_NAME=Generic \
 		-DCMAKE_AR=$(ROOT_DIR)/bin/llvm-ar \
 		-DCMAKE_NM=$(ROOT_DIR)/bin/llvm-nm \
 		-DCMAKE_C_COMPILER=$(ROOT_DIR)/bin/clang \
-		-S $(ROOT_DIR)/src/wasi-libc \
-		--build
+		-B build/wasi-libc \
+		-S $(ROOT_DIR)/src/wasi-libc
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
