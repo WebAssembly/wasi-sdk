@@ -41,9 +41,16 @@ else
   stdin="/dev/null"
 fi
 
+# Determine any environment variables to set.
+if [ -e "$input.env" ]; then
+    env=$(sed -e 's/^/--env /' < "$input.env")
+else
+    env=""
+fi
+
 # Run the test, capturing stdout, stderr, and the exit status.
 exit_status=0
-"$runwasi" "$wasm" \
+"$runwasi" $env "$wasm" \
     < "$stdin" \
     > "$stdout_observed" \
     2> "$stderr_observed" \
