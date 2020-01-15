@@ -53,7 +53,7 @@ build/llvm.BUILT:
 
 build/wasi-libc.BUILT: build/llvm.BUILT
 	cmake -G Ninja \
-		--build \
+		--install \
 		-DCMAKE_SYSTEM_NAME=Generic \
 		-DCMAKE_AR=$(ROOT_DIR)/bin/llvm-ar \
 		-DCMAKE_NM=$(ROOT_DIR)/bin/llvm-nm \
