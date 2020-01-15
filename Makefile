@@ -62,7 +62,7 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 		-S $(ROOT_DIR)/src/wasi-libc
 	touch build/wasi-libc.BUILT
 
-build/compiler-rt.BUILT: build/llvm.BUILT
+build/compiler-rt.BUILT: build/wasi-libc.BUILT build/llvm.BUILT
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt; cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
