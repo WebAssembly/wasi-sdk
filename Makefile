@@ -58,6 +58,7 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 		-DCMAKE_AR=$(PREFIX)/bin/ar \
 		-DCMAKE_NM=$(PREFIX)/bin/nm \
 		-DCMAKE_C_COMPILER=$(PREFIX)/bin/clang \
+		-DCMAKE_C_COMPILER_WORKS=YES \
 		-B build/wasi-libc \
 		-S $(ROOT_DIR)/src/wasi-libc
 	touch build/wasi-libc.BUILT
