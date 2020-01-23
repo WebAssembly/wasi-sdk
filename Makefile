@@ -53,7 +53,6 @@ build/llvm.BUILT:
 
 build/wasi-libc.BUILT: build/llvm.BUILT
 	cmake -G Ninja \
-		--install \
 		-DCMAKE_SYSTEM_NAME=Generic \
 		-DCMAKE_AR=$(PREFIX)/bin/ar \
 		-DCMAKE_NM=$(PREFIX)/bin/nm \
@@ -61,6 +60,8 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 		-DCMAKE_C_COMPILER_WORKS=YES \
 		-B build/wasi-libc \
 		-S $(ROOT_DIR)/src/wasi-libc
+	ninja $(NINJA_FLAGS) -v -C build/wasi-libc \
+		install
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/wasi-libc.BUILT build/llvm.BUILT
