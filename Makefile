@@ -60,8 +60,9 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 		-DCMAKE_C_COMPILER=$(PREFIX)/bin/clang \
 		-DCMAKE_C_COMPILER_WORKS=YES \
 		$(ROOT_DIR)/src/wasi-libc
-	ninja $(NINJA_FLAGS) -v -C build/wasi-libc \
-		install
+	ninja $(NINJA_FLAGS) -v -C build/wasi-libc
+	mkdir -p $(PREFIX)/share
+	cp -R build/wasi-libc/sysroot $(PREFIX)/share/wasi-sysroot
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/wasi-libc.BUILT build/llvm.BUILT
