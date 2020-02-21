@@ -15,12 +15,13 @@ wasi-libc tree.
 The libc portion of this SDK is the
 [wasi-libc](https://github.com/CraneStation/wasi-libc).
 
-Upstream Clang and LLVM 8.0 can compile for WASI out of the box, and WebAssembly
-support is included in them by default. So, all that's done here is to provide
-builds configured to set the default target and sysroot for convenience.
+Upstream Clang and LLVM (from 8.0 onwards) can compile for WASI out of the box,
+and WebAssembly support is included in them by default. So, all that's done here
+is to provide builds configured to set the default target and sysroot for
+convenience.
 
-One could also use a standard Clang 8.0, build a sysroot from the sources
-mentioned above, and compile with
+One could also use a standard Clang installation, build a sysroot from the
+sources mentioned above, and compile with
 "--target=wasm32-wasi --sysroot=/path/to/sysroot".
 
 ## Notes for Autoconf
