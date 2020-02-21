@@ -30,11 +30,12 @@ jobs:
       - name: Install ninja (linux)
         run: sudo apt install ninja-build
         if: matrix.os == 'ubuntu-latest'
-      - name: Build
+      - name: Build (sudo)
         run: sudo make -j4 package
-        if: matrix.os != 'ubuntu-latest'
+        if: matrix.os != 'windows-latest'
       - name: Build (windows)
         run: make -j4 package
+        if: matrix.os == 'windows-latest'
       - name: Run the testsuite
         run: make check
         if: matrix.os == 'ubuntu-latest'
