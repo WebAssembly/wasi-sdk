@@ -16,25 +16,25 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
-          - macos-latest
-          # llvm 9 build is broken on windows for now. Re-enable this when it is fixed:
-          # - windows-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v1
         with:
           submodules: true
-      - name: Install ninja (Windows)
+      - name: Install ninja (windows)
         run: choco install ninja
         if: matrix.os == 'windows-latest'
-      - name: Install ninja (macOS)
+      - name: Install ninja (macos)
         run: brew install ninja
         if: matrix.os == 'macos-latest'
-      - name: Install ninja (Linux)
+      - name: Install ninja (linux)
         run: sudo apt install ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
         run: sudo make -j4 package
+        if: matrix.os != 'ubuntu-latest'
+      - name: Build (windows)
+        run: make -j4 package
       - name: Run the testsuite
         run: make check
         if: matrix.os == 'ubuntu-latest'
