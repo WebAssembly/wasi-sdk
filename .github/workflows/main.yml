@@ -1,5 +1,12 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  create:
+    tags:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   build:
@@ -17,33 +24,22 @@ jobs:
       - uses: actions/checkout@v1
         with:
           submodules: true
-      - run: |
-          # Windows releases of LLVM don't include the llvm-nm tool, which is needed for building
-          # wasi-libc. Rust's llvm-tools include llvm-nm, and Rust is installed on Azure's Windows
-          # images, so we can use that to make llvm-nm available without too much overhead.
-          rustup update stable
-          rustup default stable
-          rustup component add llvm-tools-preview
-          echo "::set-env name=WASM_NM::$(rustc --print sysroot|sed 's|C:|/c|'|sed 's|\\|/|g')/lib/rustlib/x86_64-pc-windows-msvc/bin/llvm-nm.exe"
-        shell: bash
-        name: Install llvm-nm (Windows)
+      - name: Install ninja (Windows)
+        run: choco install ninja
         if: matrix.os == 'windows-latest'
-      - run: choco install ninja
-        name: Install Ninja (Windows)
-        if: matrix.os == 'windows-latest'
-      - run: brew install ninja
-        name: Install Ninja (macOS)
+      - name: Install ninja (macOS)
+        run: brew install ninja
         if: matrix.os == 'macos-latest'
-      - run: sudo apt install ninja-build
-        name: Install Ninja (Linux)
+      - name: Install ninja (Linux)
+        run: sudo apt install ninja-build
         if: matrix.os == 'ubuntu-latest'
-      - run: sudo make -j4 package
-        shell: bash
-        name: Build
-      - run: make check
-        name: Run the testsuite
+      - name: Build
+        run: sudo make -j4 package
+      - name: Run the testsuite
+        run: make check
         if: matrix.os == 'ubuntu-latest'
-      - uses: actions/upload-artifact@v1
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-{0}.tgz', matrix.os) }}
