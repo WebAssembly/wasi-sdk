@@ -1,0 +1,7 @@
+#!/bin/bash
+set -euo pipefail
+
+cat \
+    | sed -e 's/main module `assert-fail\.c\.[^`]*\.wasm`/main module `assert-fail.c.---.wasm`/' \
+    | sed -e 's/source location: @[[:xdigit:]]*$/source location: @----/' \
+    | head -n 7

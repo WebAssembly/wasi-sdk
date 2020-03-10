@@ -60,11 +60,27 @@ echo $exit_status > "$exit_status_observed"
 # Determine the reference files to compare with.
 if [ -e "$input.stdout.expected" ]; then
   stdout_expected="$input.stdout.expected"
+
+  # Apply output filters.
+  if [ -e "$input.stdout.expected.filter" ]; then
+      cat "$stdout_observed" \
+          | "$input.stdout.expected.filter" \
+          > "${stdout_observed}.filtered"
+      stdout_observed="${stdout_observed}.filtered"
+  fi
 else
   stdout_expected="/dev/null"
 fi
 if [ -e "$input.stderr.expected" ]; then
   stderr_expected="$input.stderr.expected"
+
+  # Apply output filters.
+  if [ -e "$input.stderr.expected.filter" ]; then
+      cat "$stderr_observed" \
+          | "./$input.stderr.expected.filter" \
+          > "${stderr_observed}.filtered"
+      stderr_observed="${stderr_observed}.filtered"
+  fi
 else
   stderr_expected="/dev/null"
 fi
