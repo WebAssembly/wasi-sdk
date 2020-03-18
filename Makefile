@@ -109,7 +109,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 	cmake -B build/libcxx -G Ninja $(LIBCXX_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-            -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
+	    -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxx
 	ninja $(NINJA_FLAGS) -v -C build/libcxx
 	# Do the install.
