@@ -20,7 +20,7 @@ clean:
 
 build/llvm.BUILT:
 	mkdir -p build/llvm
-	cd build/llvm; cmake -G Ninja \
+	cmake -B build/llvm -G Ninja \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
@@ -58,8 +58,9 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
+	# Do the build, and install it.
 	mkdir -p build/compiler-rt
-	cd build/compiler-rt; cmake -G Ninja \
+	cmake -B build/compiler-rt -G Ninja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DCOMPILER_RT_BAREMETAL_BUILD=On \
@@ -76,67 +77,80 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
 	ninja $(NINJA_FLAGS) -v -C build/compiler-rt install
+	# Install clang-provided headers.
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(PREFIX)/lib/
 	touch build/compiler-rt.BUILT
 
+# Flags for libcxx.
+LIBCXX_CMAKE_FLAGS = \
+    -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
+    -DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
+    -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+    -DLIBCXX_ENABLE_THREADS:BOOL=OFF \
+    -DLIBCXX_HAS_PTHREAD_API:BOOL=OFF \
+    -DLIBCXX_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
+    -DLIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
+    -DLIBCXX_HAS_WIN32_THREAD_API:BOOL=OFF \
+    -DCMAKE_BUILD_TYPE=RelWithDebugInfo \
+    -DLIBCXX_ENABLE_SHARED:BOOL=OFF \
+    -DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
+    -DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
+    -DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
+    -DLIBCXX_CXX_ABI=libcxxabi \
+    -DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(LLVM_PROJ_DIR)/libcxxabi/include \
+    -DLIBCXX_HAS_MUSL_LIBC:BOOL=ON \
+    -DLIBCXX_ABI_VERSION=2 \
+    -DWASI_SDK_PREFIX=$(PREFIX) \
+    --debug-trycompile
+
 build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
+	# Do the build.
 	mkdir -p build/libcxx
-	cd build/libcxx; cmake -G Ninja \
-		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
-		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
-		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-		-DLIBCXX_ENABLE_THREADS:BOOL=OFF \
-		-DLIBCXX_HAS_PTHREAD_API:BOOL=OFF \
-		-DLIBCXX_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
-		-DLIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
-		-DLIBCXX_HAS_WIN32_THREAD_API:BOOL=OFF \
-		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
-		-DLIBCXX_ENABLE_SHARED:BOOL=OFF \
-		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
-		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
-		-DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
-		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(LLVM_PROJ_DIR)/libcxxabi/include \
-		-DLIBCXX_HAS_MUSL_LIBC:BOOL=ON \
-		-DLIBCXX_ABI_VERSION=2 \
-		-DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
-		-DWASI_SDK_PREFIX=$(PREFIX) \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-		--debug-trycompile \
-		$(LLVM_PROJ_DIR)/libcxx
+	cmake -B build/libcxx -G Ninja $(LIBCXX_CMAKE_FLAGS) \
+	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
+	    -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
+	    $(LLVM_PROJ_DIR)/libcxx
+	ninja $(NINJA_FLAGS) -v -C build/libcxx
+	# Do the install.
 	ninja $(NINJA_FLAGS) -v -C build/libcxx install
 	touch build/libcxx.BUILT
 
+# Flags for libcxxabi.
+LIBCXXABI_CMAKE_FLAGS = \
+    -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+    -DCMAKE_CXX_COMPILER_WORKS=ON \
+    -DCMAKE_C_COMPILER_WORKS=ON \
+    -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF \
+    -DLIBCXXABI_ENABLE_SHARED:BOOL=OFF \
+    -DLIBCXXABI_SILENT_TERMINATE:BOOL=ON \
+    -DLIBCXXABI_ENABLE_THREADS:BOOL=OFF \
+    -DLIBCXXABI_HAS_PTHREAD_API:BOOL=OFF \
+    -DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
+    -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
+    -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF \
+    $(if $(patsubst 8.%,,$(CLANG_VERSION)),-DLIBCXXABI_ENABLE_PIC:BOOL=OFF,) \
+    -DCXX_SUPPORTS_CXX11=ON \
+    -DLLVM_COMPILER_CHECKED=ON \
+    -DCMAKE_BUILD_TYPE=RelWithDebugInfo \
+    -DLIBCXXABI_LIBCXX_PATH=$(LLVM_PROJ_DIR)/libcxx \
+    -DLIBCXXABI_LIBCXX_INCLUDES=$(PREFIX)/share/wasi-sysroot/include/c++/v1 \
+    -DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
+    -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
+    -DWASI_SDK_PREFIX=$(PREFIX) \
+    -DUNIX:BOOL=ON \
+    --debug-trycompile
+
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
+	# Do the build.
 	mkdir -p build/libcxxabi
-	cd build/libcxxabi; cmake -G Ninja \
-		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-		-DCMAKE_CXX_COMPILER_WORKS=ON \
-		-DCMAKE_C_COMPILER_WORKS=ON \
-		-DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF \
-		-DLIBCXXABI_ENABLE_SHARED:BOOL=OFF \
-		-DLIBCXXABI_SILENT_TERMINATE:BOOL=ON \
-		-DLIBCXXABI_ENABLE_THREADS:BOOL=OFF \
-		-DLIBCXXABI_HAS_PTHREAD_API:BOOL=OFF \
-		-DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
-		-DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
-		-DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF \
-		$(if $(patsubst 8.%,,$(CLANG_VERSION)),-DLIBCXXABI_ENABLE_PIC:BOOL=OFF,) \
-		-DCXX_SUPPORTS_CXX11=ON \
-		-DLLVM_COMPILER_CHECKED=ON \
-		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
-		-DLIBCXXABI_LIBCXX_PATH=$(LLVM_PROJ_DIR)/libcxx \
-		-DLIBCXXABI_LIBCXX_INCLUDES=$(PREFIX)/share/wasi-sysroot/include/c++/v1 \
-		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
-		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
-		-DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi \
-		-DWASI_SDK_PREFIX=$(PREFIX) \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/wasi-sysroot/include" \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -I$(PREFIX)/share/wasi-sysroot/include/c++/v1" \
-		-DUNIX:BOOL=ON \
-		--debug-trycompile \
-		$(LLVM_PROJ_DIR)/libcxxabi
+	cmake -B build/libcxxabi -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
+	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
+	    -DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi \
+	    $(LLVM_PROJ_DIR)/libcxxabi
+	ninja $(NINJA_FLAGS) -v -C build/libcxxabi
+	# Do the install.
 	ninja $(NINJA_FLAGS) -v -C build/libcxxabi install
 	touch build/libcxxabi.BUILT
 
