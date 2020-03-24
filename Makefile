@@ -164,7 +164,7 @@ build/config.BUILT:
 build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT build/config.BUILT
 
 strip: build/llvm.BUILT
-	cd $(PREFIX)/bin; strip clang-9 lld llvm-ar
+	cd $(PREFIX)/bin; strip clang-* clang++-* lld llvm-ar
 
 package: build/package.BUILT
 
