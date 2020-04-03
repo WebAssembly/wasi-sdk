@@ -48,9 +48,18 @@ else
     env=""
 fi
 
+# Determine a preopened directory to provide.
+if [ -e "$input.dir" ]; then
+    dir="--dir $input.dir"
+    dirarg="$input.dir"
+else
+    dir=""
+    dirarg=""
+fi
+
 # Run the test, capturing stdout, stderr, and the exit status.
 exit_status=0
-"$runwasi" $env "$wasm" \
+"$runwasi" $env $dir "$wasm" $dirarg \
     < "$stdin" \
     > "$stdout_observed" \
     2> "$stderr_observed" \
