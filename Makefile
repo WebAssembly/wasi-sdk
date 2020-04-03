@@ -54,11 +54,12 @@ build/llvm.BUILT:
 build/wasi-libc.BUILT: build/llvm.BUILT
 	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
 		WASM_CC=$(PREFIX)/bin/clang \
-		SYSROOT=$(PREFIX)/share/wasi-sysroot
+		SYSROOT=$(PREFIX)/share/wasi-sysroot \
+		CLANG_VERSION=$(CLANG_VERSION)
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
-	# Do the build, and install it.
+	# Do the conventional build, and install it.
 	mkdir -p build/compiler-rt
 	cmake -B build/compiler-rt -G Ninja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -70,7 +71,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
 		-DWASI_SDK_PREFIX=$(PREFIX) \
-		-DCMAKE_C_FLAGS="-O1 $(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=wasi \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
@@ -81,7 +82,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(PREFIX)/lib/
 	touch build/compiler-rt.BUILT
 
-# Flags for libcxx.
+# Flags common to both the non-LTO and LTO builds of libcxx.
 LIBCXX_CMAKE_FLAGS = \
     -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
     -DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
@@ -104,7 +105,7 @@ LIBCXX_CMAKE_FLAGS = \
     --debug-trycompile
 
 build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
-	# Do the build.
+	# Do the conventional build.
 	mkdir -p build/libcxx
 	cmake -B build/libcxx -G Ninja $(LIBCXX_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
@@ -112,11 +113,20 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 	    -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxx
 	ninja $(NINJA_FLAGS) -v -C build/libcxx
+	# Now build the same thing but with LTO enabled.
+	mkdir -p build/libcxx.llvm-lto
+	cmake -B build/libcxx.llvm-lto -G Ninja $(LIBCXX_CMAKE_FLAGS) \
+	    -DCMAKE_C_FLAGS="-flto $(DEBUG_PREFIX_MAP)" \
+	    -DCMAKE_CXX_FLAGS="-flto $(DEBUG_PREFIX_MAP)" \
+	    -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi/llvm-lto/$(CLANG_VERSION) \
+	    $(LLVM_PROJ_DIR)/libcxx
+	ninja $(NINJA_FLAGS) -v -C build/libcxx.llvm-lto
 	# Do the install.
 	ninja $(NINJA_FLAGS) -v -C build/libcxx install
+	ninja $(NINJA_FLAGS) -v -C build/libcxx.llvm-lto install
 	touch build/libcxx.BUILT
 
-# Flags for libcxxabi.
+# Flags common to both the non-LTO and LTO builds of libcxxabi.
 LIBCXXABI_CMAKE_FLAGS = \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
     -DCMAKE_CXX_COMPILER_WORKS=ON \
@@ -142,7 +152,7 @@ LIBCXXABI_CMAKE_FLAGS = \
     --debug-trycompile
 
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
-	# Do the build.
+	# Do the conventional build.
 	mkdir -p build/libcxxabi
 	cmake -B build/libcxxabi -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
@@ -150,8 +160,17 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	    -DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxxabi
 	ninja $(NINJA_FLAGS) -v -C build/libcxxabi
+	# Now build the same thing but with LTO enabled.
+	mkdir -p build/libcxxabi.llvm-lto
+	cmake -B build/libcxxabi.llvm-lto -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
+	    -DCMAKE_C_FLAGS="-flto $(DEBUG_PREFIX_MAP)" \
+	    -DCMAKE_CXX_FLAGS="-flto $(DEBUG_PREFIX_MAP)" \
+	    -DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi/llvm-lto/$(CLANG_VERSION) \
+	    $(LLVM_PROJ_DIR)/libcxxabi
+	ninja $(NINJA_FLAGS) -v -C build/libcxxabi.llvm-lto
 	# Do the install.
 	ninja $(NINJA_FLAGS) -v -C build/libcxxabi install
+	ninja $(NINJA_FLAGS) -v -C build/libcxxabi.llvm-lto install
 	touch build/libcxxabi.BUILT
 
 build/config.BUILT:
