@@ -34,7 +34,7 @@ jobs:
         run: sudo apt install ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: sudo make -j4 package
+        run: sudo make -j1 package
       - name: Run the testsuite
         run: make check
         if: matrix.os == 'ubuntu-latest'
