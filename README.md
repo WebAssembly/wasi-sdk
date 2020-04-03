@@ -24,6 +24,24 @@ One could also use a standard Clang installation, build a sysroot from the
 sources mentioned above, and compile with
 "--target=wasm32-wasi --sysroot=/path/to/sysroot".
 
+## Install
+
+A typical installation from the release binaries might look like the following:
+```shell script
+wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-[VERSION]/wasi-sdk-[VERSION]-linux.tar.gz
+tar xvf wasi-sdk-[VERSION]-linux.tar.gz
+```
+
+## Use
+
+Use the clang installed in the wasi-sdk directory:
+```shell script
+CC="[WASI_SDK_PATH]/bin/clang --sysroot=[WASI_SDK_PATH]/share/wasi-sysroot"
+$CC foo.c -o foo.wasm
+```
+Note: `[WASI_SDK_PATH]/share/wasi-sysroot` contains the WASI-specific includes/libraries/etc. The `--sysroot=...` option
+is not necessary if `WASI_SDK_PATH` is `/opt/wasi-sdk`.
+
 ## Notes for Autoconf
 
 Upstream autoconf now
