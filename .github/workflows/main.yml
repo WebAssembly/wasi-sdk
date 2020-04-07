@@ -18,8 +18,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
-          # llvm 9 build is broken on windows for now. Re-enable this when it is fixed:
-          # - windows-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v1
         with:
