@@ -34,6 +34,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       - name: Build
         run: sudo make -j4 package
+        shell: bash
       - name: Run the testsuite
         run: make check
         if: matrix.os == 'ubuntu-latest'
