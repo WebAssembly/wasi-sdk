@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Native Build
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,4 +43,20 @@ jobs:
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-{0}.tgz', matrix.os) }}
+          path: dist
+
+  dockerbuild:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
+      - name: Run docker_build script
+        run: ./docker_build.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          # Upload the dist folder. Give it a name according to the OS it was built for.
+          name: dist-docker.tgz
           path: dist
