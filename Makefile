@@ -20,7 +20,7 @@ clean:
 
 build/llvm.BUILT:
 	mkdir -p build/llvm
-	cmake -B build/llvm -G Ninja \
+	cd build/llvm && cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
@@ -60,7 +60,7 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 build/compiler-rt.BUILT: build/llvm.BUILT
 	# Do the build, and install it.
 	mkdir -p build/compiler-rt
-	cmake -B build/compiler-rt -G Ninja \
+	cd build/compiler-rt && cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DCOMPILER_RT_BAREMETAL_BUILD=On \
@@ -106,7 +106,7 @@ LIBCXX_CMAKE_FLAGS = \
 build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
 	# Do the build.
 	mkdir -p build/libcxx
-	cmake -B build/libcxx -G Ninja $(LIBCXX_CMAKE_FLAGS) \
+	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
@@ -144,7 +144,7 @@ LIBCXXABI_CMAKE_FLAGS = \
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	# Do the build.
 	mkdir -p build/libcxxabi
-	cmake -B build/libcxxabi -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
+	cd build/libcxxabi && cmake -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi \
