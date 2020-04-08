@@ -48,7 +48,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: ${{ format( 'dist-{0}.tgz', matrix.os) }}
+          name: ${{ format( 'dist-{0}', matrix.os) }}
           path: dist
 
   dockerbuild:
@@ -64,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: dist-docker.tgz
+          name: dist-debian-stretch
           path: dist
