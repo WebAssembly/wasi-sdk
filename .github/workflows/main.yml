@@ -64,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: dist-debian-stretch
+          name: dist-ubuntu-xenial
           path: dist
