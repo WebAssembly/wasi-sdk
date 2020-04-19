@@ -18,9 +18,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
-          # Build still fails on windows - sysroot path passed to compiler-rt
-          # is incorrect.
-          # - windows-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v1
         with:
