@@ -4,20 +4,28 @@
 ROOT_DIR=${CURDIR}
 LLVM_PROJ_DIR?=$(ROOT_DIR)/src/llvm-project
 
+# Windows needs munging
+ifeq ($(OS),Windows_NT)
+
+PREFIX?=c:/wasi-sdk
+# we need to explicitly call bash -c for makefile $(shell ...), otherwise we'll try under
+# who knows what
+BASH?=bash -c
+
+ifneq (x$(MSYSTEM),x)
 # msys needs any /-prefixed arguments, or =/ containing, to turn into //
 # because it tries to path-expand the / into the msys root.  // escapes this.
-SLASHY_SLASH=
-
-ifeq ($(OS),Windows_NT)
-PREFIX?=c:/wasi-sdk
-BASH?=bash -c
-ifneq (x$(MSYSTEM),x)
 SLASHY_SLASH=/
+# assuming we're running under msys2 (git-bash), PATH needs /c/foo format directories
+PATH_PREFIX=$(shell cygpath.exe -u $(PREFIX))
 endif
-else
+
+endif
+
 PREFIX?=/opt/wasi-sdk
+PATH_PREFIX?=$(PREFIX)
+SLASHY_SLASH?=
 BASH?=
-endif
 
 CLANG_VERSION=$(shell $(BASH) ./llvm_version.sh $(LLVM_PROJ_DIR))
 VERSION:=$(shell $(BASH) ./version.sh)
@@ -27,7 +35,7 @@ default: build
 	@echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
 check:
-	cd tests && PATH="$(PREFIX)/bin:$$PATH" ./run.sh
+	cd tests && PATH="$(PATH_PREFIX)/bin:$$PATH" ./run.sh
 
 clean:
 	rm -rf build $(PREFIX)
