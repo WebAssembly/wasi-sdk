@@ -12,19 +12,23 @@ PREFIX?=c:/wasi-sdk
 # who knows what
 BASH?=bash -c
 
-ifneq (x$(MSYSTEM),x)
+ifeq (x$(MSYSTEM),x)
+$(error On Windows, this Makefile only works in MSYS2 environments such as git-bash.)
+endif
+
 # msys needs any /-prefixed arguments, or =/ containing, to turn into //
 # because it tries to path-expand the / into the msys root.  // escapes this.
-SLASHY_SLASH=/
-# assuming we're running under msys2 (git-bash), PATH needs /c/foo format directories
+ESCAPE_SLASH=/
+
+# assuming we're running under msys2 (git-bash), PATH needs /c/foo format directories (because
+# it itself is :-delimited)
 PATH_PREFIX=$(shell cygpath.exe -u $(PREFIX))
-endif
 
 endif
 
 PREFIX?=/opt/wasi-sdk
 PATH_PREFIX?=$(PREFIX)
-SLASHY_SLASH?=
+ESCAPE_SLASH?=
 BASH?=
 
 CLANG_VERSION=$(shell $(BASH) ./llvm_version.sh $(LLVM_PROJ_DIR))
@@ -131,7 +135,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-	    -DLIBCXX_LIBDIR_SUFFIX=$(SLASHY_SLASH)/wasm32-wasi \
+	    -DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxx
 	ninja $(NINJA_FLAGS) -v -C build/libcxx
 	# Do the install.
@@ -169,7 +173,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	cd build/libcxxabi && cmake -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-	    -DLIBCXXABI_LIBDIR_SUFFIX=$(SLASHY_SLASH)/wasm32-wasi \
+	    -DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxxabi
 	ninja $(NINJA_FLAGS) -v -C build/libcxxabi
 	# Do the install.
