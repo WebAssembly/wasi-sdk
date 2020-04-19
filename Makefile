@@ -3,10 +3,24 @@
 
 ROOT_DIR=${CURDIR}
 LLVM_PROJ_DIR?=$(ROOT_DIR)/src/llvm-project
-PREFIX?=/opt/wasi-sdk
 
-CLANG_VERSION=$(shell ./llvm_version.sh $(LLVM_PROJ_DIR))
-VERSION:=$(shell ./version.sh)
+# msys needs any /-prefixed arguments, or =/ containing, to turn into //
+# because it tries to path-expand the / into the msys root.  // escapes this.
+SLASHY_SLASH=
+
+ifeq ($(OS),Windows_NT)
+PREFIX?=c:/wasi-sdk
+BASH?=bash -c
+ifneq (x$(MSYSTEM),x)
+SLASHY_SLASH=/
+endif
+else
+PREFIX?=/opt/wasi-sdk
+BASH?=
+endif
+
+CLANG_VERSION=$(shell $(BASH) ./llvm_version.sh $(LLVM_PROJ_DIR))
+VERSION:=$(shell $(BASH) ./version.sh)
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
 default: build
@@ -109,7 +123,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-	    -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
+	    -DLIBCXX_LIBDIR_SUFFIX=$(SLASHY_SLASH)/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxx
 	ninja $(NINJA_FLAGS) -v -C build/libcxx
 	# Do the install.
@@ -147,7 +161,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	cd build/libcxxabi && cmake -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-	    -DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi \
+	    -DLIBCXXABI_LIBDIR_SUFFIX=$(SLASHY_SLASH)/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxxabi
 	ninja $(NINJA_FLAGS) -v -C build/libcxxabi
 	# Do the install.
