@@ -193,7 +193,7 @@ package: build/package.BUILT
 build/package.BUILT: build strip
 	mkdir -p dist
 	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh $(shell pwd)/dist || true
-	./tar_from_installation.sh $(shell pwd)/dist
+	./tar_from_installation.sh "$(shell pwd)/dist" "$(VERSION)" "$(PATH_PREFIX)"
 	touch build/package.BUILT
 
 .PHONY: default clean build strip package check

@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 set -ex
+OUTDIR=$PWD/dist
+VERSION=`./version.sh`
+INDIR=/opt/wasi-sdk
+
 if [ -n "$1" ]; then
     OUTDIR=$1
-else
-    OUTDIR=$PWD/dist
 fi
 
 if [ -n "$2" ]; then
     VERSION="$2"
-else
-    VERSION=`./version.sh`
+fi
+
+if [ -n "$3" ]; then
+    INDIR="$3"
 fi
 
 PKGDIR=build/wasi-sdk-$VERSION
@@ -23,7 +27,7 @@ case "$(uname -s)" in
 esac
 
 rm -rf $PKGDIR
-cp -R /opt/wasi-sdk $PKGDIR
+cp -R $INDIR $PKGDIR
 cd build
 tar czf $OUTDIR/wasi-sdk-$VERSION\-$MACHINE.tar.gz wasi-sdk-$VERSION
 
