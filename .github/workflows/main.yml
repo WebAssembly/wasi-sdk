@@ -36,7 +36,7 @@ jobs:
         run: sudo make -j4 package
         if: matrix.os != 'windows-latest'
       - name: Build
-        run: make -j4 package
+        run: make package
         shell: bash
         if: matrix.os == 'windows-latest'
       - name: Run the testsuite
