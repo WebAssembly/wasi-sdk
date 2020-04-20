@@ -78,7 +78,7 @@ build/llvm.BUILT:
 	touch build/llvm.BUILT
 
 build/wasi-libc.BUILT: build/llvm.BUILT
-	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
+	$(MAKE) -j4 -C $(ROOT_DIR)/src/wasi-libc \
 		WASM_CC=$(PREFIX)/bin/clang \
 		SYSROOT=$(PREFIX)/share/wasi-sysroot
 	touch build/wasi-libc.BUILT
