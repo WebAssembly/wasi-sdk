@@ -33,7 +33,7 @@ jobs:
         run: sudo apt install ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: sudo make -j4 package
+        run: sudo make package
         if: matrix.os != 'windows-latest'
       - name: Build
         run: make package
