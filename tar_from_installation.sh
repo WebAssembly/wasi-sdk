@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -ex
+
 if [ -n "$1" ]; then
     OUTDIR=$1
 else
@@ -12,6 +13,12 @@ else
     VERSION=`./version.sh`
 fi
 
+if [ -n "$3" ]; then
+    INSTALL_DIR="$3"
+else
+    INSTALL_DIR=/opt/wasi-sdk
+fi
+
 PKGDIR=build/wasi-sdk-$VERSION
 
 case "$(uname -s)" in
@@ -22,8 +29,13 @@ case "$(uname -s)" in
     *)          MACHINE="UNKNOWN"
 esac
 
+if [ ! -d $INSTALL_DIR ] ; then
+    echo "Directory $INSTALL_DIR doesn't exist.  Nothing to copy from."
+    exit 1
+fi
+
 rm -rf $PKGDIR
-cp -R /opt/wasi-sdk $PKGDIR
+cp -R $INSTALL_DIR $PKGDIR
 cd build
 tar czf $OUTDIR/wasi-sdk-$VERSION\-$MACHINE.tar.gz wasi-sdk-$VERSION
 

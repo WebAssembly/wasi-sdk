@@ -18,9 +18,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
-          # Build still fails on windows - sysroot path passed to compiler-rt
-          # is incorrect.
-          # - windows-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v1
         with:
@@ -35,10 +33,10 @@ jobs:
         run: sudo apt install ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: sudo make -j4 package
+        run: sudo make package
         if: matrix.os != 'windows-latest'
       - name: Build
-        run: make -j4 package
+        run: make package
         shell: bash
         if: matrix.os == 'windows-latest'
       - name: Run the testsuite
