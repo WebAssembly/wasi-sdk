@@ -4,7 +4,7 @@
 
 ## Quick Start
 
-[Download SDK packages here.](https://github.com/CraneStation/wasi-sdk/releases)
+[Download SDK packages here.](https://github.com/WebAssembly/wasi-sdk/releases)
 
 ## About this repository
 
@@ -13,7 +13,7 @@ git submodules to pull in the upstream Clang and LLVM tree, as well as the
 wasi-libc tree.
 
 The libc portion of this SDK is the
-[wasi-libc](https://github.com/CraneStation/wasi-libc).
+[wasi-libc](https://github.com/WebAssembly/wasi-libc).
 
 Upstream Clang and LLVM (from 8.0 onwards) can compile for WASI out of the box,
 and WebAssembly support is included in them by default. So, all that's done here
