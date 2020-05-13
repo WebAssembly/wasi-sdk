@@ -7,7 +7,7 @@ set -ueo pipefail
 # Command-line parsing; this script is meant to be run from a higher-level
 # script, so don't do anything fancy.
 runwasi="$1"
-clang="$2"
+compiler="$2"
 options="$3"
 input="$4"
 
@@ -27,7 +27,7 @@ fi
 echo "Testing $input..."
 
 # Compile the testcase.
-"$clang" $options $file_options "$input" -o "$wasm"
+$compiler $options $file_options "$input" -o "$wasm"
 
 # If we don't have a runwasi command, we're just doing compile-only testing.
 if [ "$runwasi" == "" ]; then
