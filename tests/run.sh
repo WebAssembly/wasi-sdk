@@ -5,8 +5,8 @@ set -ueo pipefail
 # or "run.sh <runwasi>" where <runwasi> is a WASI-capable runtime to run the
 # tests in full compile and execute mode.
 #
-# By default this scripte will look for `clang` and `clang++` in $PATH and
-# assume that is it correctly configured with the sysroot in the default
+# By default this script will look for `clang` and `clang++` in $PATH and
+# assume that they are correctly configured with the sysroot in the default
 # location.  Alternatively, exporting $CC and $CXX allow more flexibility. e.g:
 #
 #  export CXX="<wasi-sdk>/bin/clang++ --sysroot <wasi-sdk>/share/wasi-sysroot"
