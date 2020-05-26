@@ -16,8 +16,8 @@
     return EXIT_FAILURE;         \
   } while (0)
 
-#define OFFSET "10726"
-#define LENGTH "143"
+#define OFFSET 10726
+#define LENGTH 143
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   if (fstat(fd, &stat_buf) != 0)
     perror_and_exit("fstat");
 
-  off_t offset = atoll(OFFSET);
+  off_t offset = OFFSET;
   if (offset < 0) {
     fprintf(stderr, "negative offset\n");
     return EXIT_FAILURE;
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  size_t length = strtoul(LENGTH, NULL, 10);
+  size_t length = LENGTH;
   if ((off_t)length < 0) {
     fprintf(stderr, "length overflow\n");
     return EXIT_FAILURE;
