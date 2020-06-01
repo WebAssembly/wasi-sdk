@@ -5,26 +5,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-// Check for C-standard macros.
-#ifndef SIGABRT
-#error SIGABRT not defined
-#endif
-#ifndef SIGFPE
-#error SIGFPE not defined
-#endif
-#ifndef SIGILL
-#error SIGILL not defined
-#endif
-#ifndef SIGINT
-#error SIGINT not defined
-#endif
-#ifndef SIGSEGV
-#error SIGSEGV not defined
-#endif
-#ifndef SIGTERM
-#error SIGTERM not defined
-#endif
-
 // Make sure this exists.
 #include <sys/signal.h>
 
@@ -62,10 +42,21 @@ int main(void) {
     errno = 0;
     assert(signal(SIGSTOP, SIG_IGN) == SIG_ERR && errno == EINVAL);
 
-    // Test SIG_IGN.
-    assert(signal(SIGINT, SIG_IGN) == SIG_DFL);
-    raise(SIGINT);
-    assert(signal(SIGINT, SIG_DFL) == SIG_IGN);
+    // Test that all the C-standard-required signals can be
+    // ignored with `SIG_IGN`.
+    int some_fatal_sigs[] = {
+        SIGINT, SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM
+    };
+    for (size_t i = 0;
+         i < sizeof(some_fatal_sigs) / sizeof(some_fatal_sigs[0]);
+         ++i)
+    {
+        int sig = some_fatal_sigs[i];
+        assert(signal(sig, SIG_IGN) == SIG_DFL);
+        raise(sig);
+        assert(signal(sig, SIG_DFL) == SIG_IGN);
+        assert(signal(sig, SIG_DFL) == SIG_DFL);
+    }
 
     // Install a handler and invoke it.
     printf("beginning handler test:\n");
