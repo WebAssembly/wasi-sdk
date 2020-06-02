@@ -3,8 +3,8 @@
 #include <stdlib.h>
 
 int main(void) {
-    fprintf("raising SIGABRT...\n");
+    fprintf(stderr, "raising SIGABRT...\n");
     raise(SIGABRT);
-    fprintf("oops!\n");
+    fprintf(stderr, "oops!\n");
     return EXIT_FAILURE;
 }
