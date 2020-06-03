@@ -1,0 +1,8 @@
+raising SIGABRT...
+Program recieved fatal signal: Aborted
+Error: failed to run main module `sigabrt.c.---.wasm`
+
+Caused by:
+    0: failed to invoke `_start`
+    1: wasm trap: unreachable, source location: @----
+       wasm backtrace:
