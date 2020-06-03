@@ -3,24 +3,50 @@
 
 ROOT_DIR=${CURDIR}
 LLVM_PROJ_DIR?=$(ROOT_DIR)/src/llvm-project
-PREFIX?=/opt/wasi-sdk
 
-CLANG_VERSION=$(shell ./llvm_version.sh $(LLVM_PROJ_DIR))
-VERSION:=$(shell ./version.sh)
+# Windows needs munging
+ifeq ($(OS),Windows_NT)
+
+PREFIX?=c:/wasi-sdk
+# we need to explicitly call bash -c for makefile $(shell ...), otherwise we'll try under
+# who knows what
+BASH?=bash -c
+
+ifeq (x$(MSYSTEM),x)
+$(error On Windows, this Makefile only works in MSYS2 environments such as git-bash.)
+endif
+
+# msys needs any /-prefixed arguments, or =/ containing, to turn into //
+# because it tries to path-expand the / into the msys root.  // escapes this.
+ESCAPE_SLASH=/
+
+# assuming we're running under msys2 (git-bash), PATH needs /c/foo format directories (because
+# it itself is :-delimited)
+PATH_PREFIX=$(shell cygpath.exe -u $(PREFIX))
+
+endif
+
+PREFIX?=/opt/wasi-sdk
+PATH_PREFIX?=$(PREFIX)
+ESCAPE_SLASH?=
+BASH?=
+
+CLANG_VERSION=$(shell $(BASH) ./llvm_version.sh $(LLVM_PROJ_DIR))
+VERSION:=$(shell $(BASH) ./version.sh)
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
 default: build
 	@echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
 check:
-	cd tests && PATH="$(PREFIX)/bin:$$PATH" ./run.sh
+	cd tests && PATH="$(PATH_PREFIX)/bin:$$PATH" ./run.sh
 
 clean:
 	rm -rf build $(PREFIX)
 
 build/llvm.BUILT:
 	mkdir -p build/llvm
-	cmake -B build/llvm -G Ninja \
+	cd build/llvm && cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
@@ -60,7 +86,7 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 build/compiler-rt.BUILT: build/llvm.BUILT
 	# Do the build, and install it.
 	mkdir -p build/compiler-rt
-	cmake -B build/compiler-rt -G Ninja \
+	cd build/compiler-rt && cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
 		-DCOMPILER_RT_BAREMETAL_BUILD=On \
@@ -106,10 +132,10 @@ LIBCXX_CMAKE_FLAGS = \
 build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
 	# Do the build.
 	mkdir -p build/libcxx
-	cmake -B build/libcxx -G Ninja $(LIBCXX_CMAKE_FLAGS) \
+	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-	    -DLIBCXX_LIBDIR_SUFFIX=/wasm32-wasi \
+	    -DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxx
 	ninja $(NINJA_FLAGS) -v -C build/libcxx
 	# Do the install.
@@ -144,10 +170,10 @@ LIBCXXABI_CMAKE_FLAGS = \
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	# Do the build.
 	mkdir -p build/libcxxabi
-	cmake -B build/libcxxabi -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
+	cd build/libcxxabi && cmake -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
 	    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 	    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
-	    -DLIBCXXABI_LIBDIR_SUFFIX=/wasm32-wasi \
+	    -DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 	    $(LLVM_PROJ_DIR)/libcxxabi
 	ninja $(NINJA_FLAGS) -v -C build/libcxxabi
 	# Do the install.
@@ -171,7 +197,7 @@ package: build/package.BUILT
 build/package.BUILT: build strip
 	mkdir -p dist
 	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh $(shell pwd)/dist || true
-	./tar_from_installation.sh $(shell pwd)/dist
+	./tar_from_installation.sh "$(shell pwd)/dist" "$(VERSION)" "$(PATH_PREFIX)"
 	touch build/package.BUILT
 
 .PHONY: default clean build strip package check

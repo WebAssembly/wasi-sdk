@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Native Build
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -18,8 +18,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
-          # llvm 9 build is broken on windows for now. Re-enable this when it is fixed:
-          # - windows-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v1
         with:
@@ -34,7 +33,12 @@ jobs:
         run: sudo apt install ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: sudo make -j4 package
+        run: sudo make package
+        if: matrix.os != 'windows-latest'
+      - name: Build
+        run: make package
+        shell: bash
+        if: matrix.os == 'windows-latest'
       - name: Run the testsuite
         run: make check
         if: matrix.os == 'ubuntu-latest'
@@ -42,5 +46,21 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: ${{ format( 'dist-{0}.tgz', matrix.os) }}
+          name: ${{ format( 'dist-{0}', matrix.os) }}
+          path: dist
+
+  dockerbuild:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
+      - name: Run docker_build script
+        run: ./docker_build.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          # Upload the dist folder. Give it a name according to the OS it was built for.
+          name: dist-ubuntu-xenial
           path: dist

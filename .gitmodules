@@ -1,7 +1,6 @@
 [submodule "src/llvm-project"]
 	path = src/llvm-project
 	url = https://github.com/llvm/llvm-project
-	branch = release/9.x
 [submodule "src/wasi-libc"]
 	path = src/wasi-libc
 	url = https://github.com/CraneStation/wasi-libc
