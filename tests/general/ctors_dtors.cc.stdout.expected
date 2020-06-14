@@ -6,7 +6,7 @@ hello main
 goodbye main
 hello another_from_atexit
 hello from_atexit
-hello from_destructor65535
 hello from_destructor
+hello from_destructor65535
 hello StaticObject::~StaticObject
 hello from_destructor101

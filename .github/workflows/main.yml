@@ -35,15 +35,23 @@ jobs:
       - name: Build
         run: make package
         shell: bash
-      - name: Run the testsuite
-        run: make check
-        if: matrix.os == 'ubuntu-latest'
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-{0}', matrix.os) }}
           path: dist
+      - name: Compile tests
+        run: make check
+        if: matrix.os == 'ubuntu-latest'
+      - name: "Run tests: wasmtime"
+        run: |
+          VERSION=v0.8.0
+          wget https://github.com/bytecodealliance/wasmtime/releases/download/v0.8.0/wasmtime-$VERSION-x86_64-linux.tar.xz
+          tar -xf wasmtime-$VERSION-x86_64-linux.tar.xz
+          WASMTIME=wasmtime-$VERSION-x86_64-linux/wasmtime
+          make check RUNTIME=$WASMTIME
+        if: matrix.os == 'ubuntu-latest'
 
   dockerbuild:
     name: Docker Build

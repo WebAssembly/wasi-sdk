@@ -47,7 +47,7 @@ default: build
 check:
 	CC="clang --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
 	CXX="clang++ --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
-	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh
+	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh $(RUNTIME)
 
 clean:
 	rm -rf build $(DESTDIR)
