@@ -22,8 +22,7 @@ ESCAPE_SLASH=/
 
 # assuming we're running under msys2 (git-bash), PATH needs /c/foo format directories (because
 # it itself is :-delimited)
-DESTDIR=$(abspath build/install)
-BUILD_PREFIX=$(DESTDIR)/wasi-sdk
+BUILD_PREFIX=$(shell cygpath.exe -u $(PREFIX))
 
 else
 
