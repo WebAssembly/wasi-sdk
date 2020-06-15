@@ -23,7 +23,7 @@ ESCAPE_SLASH=/
 # assuming we're running under msys2 (git-bash), PATH needs /c/foo format directories (because
 # it itself is :-delimited)
 DESTDIR=$(abspath build/install)
-BUILD_PREFIX=$(DESTDIR)$(shell cygpath.exe -u $(PREFIX))
+BUILD_PREFIX=$(DESTDIR)/wasi-sdk
 
 else
 
@@ -111,7 +111,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -v -C build/compiler-rt install
 	# Install clang-provided headers.
-	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(DESTDIR)$(PREFIX)/lib/
+	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(BUILD_PREFIX)/lib/
 	touch build/compiler-rt.BUILT
 
 # Flags for libcxx.
