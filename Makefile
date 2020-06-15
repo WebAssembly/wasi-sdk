@@ -25,13 +25,15 @@ ESCAPE_SLASH=/
 DESTDIR=$(abspath build/install)
 BUILD_PREFIX=$(DESTDIR)$(shell cygpath.exe -u $(PREFIX))
 
-endif
+else
 
 PREFIX=/opt/wasi-sdk
 DESTDIR=$(abspath build/install)
 BUILD_PREFIX=$(DESTDIR)$(PREFIX)
 ESCAPE_SLASH?=
 BASH=
+
+endif
 
 CLANG_VERSION=$(shell $(BASH) ./llvm_version.sh $(LLVM_PROJ_DIR))
 VERSION:=$(shell $(BASH) ./version.sh)
