@@ -20,15 +20,18 @@ endif
 # because it tries to path-expand the / into the msys root.  // escapes this.
 ESCAPE_SLASH=/
 
+BUILD_PREFIX=$(PREFIX)
+
 # assuming we're running under msys2 (git-bash), PATH needs /c/foo format directories (because
 # it itself is :-delimited)
-BUILD_PREFIX=$(shell cygpath.exe -u $(PREFIX))
+PATH_PREFIX=$(shell cygpath.exe -u $(BUILD_PREFIX))
 
 else
 
 PREFIX?=/opt/wasi-sdk
 DESTDIR=$(abspath build/install)
 BUILD_PREFIX=$(DESTDIR)$(PREFIX)
+PATH_PREFIX=$(BUILD_PREFIX)
 ESCAPE_SLASH?=
 BASH=
 
@@ -44,8 +47,7 @@ default: build
 check:
 	CC="clang --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
 	CXX="clang++ --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
-	PATH="$(BUILD_PREFIX)/bin:$$PATH" \
-	  tests/run.sh
+	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh
 
 clean:
 	rm -rf build $(DESTDIR)
