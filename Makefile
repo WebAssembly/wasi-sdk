@@ -7,7 +7,7 @@ LLVM_PROJ_DIR?=$(ROOT_DIR)/src/llvm-project
 # Windows needs munging
 ifeq ($(OS),Windows_NT)
 
-PREFIX=c:/wasi-sdk
+PREFIX?=c:/wasi-sdk
 # we need to explicitly call bash -c for makefile $(shell ...), otherwise we'll try under
 # who knows what
 BASH=bash -c
@@ -26,7 +26,7 @@ BUILD_PREFIX=$(shell cygpath.exe -u $(PREFIX))
 
 else
 
-PREFIX=/opt/wasi-sdk
+PREFIX?=/opt/wasi-sdk
 DESTDIR=$(abspath build/install)
 BUILD_PREFIX=$(DESTDIR)$(PREFIX)
 ESCAPE_SLASH?=
