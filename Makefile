@@ -72,7 +72,7 @@ build/llvm.BUILT:
 		install-llvm-ranlib \
 		install-llvm-strip \
 		install-llvm-dwarfdump \
-		$(if $(patsubst 8.%,,$(CLANG_VERSION)),install-clang-resource-headers,install-clang-headers) \
+		install-clang-resource-headers \
 		install-ar \
 		install-ranlib \
 		install-strip \
@@ -166,7 +166,7 @@ LIBCXXABI_CMAKE_FLAGS = \
     -DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
     -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
     -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF \
-    $(if $(patsubst 8.%,,$(CLANG_VERSION)),-DLIBCXXABI_ENABLE_PIC:BOOL=OFF,) \
+    -DLIBCXXABI_ENABLE_PIC:BOOL=OFF \
     -DCXX_SUPPORTS_CXX11=ON \
     -DLLVM_COMPILER_CHECKED=ON \
     -DCMAKE_BUILD_TYPE=RelWithDebugInfo \
