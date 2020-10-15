@@ -95,7 +95,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 	# Create an empty library so that cmake's configure checks which
 	# run the compiler to see if it produces working binaries succeed.
 	mkdir -p  $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi
-	$(AR) cr $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi/libclang_rt.builtins-wasm32.a
+	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi/libclang_rt.builtins-wasm32.a
 	# Do the build, and install it.
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt && cmake -G Ninja \
@@ -148,8 +148,8 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 	# Create an empty library so that cmake's configure checks which
 	# run the compiler to see if it produces working binaries succeed.
 	mkdir -p  $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi
-	$(AR) cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++.a
-	$(AR) cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++abi.a
+	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++.a
+	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++abi.a
 	# Do the build.
 	mkdir -p build/libcxx
 	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
@@ -193,7 +193,7 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	# Create an empty library so that cmake's configure checks which
 	# run the compiler to see if it produces working binaries succeed.
 	mkdir -p  $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi
-	$(AR) cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++.a
+	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++.a
 	# Do the build.
 	mkdir -p build/libcxxabi
 	cd build/libcxxabi && cmake -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
