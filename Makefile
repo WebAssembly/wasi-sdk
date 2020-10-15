@@ -92,13 +92,10 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
-	# Create an empty library so that cmake's configure checks which
-	# run the compiler to see if it produces working binaries succeed.
-	mkdir -p  $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi
-	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi/libclang_rt.builtins-wasm32.a
 	# Do the build, and install it.
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt && cmake -G Ninja \
+		-DCMAKE_C_COMPILER_WORKS=ON \
 		-DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
@@ -122,6 +119,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 
 # Flags for libcxx.
 LIBCXX_CMAKE_FLAGS = \
+    -DCMAKE_C_COMPILER_WORKS=ON \
     -DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
     -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
     -DCMAKE_STAGING_PREFIX=$(PREFIX)/share/wasi-sysroot \
@@ -145,11 +143,6 @@ LIBCXX_CMAKE_FLAGS = \
     --debug-trycompile
 
 build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
-	# Create an empty library so that cmake's configure checks which
-	# run the compiler to see if it produces working binaries succeed.
-	mkdir -p  $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi
-	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++.a
-	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++abi.a
 	# Do the build.
 	mkdir -p build/libcxx
 	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
@@ -164,6 +157,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 
 # Flags for libcxxabi.
 LIBCXXABI_CMAKE_FLAGS = \
+    -DCMAKE_C_COMPILER_WORKS=ON \
     -DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
     -DCMAKE_CXX_COMPILER_WORKS=ON \
@@ -190,10 +184,6 @@ LIBCXXABI_CMAKE_FLAGS = \
     --debug-trycompile
 
 build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
-	# Create an empty library so that cmake's configure checks which
-	# run the compiler to see if it produces working binaries succeed.
-	mkdir -p  $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi
-	$(BUILD_PREFIX)/bin/ar cr $(BUILD_PREFIX)/share/wasi-sysroot/lib/wasm32-wasi/libc++.a
 	# Do the build.
 	mkdir -p build/libcxxabi
 	cd build/libcxxabi && cmake -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
