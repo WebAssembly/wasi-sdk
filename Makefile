@@ -107,7 +107,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
 		-DWASI_SDK_PREFIX=$(BUILD_PREFIX) \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=wasi \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
