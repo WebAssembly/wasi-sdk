@@ -96,6 +96,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt && cmake -G Ninja \
 		-DCMAKE_C_COMPILER_WORKS=ON \
+		-DCMAKE_CXX_COMPILER_WORKS=ON \
 		-DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
@@ -106,7 +107,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
 		-DWASI_SDK_PREFIX=$(BUILD_PREFIX) \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=wasi \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
@@ -120,6 +121,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 # Flags for libcxx.
 LIBCXX_CMAKE_FLAGS = \
     -DCMAKE_C_COMPILER_WORKS=ON \
+    -DCMAKE_CXX_COMPILER_WORKS=ON \
     -DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
     -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
     -DCMAKE_STAGING_PREFIX=$(PREFIX)/share/wasi-sysroot \
@@ -158,10 +160,9 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 # Flags for libcxxabi.
 LIBCXXABI_CMAKE_FLAGS = \
     -DCMAKE_C_COMPILER_WORKS=ON \
+    -DCMAKE_CXX_COMPILER_WORKS=ON \
     -DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-    -DCMAKE_CXX_COMPILER_WORKS=ON \
-    -DCMAKE_C_COMPILER_WORKS=ON \
     -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF \
     -DLIBCXXABI_ENABLE_SHARED:BOOL=OFF \
     -DLIBCXXABI_SILENT_TERMINATE:BOOL=ON \
