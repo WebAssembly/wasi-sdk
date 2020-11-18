@@ -24,7 +24,7 @@ jobs:
         with:
           submodules: true
       - name: Set up Visual Studio shell
-        uses: egor-tensin/vs-shell@v1
+        uses: egor-tensin/vs-shell@6d88c01ad4b6b33190d261b45e241e462545652b
         if: matrix.os == 'windows-latest'
       - name: Install ninja (Windows)
         run: choco install ninja
