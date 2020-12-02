@@ -216,7 +216,7 @@ package: build/package.BUILT
 
 build/package.BUILT: build strip
 	mkdir -p dist
-	command -v dpkg-deb >/dev/null && ./deb_from_installation.sh $(shell pwd)/dist || true
+	./deb_from_installation.sh $(shell pwd)/dist "$(VERSION)" "$(BUILD_PREFIX)"
 	./tar_from_installation.sh "$(shell pwd)/dist" "$(VERSION)" "$(BUILD_PREFIX)"
 	touch build/package.BUILT
 

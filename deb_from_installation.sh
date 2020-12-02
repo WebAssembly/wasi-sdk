@@ -1,5 +1,14 @@
 #!/usr/bin/env sh
+set -x
+
+command -v dpkg-deb >/dev/null
+if [ $? -ne 0 ]; then
+    echo "required tool dpkg-deb missing. exiting"
+    exit 0
+fi
+
 set -ex
+
 if [ -n "$1" ]; then
     OUTDIR=$1
 else
@@ -12,10 +21,21 @@ else
     VERSION=`./version.sh`
 fi
 
+if [ -n "$3" ]; then
+    INSTALL_DIR="$3"
+else
+    INSTALL_DIR=/opt/wasi-sdk
+fi
+
+if [ ! -d $INSTALL_DIR ] ; then
+    echo "Directory $INSTALL_DIR doesn't exist. Nothing to copy from."
+    exit 1
+fi
+
 rm -rf build/pkg
 mkdir -p build/pkg/opt
 mkdir -p build/pkg/DEBIAN
 sed -e s/VERSION/$VERSION/ wasi-sdk.control > build/pkg/DEBIAN/control
-cp -R /opt/wasi-sdk build/pkg/opt/
+cp -R $INSTALL_DIR build/pkg/opt/
 cd build && dpkg-deb -b pkg wasi-sdk_$VERSION\_amd64.deb && cd ..
 mv build/wasi-sdk_$VERSION\_amd64.deb $OUTDIR/
