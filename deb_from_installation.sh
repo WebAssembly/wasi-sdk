@@ -2,9 +2,7 @@
 set -x
 
 command -v dpkg-deb >/dev/null
-if [ $? -eq 0 ]
-then
-else
+if [ $? -ne 0 ]; then
     echo "required tool dpkg-deb missing. exiting"
     exit 0
 fi
