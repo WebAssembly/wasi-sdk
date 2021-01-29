@@ -60,7 +60,11 @@ build/llvm.BUILT:
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi \
 		-DLLVM_ENABLE_PROJECTS="lld;clang;clang-tools-extra" \
-		-DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot \
+		$(if $(patsubst 9.%,,$(CLANG_VERSION)), \
+	             $(if $(patsubst 10.%,,$(CLANG_VERSION)), \
+		          -DDEFAULT_SYSROOT=../share/wasi-sysroot, \
+			  -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot), \
+		     -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot) \
 		-DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE \
 		$(LLVM_PROJ_DIR)/llvm
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -v -C build/llvm \
