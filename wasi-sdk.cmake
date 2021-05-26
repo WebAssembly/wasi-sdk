@@ -3,6 +3,10 @@
 # This is arbitrary, AFAIK, for now.
 cmake_minimum_required(VERSION 3.4.0)
 
+# Until Platform/WASI.cmake is upstream we need to inject the path to it
+# into CMAKE_MODULE_PATH.
+list(APPEND CMAKE_MODULE_PATH "${WASI_SDK_PREFIX}/cmake")
+
 set(CMAKE_SYSTEM_NAME WASI)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR wasm32)
