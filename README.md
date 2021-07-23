@@ -26,18 +26,21 @@ sources mentioned above, and compile with
 
 A typical installation from the release binaries might look like the following:
 ```shell script
-wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-[VERSION]/wasi-sdk-[VERSION]-linux.tar.gz
-tar xvf wasi-sdk-[VERSION]-linux.tar.gz
+export WASI_VERSION=12
+export WASI_VERSION_FULL=${WASI_VERSION}.0
+wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
+tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
 ```
 
 ## Use
 
 Use the clang installed in the wasi-sdk directory:
 ```shell script
-CC="[WASI_SDK_PATH]/bin/clang --sysroot=[WASI_SDK_PATH]/share/wasi-sysroot"
+export WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}
+CC="${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 $CC foo.c -o foo.wasm
 ```
-Note: `[WASI_SDK_PATH]/share/wasi-sysroot` contains the WASI-specific includes/libraries/etc. The `--sysroot=...` option
+Note: `${WASI_SDK_PATH}/share/wasi-sysroot` contains the WASI-specific includes/libraries/etc. The `--sysroot=...` option
 is not necessary if `WASI_SDK_PATH` is `/opt/wasi-sdk`.
 
 ## Notes for Autoconf
