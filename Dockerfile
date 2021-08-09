@@ -1,8 +1,7 @@
 # Use a relatively old/stable distro here to maximize the supported platforms
 # and avoid depending on more recent version of, say, libc.
-# Here we choose Xenial 16.04 which mean we also support Debian from stretch
-# (releases 2017) onwards.
-FROM ubuntu:xenial
+# Here we choose Bionic 18.04.
+FROM ubuntu:bionic
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
