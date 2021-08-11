@@ -95,7 +95,7 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot
 	touch build/wasi-libc.BUILT
 
-build/compiler-rt.BUILT: build/llvm.BUILT
+build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 	# Do the build, and install it.
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt && cmake -G Ninja \
