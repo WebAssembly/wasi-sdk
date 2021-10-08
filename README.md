@@ -26,7 +26,7 @@ sources mentioned above, and compile with
 
 A typical installation from the release binaries might look like the following:
 ```shell script
-export WASI_VERSION=13
+export WASI_VERSION=12
 export WASI_VERSION_FULL=${WASI_VERSION}.0
 wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
 tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
