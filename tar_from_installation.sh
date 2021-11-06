@@ -20,6 +20,7 @@ else
 fi
 
 PKGDIR=build/wasi-sdk-$VERSION
+mkdir -p build
 
 case "$(uname -s)" in
     Linux*)     MACHINE=linux;;
