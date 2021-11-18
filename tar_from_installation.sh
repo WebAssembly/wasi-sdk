@@ -24,6 +24,7 @@ case "$(uname -s)" in
     Darwin*)    MACHINE=macos;;
     CYGWIN*)    MACHINE=cygwin;;
     MINGW*)     MACHINE=mingw;;
+    MSYS*)      MACHINE=msys;; #MSYS_NT-10.0-19043
     *)          MACHINE="UNKNOWN"
 esac
 
@@ -34,7 +35,7 @@ fi
 
 PKGDIR=build/wasi-sdk-$VERSION
 rm -rf $PKGDIR
-if [ "$MACHINE" == "cygwin" ] || [ "$MACHINE" == "mingw" ]; then
+if [ "$MACHINE" == "cygwin" ] || [ "$MACHINE" == "mingw" ] || [ "$MACHINE" == "msys" ]; then
     # Copy with -L to avoid trying to create symlinks on Windows.
     cp -R -L $INSTALL_DIR $PKGDIR
 else
