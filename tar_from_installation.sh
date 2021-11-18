@@ -42,13 +42,15 @@ ls -l -R $INSTALL_DIR || :
 sleep 30
 ls -l -R $PKGDIR || :
 sleep 30
-cp -R $INSTALL_DIR $PKGDIR || :
+# Copy with -l to avoid trying to create symlinks on Windows.
+cp -l -R $INSTALL_DIR $PKGDIR || :
 sleep 30
 ls -l -R $PKGDIR || :
 sleep 30
 rm -rf $PKGDIR
 sleep 30
-cp -R $INSTALL_DIR $PKGDIR
+# Copy with -l to avoid trying to create symlinks on Windows.
+cp -l -R $INSTALL_DIR $PKGDIR
 cd build
 tar czf $OUTDIR/wasi-sdk-$VERSION\-$MACHINE.tar.gz wasi-sdk-$VERSION
 
