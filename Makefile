@@ -67,7 +67,7 @@ build/llvm.BUILT:
 		     -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot) \
 		-DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE \
 		$(LLVM_PROJ_DIR)/llvm
-	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -v -C build/llvm \
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/llvm \
 		install-clang \
 		install-clang-format \
 		install-clang-tidy \
@@ -119,7 +119,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
-	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -v -C build/compiler-rt install
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/compiler-rt install
 	# Install clang-provided headers.
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(BUILD_PREFIX)/lib/
 	touch build/compiler-rt.BUILT
@@ -160,9 +160,9 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) \
 		-DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 		$(LLVM_PROJ_DIR)/libcxx
-	ninja $(NINJA_FLAGS) -v -C build/libcxx
+	ninja $(NINJA_FLAGS) -C build/libcxx
 	# Do the install.
-	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -v -C build/libcxx install
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx install
 	touch build/libcxx.BUILT
 
 # Flags for libcxxabi.
@@ -202,9 +202,9 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) \
 		-DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 		$(LLVM_PROJ_DIR)/libcxxabi
-	ninja $(NINJA_FLAGS) -v -C build/libcxxabi
+	ninja $(NINJA_FLAGS) -C build/libcxxabi
 	# Do the install.
-	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -v -C build/libcxxabi install
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxxabi install
 	touch build/libcxxabi.BUILT
 
 build/config.BUILT:
