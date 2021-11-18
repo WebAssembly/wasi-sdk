@@ -36,6 +36,8 @@ if [ ! -d $INSTALL_DIR ] ; then
 fi
 
 rm -rf $PKGDIR
+ls -R $INSTALL_DIR || :
+ls -R $PKGDIR || :
 cp -R $INSTALL_DIR $PKGDIR
 cd build
 tar czf $OUTDIR/wasi-sdk-$VERSION\-$MACHINE.tar.gz wasi-sdk-$VERSION
