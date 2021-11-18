@@ -19,9 +19,6 @@ else
     INSTALL_DIR=/opt/wasi-sdk
 fi
 
-PKGDIR=build/wasi-sdk-$VERSION
-mkdir -p build
-
 case "$(uname -s)" in
     Linux*)     MACHINE=linux;;
     Darwin*)    MACHINE=macos;;
@@ -35,8 +32,14 @@ if [ ! -d $INSTALL_DIR ] ; then
     exit 1
 fi
 
+PKGDIR=build/wasi-sdk-$VERSION
 rm -rf $PKGDIR
-cp -R $INSTALL_DIR $PKGDIR
+if [ "$MACHINE" == "cygwin" ] || [ "$MACHINE" == "mingw" ]; then
+    # Copy with -L to avoid trying to create symlinks on Windows.
+    cp -R -L $INSTALL_DIR $PKGDIR
+else
+    cp -R $INSTALL_DIR $PKGDIR
+fi
 cd build
 tar czf $OUTDIR/wasi-sdk-$VERSION\-$MACHINE.tar.gz wasi-sdk-$VERSION
 
