@@ -40,7 +40,6 @@ jobs:
         shell: bash
       - name: Run the testsuite
         run: NINJA_FLAGS=-v make check
-        if: matrix.os == 'ubuntu-latest'
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
