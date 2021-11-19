@@ -18,17 +18,10 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
-          - windows-latest
     steps:
       - uses: actions/checkout@v1
         with:
           submodules: true
-      - name: Set up Visual Studio shell
-        uses: egor-tensin/vs-shell@6d88c01ad4b6b33190d261b45e241e462545652b
-        if: matrix.os == 'windows-latest'
-      - name: Install ninja (Windows)
-        run: choco install ninja
-        if: matrix.os == 'windows-latest'
       - name: Install ninja (macOS)
         run: brew install ninja
         if: matrix.os == 'macos-latest'
@@ -45,6 +38,48 @@ jobs:
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-{0}', matrix.os) }}
+          path: dist
+
+  winbuild:
+    name: Windows Build
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x64
+          - x86
+    env:
+      MSYS2_PATH_TYPE: inherit
+      MSYSTEM: MINGW64
+      CC: cl
+      CXX: cl
+      NINJA_FLAGS: -v
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
+      - name: Install ninja (Windows)
+        run: choco install ninja
+      - name: Build
+        shell: cmd
+        run: |
+          set "HOME=%CD%"
+          set CL_ARCH=${{ fromJson('{ "x86": "amd64_x86", "x64": "amd64" }')[matrix.arch] }}
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %CL_ARCH%
+          C:\msys64\usr\bin\bash.exe --login -c "make package"
+      - name: Run the testsuite
+        shell: cmd
+        run: |
+          set "HOME=%CD%"
+          set CL_ARCH=${{ fromJson('{ "x86": "amd64_x86", "x64": "amd64" }')[matrix.arch] }}
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %CL_ARCH%
+          C:\msys64\usr\bin\bash.exe --login -c "make check"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          # Upload the dist folder. Give it a name according to the OS it was built for.
+          name: ${{ format( 'dist-windows-latest-{0}', matrix.arch) }}
           path: dist
 
   dockerbuild:
