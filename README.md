@@ -22,6 +22,35 @@ One could also use a standard Clang installation, build a sysroot from the
 sources mentioned above, and compile with
 "--target=wasm32-wasi --sysroot=/path/to/sysroot".
 
+## Clone
+
+This repository uses git submodule, to clone it you need use the command below :
+
+```shell script
+git clone --recursive  git@github.com:WebAssembly/wasi-sdk.git 
+```
+
+## Requirements
+
+The Wasm-sdk's build process needs some packages :
+
+* `cmake`
+* `clang`
+* `ninja`
+
+Please refer to your OS documentation to install those packages. 
+
+## Build 
+
+To build the full package
+
+```shell script
+cd wasi-sdk
+NINJA_FLAGS=-v make package
+```
+
+The built package can be found into `dist` directory.
+
 ## Install
 
 A typical installation from the release binaries might look like the following:
