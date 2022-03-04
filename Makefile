@@ -156,8 +156,8 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 	mkdir -p build/libcxx
 	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 		$(LLVM_PROJ_DIR)/libcxx
 	ninja $(NINJA_FLAGS) -C build/libcxx
@@ -198,8 +198,8 @@ build/libcxxabi.BUILT: build/libcxx.BUILT build/llvm.BUILT
 	mkdir -p build/libcxxabi
 	cd build/libcxxabi && cmake -G Ninja $(LIBCXXABI_CMAKE_FLAGS) \
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 		$(LLVM_PROJ_DIR)/libcxxabi
 	ninja $(NINJA_FLAGS) -C build/libcxxabi
