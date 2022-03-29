@@ -42,7 +42,7 @@ jobs:
 
   winbuild:
     name: Windows Build
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
@@ -63,6 +63,7 @@ jobs:
         run: choco install ninja
       - name: Build
         shell: cmd
+        # vcvarsall.bat need explicit Visual Studio 2019 to be installed
         run: |
           set "HOME=%CD%"
           set CL_ARCH=${{ fromJson('{ "x86": "amd64_x86", "x64": "amd64" }')[matrix.arch] }}
