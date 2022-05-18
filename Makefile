@@ -46,7 +46,7 @@ default: build
 
 check:
 	CC="clang --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
-	CXX="clang++ --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
+	CXX="clang++ --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot -fno-exceptions" \
 	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh
 
 clean:
