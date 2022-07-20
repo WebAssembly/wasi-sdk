@@ -27,7 +27,7 @@ sources mentioned above, and compile with
 This repository uses git submodule, to clone it you need use the command below :
 
 ```shell script
-git clone --recursive  git@github.com:WebAssembly/wasi-sdk.git 
+git clone --recursive https://github.com/WebAssembly/wasi-sdk.git
 ```
 
 ## Requirements
