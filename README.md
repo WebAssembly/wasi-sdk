@@ -86,7 +86,7 @@ in the install directory.
 This repository does not yet support C++ exceptions. C++ code is
 supported only with -fno-exceptions for now. Similarly, there is not
 yet support for setjmp/longjmp. Work on support for [exception handling] 
-s underway at the language level which will support both of these
+is underway at the language level which will support both of these
 features.
 
 [exception handling]: https://github.com/WebAssembly/exception-handling/
