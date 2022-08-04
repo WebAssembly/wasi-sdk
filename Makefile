@@ -74,6 +74,7 @@ build/llvm.BUILT:
 		install-clang-tidy \
 		install-clang-apply-replacements \
 		install-lld \
+		install-llvm-mc \
 		install-llvm-ranlib \
 		install-llvm-strip \
 		install-llvm-dwarfdump \
