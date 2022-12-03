@@ -56,6 +56,10 @@ build/llvm.BUILT:
 	mkdir -p build/llvm
 	cd build/llvm && cmake -G Ninja \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DLLVM_ENABLE_TERMINFO=OFF \
+		-DLLVM_ENABLE_ZLIB=OFF \
+		-DLLVM_ENABLE_ZSTD=OFF \
+		-DLLVM_STATIC_LINK_CXX_STDLIB=ON \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi \
