@@ -10,7 +10,7 @@ set -ueo pipefail
 # location.  Alternatively, exporting $CC and $CXX allow more flexibility. e.g:
 #
 #  export CXX="<wasi-sdk>/bin/clang++ --sysroot <wasi-sdk>/share/wasi-sysroot"
-#  export CCC="<wasi-sdk>/bin/clang --sysroot <wasi-sdk>/share/wasi-sysroot"
+#  export CC="<wasi-sdk>/bin/clang --sysroot <wasi-sdk>/share/wasi-sysroot"
 #
 
 # Determine the wasm runtime to use, if one is provided.
