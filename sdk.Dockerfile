@@ -2,6 +2,15 @@
 # the wasi-sdk sysroot. The SDK distribution must have first been built,
 # for example using docker_build.sh
 
+# Extract built SDK archive to copy out the sysroot
+FROM ubuntu:22.04 as dist
+
+ADD dist/wasi-sdk-*.*-linux.tar.gz /
+
+# Move versioned folder to unversioned to using bash glob to allow
+# this file to be independent of major version number.
+RUN mv /wasi-sdk-* /wasi-sdk
+
 # Use ubuntu to use official repository with newer cmake packages
 FROM ubuntu:22.04
 
@@ -24,7 +33,7 @@ RUN apt-get update && \
     apt-get install -y clang-15 lld-15 cmake ninja-build make autoconf autogen automake libtool && \
     rm -rf /var/lib/apt/lists/*
 
-ADD dist/wasi-sysroot-*.*.tar.gz /
+COPY --from=dist /wasi-sdk/share/wasi-sysroot/ /wasi-sysroot/
 # The path to the rt directory contains the LLVM patch version which is not reflected in the LLVM apt repository
 # or package. To make adding the RT robust to changing patch versions without needing to duplicate the folder
 # content, we symlink after extracting using a bash glob to resolve the patch version
