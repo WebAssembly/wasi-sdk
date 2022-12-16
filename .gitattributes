@@ -1,0 +1,2 @@
+# Bourne-style shell scripts: These are Unix-style scripts. Don't add CR's.
+*.sh		text eol=lf
