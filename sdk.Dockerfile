@@ -1,0 +1,46 @@
+# Docker image with a build toolchain and environment variables set to use
+# the wasi-sdk sysroot. The SDK distribution must have first been built,
+# for example using docker_build.sh
+
+# Use ubuntu to use official repository with newer cmake packages
+FROM ubuntu:22.04
+
+ENV LLVM_VERSION 15
+
+# Install build toolchain including clang, ld, make, autotools, ninja, and cmake
+RUN apt-get update && \
+    # Temporarily install to setup apt repositories
+    apt-get install -y curl gnupg && \
+\
+    curl -sS https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor > /etc/apt/trusted.gpg.d/llvm.gpg && \
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/llvm.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${LLVM_VERSION} main" >> /etc/apt/sources.list.d/llvm.list && \
+    echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/llvm.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${LLVM_VERSION} main" >> /etc/apt/sources.list.d/llvm.list && \
+\
+    curl -sS https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/kitware.gpg && \
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/kitware.gpg] https://apt.kitware.com/ubuntu/ jammy main" >> /etc/apt/sources.list.d/kitware.list && \
+    echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/kitware.gpg] https://apt.kitware.com/ubuntu/ jammy main" >> /etc/apt/sources.list.d/kitware.list && \
+\
+    apt-get update && \
+    apt-get install -y clang-15 lld-15 cmake ninja-build make autoconf autogen automake libtool && \
+    rm -rf /var/lib/apt/lists/*
+
+ADD dist/wasi-sysroot-*.*.tar.gz /
+# The path to the rt directory contains the LLVM patch version which is not reflected in the LLVM apt repository
+# or package. To make adding the RT robust to changing patch versions without needing to duplicate the folder
+# content, we symlink after extracting using a bash glob to resolve the patch version
+ADD dist/libclang_rt.builtins-wasm32-wasi-*.*.tar.gz /wasi-sysroot-clang_rt
+RUN ln -s /wasi-sysroot-clang_rt/lib/wasi/ $(echo /usr/lib/llvm-${LLVM_VERSION}/lib/clang/${LLVM_VERSION}.*)/lib/wasi
+
+ADD sdk.docker.cmake /usr/share/cmake/wasi-sdk.cmake
+ENV CMAKE_TOOLCHAIN_FILE /usr/share/cmake/wasi-sdk.cmake
+ADD cmake/Platform/WASI.cmake /usr/share/cmake/Modules/Platform/WASI.cmake
+
+ENV CC clang-15
+ENV CXX clang++-15
+ENV LD wasm-ld-15
+ENV AR llvm-ar-15
+ENV RANLIB llvm-ranlib-15
+
+ENV CFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
+ENV CXXFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
+ENV LDFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
