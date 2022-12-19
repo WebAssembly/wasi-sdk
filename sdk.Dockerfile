@@ -30,7 +30,7 @@ RUN apt-get update && \
     echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/kitware.gpg] https://apt.kitware.com/ubuntu/ jammy main" >> /etc/apt/sources.list.d/kitware.list && \
 \
     apt-get update && \
-    apt-get install -y clang-15 lld-15 cmake ninja-build make autoconf autogen automake libtool && \
+    apt-get install -y clang-${LLVM_VERSION} lld-${LLVM_VERSION} cmake ninja-build make autoconf autogen automake libtool && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=dist /wasi-sdk/share/wasi-sysroot/ /wasi-sysroot/
@@ -44,11 +44,11 @@ ADD sdk.docker.cmake /usr/share/cmake/wasi-sdk.cmake
 ENV CMAKE_TOOLCHAIN_FILE /usr/share/cmake/wasi-sdk.cmake
 ADD cmake/Platform/WASI.cmake /usr/share/cmake/Modules/Platform/WASI.cmake
 
-ENV CC clang-15
-ENV CXX clang++-15
-ENV LD wasm-ld-15
-ENV AR llvm-ar-15
-ENV RANLIB llvm-ranlib-15
+ENV CC clang-${LLVM_VERSION}
+ENV CXX clang++-${LLVM_VERSION}
+ENV LD wasm-ld-${LLVM_VERSION}
+ENV AR llvm-ar-${LLVM_VERSION}
+ENV RANLIB llvm-ranlib-${LLVM_VERSION}
 
 ENV CFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
 ENV CXXFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
