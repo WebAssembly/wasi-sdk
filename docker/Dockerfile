@@ -2,7 +2,10 @@
 # the wasi-sdk sysroot. The SDK distribution must have first been built,
 # for example using docker_build.sh
 
-# Extract built SDK archive to copy out the sysroot
+# Extract built SDK archive to copy out the sysroot. We use an initial build
+# stage to do this to make sure it is only the sysroot, not the entire SDK
+# with binaries, that is included in the final image since we install those
+# separately.
 FROM ubuntu:22.04 as dist
 
 ADD dist/wasi-sdk-*.*-linux.tar.gz /
@@ -37,7 +40,7 @@ COPY --from=dist /wasi-sdk/share/wasi-sysroot/ /wasi-sysroot/
 ADD dist/libclang_rt.builtins-wasm32-wasi-*.*.tar.gz /wasi-sysroot-clang_rt
 RUN ln -s /wasi-sysroot-clang_rt/lib/wasi/ $(echo /usr/lib/llvm-${LLVM_VERSION}/lib/clang/${LLVM_VERSION}.*)/lib/wasi
 
-ADD docker/sdk.cmake /usr/share/cmake/wasi-sdk.cmake
+ADD docker/wasi-sdk.cmake /usr/share/cmake/wasi-sdk.cmake
 ENV CMAKE_TOOLCHAIN_FILE /usr/share/cmake/wasi-sdk.cmake
 ADD cmake/Platform/WASI.cmake /usr/share/cmake/Modules/Platform/WASI.cmake
 
