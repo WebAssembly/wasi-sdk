@@ -25,10 +25,6 @@ RUN apt-get update && \
     echo "deb [signed-by=/etc/apt/trusted.gpg.d/llvm.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${LLVM_VERSION} main" >> /etc/apt/sources.list.d/llvm.list && \
     echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/llvm.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${LLVM_VERSION} main" >> /etc/apt/sources.list.d/llvm.list && \
 \
-    curl -sS https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/kitware.gpg && \
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/kitware.gpg] https://apt.kitware.com/ubuntu/ jammy main" >> /etc/apt/sources.list.d/kitware.list && \
-    echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/kitware.gpg] https://apt.kitware.com/ubuntu/ jammy main" >> /etc/apt/sources.list.d/kitware.list && \
-\
     apt-get update && \
     apt-get install -y clang-${LLVM_VERSION} lld-${LLVM_VERSION} cmake ninja-build make autoconf autogen automake libtool && \
     apt-get remove -y curl gnupg && \
@@ -41,7 +37,7 @@ COPY --from=dist /wasi-sdk/share/wasi-sysroot/ /wasi-sysroot/
 ADD dist/libclang_rt.builtins-wasm32-wasi-*.*.tar.gz /wasi-sysroot-clang_rt
 RUN ln -s /wasi-sysroot-clang_rt/lib/wasi/ $(echo /usr/lib/llvm-${LLVM_VERSION}/lib/clang/${LLVM_VERSION}.*)/lib/wasi
 
-ADD sdk.docker.cmake /usr/share/cmake/wasi-sdk.cmake
+ADD docker/sdk.cmake /usr/share/cmake/wasi-sdk.cmake
 ENV CMAKE_TOOLCHAIN_FILE /usr/share/cmake/wasi-sdk.cmake
 ADD cmake/Platform/WASI.cmake /usr/share/cmake/Modules/Platform/WASI.cmake
 
