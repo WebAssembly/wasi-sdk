@@ -14,7 +14,6 @@ ADD dist/wasi-sdk-*.*-linux.tar.gz /
 # this file to be independent of major version number.
 RUN mv /wasi-sdk-* /wasi-sdk
 
-# Use ubuntu to use official repository with newer cmake packages
 FROM ubuntu:22.04
 
 ENV LLVM_VERSION 15

@@ -1,3 +1,0 @@
-# We don't need any files to for build image.
-# Without this `docker build` will everything in this directory.
-*
