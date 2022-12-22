@@ -1,0 +1,3 @@
+# Our docker builds do not require the submodule sources so exclude them as
+# they can be very big.
+/src
