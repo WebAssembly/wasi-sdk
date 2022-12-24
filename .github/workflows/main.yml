@@ -18,7 +18,7 @@ jobs:
       matrix:
         os:
           - ubuntu-20.04
-          - macos-latest
+          - macos-11
     steps:
       - uses: actions/cache@v3
         with:
@@ -34,10 +34,10 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ~/Library/Caches/ccache
-          key: 0-cache-macos-latest-${{ github.run_id }}
+          key: 0-cache-${{ matrix.os }}-${{ github.run_id }}
           restore-keys: |
-            0-cache-macos-latest
-        if: matrix.os == 'macos-latest'
+            0-cache-${{ matrix.os }}
+        if: startsWith(matrix.os, 'macos-')
       - name: Install wasmtime for tests
         run: curl -f -L --retry 5 https://wasmtime.dev/install.sh | bash -s -- --version v2.0.2
       - uses: actions/checkout@v3
@@ -51,7 +51,7 @@ jobs:
       - run: git submodule update --init --depth 16 --jobs 3
       - name: Install ccache, ninja (macOS)
         run: brew install ccache ninja
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos-')
       - name: Install ccache, ninja (Linux)
         run: sudo apt install ccache ninja-build
         if: startsWith(matrix.os, 'ubuntu-')
