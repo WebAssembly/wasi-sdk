@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-20.04
           - macos-latest
     steps:
       - uses: actions/cache@v3
@@ -27,10 +27,10 @@ jobs:
           # enforce a clean build, in the unlikely case that some
           # weird build error occur and ccache becomes a potential
           # suspect.
-          key: 0-cache-ubuntu-latest-${{ github.run_id }}
+          key: 0-cache-${{ matrix.os }}-${{ github.run_id }}
           restore-keys: |
-            0-cache-ubuntu-latest
-        if: matrix.os == 'ubuntu-latest'
+            0-cache-${{ matrix.os }}
+        if: startsWith(matrix.os, 'ubuntu-')
       - uses: actions/cache@v3
         with:
           path: ~/Library/Caches/ccache
@@ -54,7 +54,7 @@ jobs:
         if: matrix.os == 'macos-latest'
       - name: Install ccache, ninja (Linux)
         run: sudo apt install ccache ninja-build
-        if: matrix.os == 'ubuntu-latest'
+        if: startsWith(matrix.os, 'ubuntu-')
       - name: Build
         run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
