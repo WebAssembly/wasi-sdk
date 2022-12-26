@@ -196,6 +196,7 @@ build/config.BUILT:
 	cp src/config/config.sub src/config/config.guess $(BUILD_PREFIX)/share/misc
 	mkdir -p $(BUILD_PREFIX)/share/cmake
 	cp wasi-sdk.cmake $(BUILD_PREFIX)/share/cmake
+	cp wasi-sdk-pthread.cmake $(BUILD_PREFIX)/share/cmake
 	touch build/config.BUILT
 
 build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxx.BUILT build/config.BUILT
