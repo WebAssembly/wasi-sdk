@@ -1,3 +1,3 @@
-# We don't need any files to for build image.
-# Without this `docker build` will everything in this directory.
-*
+# Our docker builds do not require the submodule sources so exclude them as
+# they can be very big.
+/src
