@@ -199,7 +199,7 @@ build/config.BUILT:
 build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxx.BUILT build/config.BUILT
 
 strip: build/llvm.BUILT
-	./strip_symbols.sh $(BUILD_PREFIX)
+	./strip_symbols.sh $(BUILD_PREFIX)/bin
 
 package: build/package.BUILT
 
