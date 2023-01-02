@@ -20,17 +20,35 @@ jobs:
           - ubuntu-latest
           - macos-latest
     steps:
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/ccache
+          # Bump the prefix number to evict all previous caches and
+          # enforce a clean build, in the unlikely case that some
+          # weird build error occur and ccache becomes a potential
+          # suspect.
+          key: 0-cache-ubuntu-latest-${{ github.run_id }}
+          restore-keys: |
+            0-cache-ubuntu-latest
+        if: matrix.os == 'ubuntu-latest'
+      - uses: actions/cache@v3
+        with:
+          path: ~/Library/Caches/ccache
+          key: 0-cache-macos-latest-${{ github.run_id }}
+          restore-keys: |
+            0-cache-macos-latest
+        if: matrix.os == 'macos-latest'
       - uses: actions/checkout@v1
         with:
           submodules: true
-      - name: Install ninja (macOS)
-        run: brew install ninja
+      - name: Install ccache, ninja (macOS)
+        run: brew install ccache ninja
         if: matrix.os == 'macos-latest'
-      - name: Install ninja (Linux)
-        run: sudo apt install ninja-build
+      - name: Install ccache, ninja (Linux)
+        run: sudo apt install ccache ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: NINJA_FLAGS=-v make package
+        run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
       - name: Run the testsuite
         run: NINJA_FLAGS=-v make check
@@ -55,11 +73,18 @@ jobs:
             sys: clang32
             env: clang-i686
     steps:
+      - uses: actions/cache@v3
+        with:
+          path: ~/AppData/Local/ccache
+          key: 0-${{ format( 'cache-windows-latest-{0}', matrix.arch) }}-${{ github.run_id }}
+          restore-keys: |
+            0-${{ format( 'cache-windows-latest-{0}', matrix.arch) }}
       - uses: msys2/setup-msys2@v2
         with:
           install: >-
             base-devel
             git
+            mingw-w64-${{ matrix.env }}-ccache
             mingw-w64-${{ matrix.env }}-cmake
             mingw-w64-${{ matrix.env }}-ninja
             mingw-w64-${{ matrix.env }}-toolchain
@@ -73,7 +98,7 @@ jobs:
       - name: Build
         shell: msys2 {0}
         run: |
-          make package
+          make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
           make check
       - name: Does it work sans msys2?
         run: |
@@ -91,6 +116,13 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/cache@v3
+        with:
+          path: ~/.ccache
+          key: 0-cache-ubuntu-bionic-${{ github.run_id }}
+          restore-keys: |
+            0-cache-ubuntu-bionic
+
       - uses: actions/checkout@v1
         with:
           submodules: true
@@ -121,7 +153,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: dist-ubuntu-xenial
+          name: dist-ubuntu-bionic
           path: dist
 
       - name: Build and push wasi-sdk docker image
