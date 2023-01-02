@@ -73,6 +73,7 @@ build/llvm.BUILT:
 		     -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot) \
 		-DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE \
 		-DLLVM_ENABLE_LIBXML2=OFF \
+		$(LLVM_CMAKE_FLAGS) \
 		$(LLVM_PROJ_DIR)/llvm
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/llvm \
 		install-clang \
