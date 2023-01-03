@@ -38,6 +38,8 @@ jobs:
           restore-keys: |
             0-cache-macos-latest
         if: matrix.os == 'macos-latest'
+      - name: Install wasmtime for tests
+        run: curl -f -L --retry 5 https://wasmtime.dev/install.sh | bash -s -- --version v2.0.2
       - uses: actions/checkout@v1
         with:
           submodules: true
@@ -51,7 +53,7 @@ jobs:
         run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
       - name: Run the testsuite
-        run: NINJA_FLAGS=-v make check
+        run: NINJA_FLAGS=-v make check RUNTIME=~/.wasmtime/bin/wasmtime
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
