@@ -96,6 +96,10 @@ image.
 docker run -v `pwd`:/src -w /src ghcr.io/webassembly/wasi-sdk make
 ```
 
+Take note of the [notable limitations](#notable-limitations) below when
+building projects, for example many projects will need threads support
+disabled in a configure step before building with wasi-sdk.
+
 ## Notable Limitations
 
 This repository does not yet support C++ exceptions. C++ code is
