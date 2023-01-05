@@ -83,7 +83,7 @@ in the install directory.
 
 ## Docker Image
 
-We provide a [docker image](https://github.com/orgs/WebAssembly/packages/container/wasi-sdk)
+We provide a [docker image](https://github.com/WebAssembly/wasi-sdk/pkgs/container/wasi-sdk)
 including wasi-sdk that can be used for building projects without a
 separate installation of the SDK. Autotools, CMake, and Ninja are included
 in this image, and standard environment variables are set to use wask-sdk
