@@ -105,6 +105,12 @@ build/wasi-libc.BUILT: build/llvm.BUILT
 		AR=$(BUILD_PREFIX)/bin/llvm-ar \
 		NM=$(BUILD_PREFIX)/bin/llvm-nm \
 		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot
+	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
+		CC=$(BUILD_PREFIX)/bin/clang \
+		AR=$(BUILD_PREFIX)/bin/llvm-ar \
+		NM=$(BUILD_PREFIX)/bin/llvm-nm \
+		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
+		THREAD_MODEL=posix
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
