@@ -81,6 +81,25 @@ For convenience when building packages that aren't yet updated, updated
 config.sub and config.guess files are installed at `share/misc/config.*`
 in the install directory.
 
+## Docker Image
+
+We provide a [docker image](https://github.com/WebAssembly/wasi-sdk/pkgs/container/wasi-sdk)
+including wasi-sdk that can be used for building projects without a
+separate installation of the SDK. Autotools, CMake, and Ninja are included
+in this image, and standard environment variables are set to use wask-sdk
+for building.
+
+For example, this command can build a make-based project with the Docker
+image.
+
+```
+docker run -v `pwd`:/src -w /src ghcr.io/webassembly/wasi-sdk make
+```
+
+Take note of the [notable limitations](#notable-limitations) below when
+building projects, for example many projects will need threads support
+disabled in a configure step before building with wasi-sdk.
+
 ## Notable Limitations
 
 This repository does not yet support C++ exceptions. C++ code is
