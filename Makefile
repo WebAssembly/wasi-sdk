@@ -38,6 +38,7 @@ BASH=
 endif
 
 CLANG_VERSION=$(shell $(BASH) ./llvm_version.sh $(LLVM_PROJ_DIR))
+CLANG_MAJOR_VERSION=$(shell $(BASH) ./llvm_version_major.sh $(LLVM_PROJ_DIR))
 VERSION:=$(shell $(BASH) ./version.sh)
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
@@ -134,7 +135,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=wasi \
-		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
+		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_MAJOR_VERSION)/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(LLVM_PROJ_DIR)/compiler-rt/lib/builtins
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/compiler-rt install
