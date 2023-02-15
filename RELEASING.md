@@ -7,7 +7,7 @@ To publish a new version of `wasi-sdk` as a GitHub release:
    package version (use `git show wasi-sdk-...` to show other tag messages).
 
    ```shell script
-   export TAG=wasi-sdk-1
+   TAG=wasi-sdk-1
    git tag -a $TAG
    git push origin $TAG
    ```
