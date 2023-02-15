@@ -9,6 +9,11 @@ set(CMAKE_SYSTEM_PROCESSOR wasm32)
 set(triple wasm32-wasi-threads)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+# wasi-threads requires --import-memory.
+# wasi requires --export-memory.
+# (--export-memory is implicit unless --import-memory is given)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--import-memory")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--export-memory")
 
 if(WIN32)
 	set(WASI_HOST_EXE_SUFFIX ".exe")
