@@ -46,4 +46,3 @@ To publish a new version of `wasi-sdk` as a GitHub release:
 5. Publish the release; the previous step only creates a draft. Follow the link
    in the previous step or navigate to the GitHub [releases] to review the
    description, commit, tag, and assets before clicking "Publish"
-
