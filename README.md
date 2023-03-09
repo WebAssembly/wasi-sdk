@@ -38,22 +38,24 @@ The Wasm-sdk's build process needs some packages :
 * `clang`
 * `ninja`
 
-Please refer to your OS documentation to install those packages. 
+Please refer to your OS documentation to install those packages.
 
-## Build 
+## Build
 
-To build the full package
+To build the full package:
 
 ```shell script
 cd wasi-sdk
 NINJA_FLAGS=-v make package
 ```
 
-The built package can be found into `dist` directory.
+The built package can be found into `dist` directory. For releasing a new
+version of the package on GitHub, see [RELEASING.md](RELEASING.md).
 
 ## Install
 
 A typical installation from the release binaries might look like the following:
+
 ```shell script
 export WASI_VERSION=14
 export WASI_VERSION_FULL=${WASI_VERSION}.0
@@ -64,13 +66,16 @@ tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
 ## Use
 
 Use the clang installed in the wasi-sdk directory:
+
 ```shell script
 export WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}
 CC="${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 $CC foo.c -o foo.wasm
 ```
-Note: `${WASI_SDK_PATH}/share/wasi-sysroot` contains the WASI-specific includes/libraries/etc. The `--sysroot=...` option
-is not necessary if `WASI_SDK_PATH` is `/opt/wasi-sdk`.
+
+Note: `${WASI_SDK_PATH}/share/wasi-sysroot` contains the WASI-specific
+includes/libraries/etc. The `--sysroot=...` option is not necessary if
+`WASI_SDK_PATH` is `/opt/wasi-sdk`.
 
 ## Notes for Autoconf
 
@@ -104,7 +109,7 @@ disabled in a configure step before building with wasi-sdk.
 
 This repository does not yet support C++ exceptions. C++ code is
 supported only with -fno-exceptions for now. Similarly, there is not
-yet support for setjmp/longjmp. Work on support for [exception handling] 
+yet support for setjmp/longjmp. Work on support for [exception handling]
 is underway at the language level which will support both of these
 features.
 
