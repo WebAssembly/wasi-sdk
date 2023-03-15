@@ -28,6 +28,7 @@ PATH_PREFIX=$(shell cygpath.exe -u $(BUILD_PREFIX))
 
 else
 
+WASI_SDK?=/opt/wasi-sdk
 PREFIX?=/opt/wasi-sdk
 DESTDIR=$(abspath build/install)
 BUILD_PREFIX=$(DESTDIR)$(PREFIX)
@@ -55,14 +56,23 @@ clean:
 build/llvm.BUILT:
 	mkdir -p build/llvm
 	cd build/llvm && cmake -G Ninja \
+		-DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
+		-DWASI_SDK_PREFIX=$(WASI_SDK) \
+		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
+		-DLLVM_HOST_TRIPLE=wasm32-wasi \
+		-DLLVM_ENABLE_THREADS=OFF \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DLLVM_ENABLE_TERMINFO=OFF \
 		-DLLVM_ENABLE_ZLIB=OFF \
 		-DLLVM_ENABLE_ZSTD=OFF \
 		-DLLVM_STATIC_LINK_CXX_STDLIB=ON \
 		-DLLVM_HAVE_LIBXAR=OFF \
-		-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
-		-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
+		-DCLANG_ENABLE_ARCMT=OFF \
+		-DCLANG_INCLUDE_TESTS=OFF \
+		-DLLVM_INCLUDE_TESTS=OFF \
+		-DLLVM_INCLUDE_UTILS=OFF \
+		-DLLVM_INCLUDE_BENCHMARKS=OFF \
+		-DLLVM_INCLUDE_EXAMPLES=OFF \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi \
@@ -101,9 +111,9 @@ build/llvm.BUILT:
 
 build/wasi-libc.BUILT: build/llvm.BUILT
 	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
-		CC=$(BUILD_PREFIX)/bin/clang \
-		AR=$(BUILD_PREFIX)/bin/llvm-ar \
-		NM=$(BUILD_PREFIX)/bin/llvm-nm \
+		CC=$(WASI_SDK)/bin/clang \
+		AR=$(WASI_SDK)/bin/llvm-ar \
+		NM=$(WASI_SDK)/bin/llvm-nm \
 		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot
 	touch build/wasi-libc.BUILT
 
@@ -114,7 +124,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
 		-DCMAKE_C_COMPILER_WORKS=ON \
 		-DCMAKE_CXX_COMPILER_WORKS=ON \
-		-DCMAKE_AR=$(BUILD_PREFIX)/bin/ar \
+		-DCMAKE_AR=$(WASI_SDK)/bin/ar \
 		-DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
@@ -124,9 +134,9 @@ build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 		-DCOMPILER_RT_HAS_FPIC_FLAG=OFF \
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
-		-DWASI_SDK_PREFIX=$(BUILD_PREFIX) \
+		-DWASI_SDK_PREFIX=$(WASI_SDK) \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
-		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
+		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/NATIVE/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=wasi \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
@@ -140,11 +150,11 @@ build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 LIBCXX_CMAKE_FLAGS = \
     -DCMAKE_C_COMPILER_WORKS=ON \
     -DCMAKE_CXX_COMPILER_WORKS=ON \
-    -DCMAKE_AR=$(BUILD_PREFIX)/bin/ar \
+    -DCMAKE_AR=$(WASI_SDK)/bin/ar \
     -DCMAKE_MODULE_PATH=$(ROOT_DIR)/cmake \
     -DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasi-sdk.cmake \
     -DCMAKE_STAGING_PREFIX=$(PREFIX)/share/wasi-sysroot \
-    -DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
+    -DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/NATIVE/bin/llvm-config \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
     -DCXX_SUPPORTS_CXX11=ON \
     -DLIBCXX_ENABLE_THREADS:BOOL=OFF \
@@ -171,7 +181,7 @@ LIBCXX_CMAKE_FLAGS = \
     -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
     -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF \
     -DLIBCXXABI_ENABLE_PIC:BOOL=OFF \
-    -DWASI_SDK_PREFIX=$(BUILD_PREFIX) \
+    -DWASI_SDK_PREFIX=$(WASI_SDK) \
     -DUNIX:BOOL=ON \
     --debug-trycompile
 
