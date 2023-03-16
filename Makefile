@@ -153,8 +153,8 @@ LIBCXX_CMAKE_FLAGS = \
     -DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
     -DCXX_SUPPORTS_CXX11=ON \
-    -DLIBCXX_ENABLE_THREADS:BOOL=OFF \
-    -DLIBCXX_HAS_PTHREAD_API:BOOL=OFF \
+    -DLIBCXX_ENABLE_THREADS:BOOL=@PTHREAD@ \
+    -DLIBCXX_HAS_PTHREAD_API:BOOL=@PTHREAD@ \
     -DLIBCXX_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
     -DLIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
     -DLIBCXX_HAS_WIN32_THREAD_API:BOOL=OFF \
@@ -171,8 +171,8 @@ LIBCXX_CMAKE_FLAGS = \
     -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF \
     -DLIBCXXABI_ENABLE_SHARED:BOOL=OFF \
     -DLIBCXXABI_SILENT_TERMINATE:BOOL=ON \
-    -DLIBCXXABI_ENABLE_THREADS:BOOL=OFF \
-    -DLIBCXXABI_HAS_PTHREAD_API:BOOL=OFF \
+    -DLIBCXXABI_ENABLE_THREADS:BOOL=@PTHREAD@ \
+    -DLIBCXXABI_HAS_PTHREAD_API:BOOL=@PTHREAD@ \
     -DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
     -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
     -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF \
@@ -184,7 +184,7 @@ LIBCXX_CMAKE_FLAGS = \
 build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
 	# Do the build.
 	mkdir -p build/libcxx
-	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS) \
+	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS:@PTHREAD@=OFF) \
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP)" \
@@ -193,8 +193,19 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
 		$(LLVM_PROJ_DIR)/runtimes
 	ninja $(NINJA_FLAGS) -C build/libcxx
+	mkdir -p build/libcxx-threads
+	cd build/libcxx-threads && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS:@PTHREAD@=ON) \
+		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -pthread" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -pthread" \
+		-DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi-threads \
+		-DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi-threads \
+		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
+		$(LLVM_PROJ_DIR)/runtimes
+	ninja $(NINJA_FLAGS) -C build/libcxx-threads
 	# Do the install.
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx install
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx-threads install
 	touch build/libcxx.BUILT
 
 build/config.BUILT:
