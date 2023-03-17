@@ -71,6 +71,14 @@ for A in $ARTIFACTS; do
     NAME=$(echo $A | cut -d ',' -f 2)
     URL=$(echo $A | cut -d ',' -f 3)
     TO=$TMP_DIR/$NAME.zip
+    # Exclude dist-ubuntu-latest to prefer dist-ubuntu-bionic, which is
+    # compatible with wider distributions.
+    # cf.
+    # https://github.com/WebAssembly/wasi-sdk/pull/273#issuecomment-1373879491
+    # https://github.com/WebAssembly/wasi-sdk/issues/303
+    if [ "${NAME}" = "dist-ubuntu-latest" ]; then
+        continue
+    fi
     >&2 echo "===== Downloading: ${TO} ====="
 
     # Download the artifacts to the temporary directory.
