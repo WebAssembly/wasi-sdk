@@ -37,7 +37,8 @@ BASH=
 
 endif
 
-CLANG_VERSION=$(shell $(BASH) ./llvm_version.sh $(LLVM_PROJ_DIR))
+# Only the major version is needed for Clang, see https://reviews.llvm.org/D125860.
+CLANG_VERSION=$(shell $(BASH) ./llvm_version_major.sh $(LLVM_PROJ_DIR))
 VERSION:=$(shell $(BASH) ./version.sh)
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
@@ -67,8 +68,8 @@ build/llvm.BUILT:
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi \
 		-DLLVM_ENABLE_PROJECTS="lld;clang;clang-tools-extra" \
-		$(if $(patsubst 9.%,,$(CLANG_VERSION)), \
-	             $(if $(patsubst 10.%,,$(CLANG_VERSION)), \
+		$(if $(patsubst 9,,$(CLANG_VERSION)), \
+	             $(if $(patsubst 10,,$(CLANG_VERSION)), \
 		          -DDEFAULT_SYSROOT=../share/wasi-sysroot, \
 			  -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot), \
 		     -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot) \
