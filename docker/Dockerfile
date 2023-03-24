@@ -9,6 +9,7 @@
 FROM ubuntu:22.04 as dist
 
 ADD dist/wasi-sdk-*.*-linux.tar.gz /
+ADD dist/libclang_rt.builtins-wasm32-wasi-*.*.tar.gz /wasi-sysroot-clang_rt
 
 # Move versioned folder to unversioned to using bash glob to allow
 # this file to be independent of major version number.
@@ -16,7 +17,7 @@ RUN mv /wasi-sdk-* /wasi-sdk
 
 FROM ubuntu:22.04
 
-ENV LLVM_VERSION 15
+ENV LLVM_VERSION 16
 
 # Install build toolchain including clang, ld, make, autotools, ninja, and cmake
 RUN apt-get update && \
@@ -33,11 +34,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=dist /wasi-sdk/share/wasi-sysroot/ /wasi-sysroot/
-# The path to the rt directory contains the LLVM patch version which is not reflected in the LLVM apt repository
-# or package. To make adding the RT robust to changing patch versions without needing to duplicate the folder
-# content, we symlink after extracting using a bash glob to resolve the patch version
-ADD dist/libclang_rt.builtins-wasm32-wasi-*.*.tar.gz /wasi-sysroot-clang_rt
-RUN ln -s /wasi-sysroot-clang_rt/lib/wasi/ $(echo /usr/lib/llvm-${LLVM_VERSION}/lib/clang/${LLVM_VERSION}.*)/lib/wasi
+COPY --from=dist /wasi-sysroot-clang_rt/lib/wasi /usr/lib/llvm-${LLVM_VERSION}/lib/clang/${LLVM_VERSION}/lib/wasi
 
 ADD docker/wasi-sdk.cmake /usr/share/cmake/wasi-sdk.cmake
 ENV CMAKE_TOOLCHAIN_FILE /usr/share/cmake/wasi-sdk.cmake
