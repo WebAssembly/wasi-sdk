@@ -24,7 +24,14 @@ To publish a new version of `wasi-sdk` as a GitHub release:
    [actions]: https://github.com/WebAssembly/wasi-sdk/actions
    [tokens]: https://github.com/settings/tokens
 
-3. Download and unzip the workflow artifacts. Note that artifacts with `+m` or
+3. Check that the workflow built the artifacts for the given tag and that the
+   workflow completed successfully:
+
+   ```shell script
+   ci/is-worfklow-valid.sh $TAG $WORKFLOW_RUN_ID $GITHUB_TOKEN
+   ```
+
+4. Download and unzip the workflow artifacts. Note that artifacts with `+m` or
    `.m` suffixes indicate that the Git tree was modified. Expect some duplicates
    since some of the same artifacts are built on multiple CI runners (e.g.,
    Windows, MacOS, Linux). The following script does all of this automatically:
@@ -33,7 +40,7 @@ To publish a new version of `wasi-sdk` as a GitHub release:
    ci/download-workflow-artifacts.sh $TAG $WORKFLOW_RUN_ID $GITHUB_TOKEN
    ```
 
-4. Draft a new release. This could be done [manually][releases] but the
+5. Draft a new release. This could be done [manually][releases] but the
    following script simplifies the uploading of all the files and auto-generates
    the release description:
 
@@ -43,6 +50,6 @@ To publish a new version of `wasi-sdk` as a GitHub release:
 
   [releases]: https://github.com/WebAssembly/wasi-sdk/releases
 
-5. Publish the release; the previous step only creates a draft. Follow the link
+6. Publish the release; the previous step only creates a draft. Follow the link
    in the previous step or navigate to the GitHub [releases] to review the
    description, commit, tag, and assets before clicking "Publish"
