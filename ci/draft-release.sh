@@ -12,11 +12,11 @@ set -e
 #
 # Usage: draft-release.sh <release tag> <artifacts dir> <token>
 
-TAG=$1
-ARTIFACTS_DIR=$2
-GITHUB_TOKEN=$3
-GITHUB_API_VERSION=2022-11-28
-GITHUB_API_URL=https://api.github.com/repos/WebAssembly/wasi-sdk
+TAG=${TAG:-$1}
+ARTIFACTS_DIR=${ARTIFACTS_DIR:-$2}
+GITHUB_TOKEN=${GITHUB_TOKEN:-$3}
+GITHUB_API_VERSION=${GITHUB_API_VERSION:-2022-11-28}
+GITHUB_API_URL=${GITHUB_API_URL:-https://api.github.com/repos/WebAssembly/wasi-sdk}
 TMP_DIR=$(mktemp -d -t release.sh.XXXXXXX)
 
 if [ -z "${TAG}" ] || [ -z "${ARTIFACTS_DIR}" ] || [ -z "${GITHUB_TOKEN}" ]; then
