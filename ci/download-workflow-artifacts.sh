@@ -10,10 +10,10 @@ set -e
 #
 # Usage: download-workflow-artifacts.sh <workflow run ID> <token>
 
-WORKFLOW_RUN_ID=$1
-GITHUB_TOKEN=$2
-GITHUB_API_VERSION=2022-11-28
-GITHUB_API_URL=https://api.github.com/repos/WebAssembly/wasi-sdk
+WORKFLOW_RUN_ID=${WORKFLOW_RUN_ID:-$1}
+GITHUB_TOKEN=${GITHUB_TOKEN:-$2}
+GITHUB_API_VERSION=${GITHUB_API_VERSION:-2022-11-28}
+GITHUB_API_URL=${GITHUB_API_URL:-https://api.github.com/repos/WebAssembly/wasi-sdk}
 TMP_DIR=$(mktemp -d -t wasi-sdk-artifacts.XXXXXXX)
 
 if [ -z "${WORKFLOW_RUN_ID}" ] || [ -z "${GITHUB_TOKEN}" ]; then

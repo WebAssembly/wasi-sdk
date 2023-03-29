@@ -13,11 +13,11 @@ set -e
 #
 # Usage: is-workflow-valid.sh <release tag> <workflow run ID> <token>
 
-TAG=$1
-WORKFLOW_RUN_ID=$2
-GITHUB_TOKEN=$3
-GITHUB_API_VERSION=2022-11-28
-GITHUB_API_URL=https://api.github.com/repos/WebAssembly/wasi-sdk
+TAG=${TAG:-$1}
+WORKFLOW_RUN_ID=${WORKFLOW_RUN_ID:-$2}
+GITHUB_TOKEN=${GITHUB_TOKEN:-$3}
+GITHUB_API_VERSION=${GITHUB_API_VERSION:-2022-11-28}
+GITHUB_API_URL=${GITHUB_API_URL:-https://api.github.com/repos/WebAssembly/wasi-sdk}
 
 if [ -z "${TAG}" ] || [ -z "${WORKFLOW_RUN_ID}" ] || [ -z "${GITHUB_TOKEN}" ]; then
     >&2 echo "Missing parameter; exiting..."

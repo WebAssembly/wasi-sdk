@@ -10,10 +10,10 @@ set -e
 #
 # Usage: get-workflows-for-tag.sh <tag> <token>
 
-TAG=$1
-GITHUB_TOKEN=$2
-GITHUB_API_VERSION=2022-11-28
-GITHUB_API_URL=https://api.github.com/repos/WebAssembly/wasi-sdk
+TAG=${TAG:-$1}
+GITHUB_TOKEN=${GITHUB_TOKEN:-$2}
+GITHUB_API_VERSION=${GITHUB_API_VERSION:-2022-11-28}
+GITHUB_API_URL=${GITHUB_API_URL:-https://api.github.com/repos/WebAssembly/wasi-sdk}
 
 if [ -z "${TAG}" ] || [ -z "${GITHUB_TOKEN}" ]; then
     >&2 echo "Missing parameter; exiting..."
