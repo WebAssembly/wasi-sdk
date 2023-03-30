@@ -5,6 +5,8 @@ To publish a new version of `wasi-sdk` as a GitHub release:
 1. Tag a commit with an annotated tag. Note that this must be an annotated tag,
    not a lightweight tag, so that `version.sh` can use it for calculating the
    package version (use `git show wasi-sdk-...` to show other tag messages).
+   Note that you may need to clear the repository cache to avoid problems with
+   cached artifacts [^cache].
 
    ```shell script
    TAG=wasi-sdk-1
@@ -53,3 +55,11 @@ To publish a new version of `wasi-sdk` as a GitHub release:
 6. Publish the release; the previous step only creates a draft. Follow the link
    in the previous step or navigate to the GitHub [releases] to review the
    description, commit, tag, and assets before clicking "Publish"
+
+[^cache]: Here is an example of how to clear a cache with the GitHub CLI:
+
+    ```shell script
+    URL=/repos/WebAssembly/wasi-sdk/actions/caches
+    gh api $URL -q '.actions_caches[].id' \
+       | xargs -I {} gh api --method DELETE $URL/{}
+    ```
