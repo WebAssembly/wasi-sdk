@@ -37,6 +37,11 @@ BASH=
 
 endif
 
+ifeq ($(shell uname),Darwin)
+LLVM_CMAKE_FLAGS += -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+		    -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
+endif
+
 # Only the major version is needed for Clang, see https://reviews.llvm.org/D125860.
 CLANG_VERSION=$(shell $(BASH) ./llvm_version_major.sh $(LLVM_PROJ_DIR))
 VERSION:=$(shell $(BASH) ./version.sh)
@@ -62,8 +67,6 @@ build/llvm.BUILT:
 		-DLLVM_ENABLE_ZSTD=OFF \
 		-DLLVM_STATIC_LINK_CXX_STDLIB=ON \
 		-DLLVM_HAVE_LIBXAR=OFF \
-		-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
-		-DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi \
