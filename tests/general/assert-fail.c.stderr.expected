@@ -3,5 +3,5 @@ Error: failed to run main module `assert-fail.c.---.wasm`
 
 Caused by:
     0: failed to invoke command default
-    1: wasm trap: wasm `unreachable` instruction executed
-       wasm backtrace:
+    1: error while executing at wasm backtrace:
+    2: wasm trap: wasm `unreachable` instruction executed
