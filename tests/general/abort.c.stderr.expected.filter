@@ -1,7 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 cat \
     | sed -e 's/main module `abort\.c\.[^`]*\.wasm`/main module `abort.c.---.wasm`/' \
-    | sed -e 's/source location: @[[:xdigit:]]*$/source location: @----/' \
-    | head -n 6
+    | sed -E '/0x[[:xdigit:]]+/d'
