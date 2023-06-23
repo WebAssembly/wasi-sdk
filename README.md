@@ -12,7 +12,7 @@ This repository contains no compiler or library code itself; it uses
 git submodules to pull in the upstream Clang and LLVM tree, as well as the
 wasi-libc tree.
 
-The libc portion of this SDK is the [wasi-libc].
+The libc portion of this SDK is maintained in [wasi-libc].
 
 [wasi-libc]: https://github.com/WebAssembly/wasi-libc
 
