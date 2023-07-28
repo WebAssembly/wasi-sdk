@@ -38,7 +38,7 @@ BASH=
 endif
 
 ifeq ($(shell uname),Darwin)
-LLVM_CMAKE_FLAGS += -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+override LLVM_CMAKE_FLAGS += -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
 		    -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
 endif
 
