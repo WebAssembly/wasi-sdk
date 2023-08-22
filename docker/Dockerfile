@@ -37,6 +37,7 @@ COPY --from=dist /wasi-sdk/share/wasi-sysroot/ /wasi-sysroot/
 COPY --from=dist /wasi-sysroot-clang_rt/lib/wasi /usr/lib/llvm-${LLVM_VERSION}/lib/clang/${LLVM_VERSION}/lib/wasi
 
 ADD docker/wasi-sdk.cmake /usr/share/cmake/wasi-sdk.cmake
+ADD docker/wasi-sdk-pthread.cmake /usr/share/cmake/wasi-sdk-pthread.cmake
 ENV CMAKE_TOOLCHAIN_FILE /usr/share/cmake/wasi-sdk.cmake
 ADD cmake/Platform/WASI.cmake /usr/share/cmake/Modules/Platform/WASI.cmake
 
