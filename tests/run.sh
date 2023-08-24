@@ -1,9 +1,10 @@
 #!/bin/bash
 set -ueo pipefail
 
-# Top-level test runner. Usage is "run.sh" to run tests in compile-only mode,
-# or "run.sh <runwasi>" where <runwasi> is a WASI-capable runtime to run the
-# tests in full compile and execute mode.
+# Top-level test runner. Usage is "run.sh <path to wasi-sdk>" to run tests
+# in compile-only mode, or "run.sh <path to wasi-sdk> <runwasi>" where
+# <runwasi> is a WASI-capable runtime to run the tests in full compile and
+# execute mode.
 #
 # By default this script will look for `clang` and `clang++` in $PATH and
 # assume that they are correctly configured with the sysroot in the default
@@ -12,10 +13,16 @@ set -ueo pipefail
 #  export CXX="<wasi-sdk>/bin/clang++ --sysroot <wasi-sdk>/share/wasi-sysroot"
 #  export CC="<wasi-sdk>/bin/clang --sysroot <wasi-sdk>/share/wasi-sysroot"
 #
+if [ $# -lt 1 ]; then
+    echo "Path to WASI SDK is required"
+    exit 1
+fi
+
+wasi_sdk="$1"
 
 # Determine the wasm runtime to use, if one is provided.
-if [ $# -gt 0 ]; then
-    runwasi="$1"
+if [ $# -gt 1 ]; then
+    runwasi="$2"
 else
     runwasi=""
 fi
@@ -26,6 +33,7 @@ CXX=${CXX:=clang++}
 
 echo $CC
 echo $CXX
+echo "SDK: $wasi_sdk"
 
 cd $testdir/compile-only
 for options in -O0 -O2 "-O2 -flto"; do
@@ -54,3 +62,27 @@ for options in -O0 -O2 "-O2 -flto"; do
     done
 done
 cd - >/dev/null
+
+# Test cmake build system for wasi-sdk
+test_cmake() {
+    local option
+    for option in Debug Release; do
+        rm -rf "$testdir/cmake/build/$option"
+        mkdir -p "$testdir/cmake/build/$option"
+        cd "$testdir/cmake/build/$option"
+        cmake \
+            -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE="$option" \
+            -DRUNWASI="$runwasi" \
+            -DWASI_SDK_PREFIX="$wasi_sdk" \
+            -DCMAKE_TOOLCHAIN_FILE="$wasi_sdk/share/cmake/wasi-sdk.cmake" \
+            ../..
+        make
+        if [[ -n "$runwasi" ]]; then
+            ctest --output-on-failure
+        fi
+        cd - >/dev/null
+    done
+}
+
+test_cmake
