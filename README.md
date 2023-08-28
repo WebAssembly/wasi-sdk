@@ -100,7 +100,7 @@ in the install directory.
 We provide a [docker image] including wasi-sdk that can be used for building
 projects without a separate installation of the SDK. Autotools, CMake, and Ninja
 are included in this image, and standard environment variables are set to use
-wask-sdk for building.
+wasi-sdk for building.
 
 [docker image]: https://github.com/WebAssembly/wasi-sdk/pkgs/container/wasi-sdk
 
