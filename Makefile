@@ -53,7 +53,7 @@ default: build
 check:
 	CC="clang --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
 	CXX="clang++ --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot -fno-exceptions" \
-	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh $(RUNTIME)
+	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh "$(BUILD_PREFIX)" "$(RUNTIME)"
 
 clean:
 	rm -rf build $(DESTDIR)
@@ -219,9 +219,10 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 build/config.BUILT:
 	mkdir -p $(BUILD_PREFIX)/share/misc
 	cp src/config/config.sub src/config/config.guess $(BUILD_PREFIX)/share/misc
-	mkdir -p $(BUILD_PREFIX)/share/cmake
+	mkdir -p $(BUILD_PREFIX)/share/cmake/Platform
 	cp wasi-sdk.cmake $(BUILD_PREFIX)/share/cmake
 	cp wasi-sdk-pthread.cmake $(BUILD_PREFIX)/share/cmake
+	cp cmake/Platform/WASI.cmake $(BUILD_PREFIX)/share/cmake/Platform
 	touch build/config.BUILT
 
 build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxx.BUILT build/config.BUILT
