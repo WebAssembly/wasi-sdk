@@ -84,6 +84,20 @@ includes/libraries/etc. The `--sysroot=...` option is not necessary if
 `WASI_SDK_PATH` is `/opt/wasi-sdk`. For troubleshooting, one can replace the
 `--sysroot` path with a manual build of [wasi-libc].
 
+### Integrating with a CMake build system
+
+Use a toolchain file to setup the *wasi-sdk* platform.
+
+```
+$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk.cmake ...
+```
+
+or the *wasi-sdk-thread* platform
+
+```
+$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-pthread.cmake ...
+```
+
 ## Notes for Autoconf
 
 [Autoconf] 2.70 now [recognizes WASI].
