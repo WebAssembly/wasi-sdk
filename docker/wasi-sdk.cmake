@@ -21,6 +21,8 @@ set(CMAKE_CXX_COMPILER_TARGET ${triple})
 set(CMAKE_ASM_COMPILER_TARGET ${triple})
 SET(CMAKE_SYSROOT /wasi-sysroot)
 
+set(CMAKE_CXX_FLAGS_INIT "-fno-exceptions")
+
 # Don't look in the sysroot for executables to run during the build
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 # Only look in the sysroot (not in the host paths) for the rest

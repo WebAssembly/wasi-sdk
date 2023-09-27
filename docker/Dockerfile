@@ -48,5 +48,5 @@ ENV AR llvm-ar-${LLVM_VERSION}
 ENV RANLIB llvm-ranlib-${LLVM_VERSION}
 
 ENV CFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
-ENV CXXFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
+ENV CXXFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot -fno-exceptions
 ENV LDFLAGS --target=wasm32-wasi --sysroot=/wasi-sysroot
