@@ -48,7 +48,7 @@ jobs:
       # bump depth (or even better, the submodule), in case of "error:
       # Server does not allow request for unadvertised object" in the
       # future.
-      - run: git submodule update --init --depth 16 --jobs 3
+      - run: git submodule update --init --depth 32 --jobs 3
       - name: Install ccache, ninja (macOS)
         run: brew install ccache ninja
         if: matrix.os == 'macos-latest'
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - run: git submodule update --init --depth 16 --jobs 3
+      - run: git submodule update --init --depth 32 --jobs 3
       - name: Build
         shell: msys2 {0}
         run: |
@@ -135,7 +135,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - run: git submodule update --init --depth 16 --jobs 3
+      - run: git submodule update --init --depth 32 --jobs 3
 
       - uses: docker/login-action@v2
         with:
