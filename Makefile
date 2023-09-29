@@ -107,21 +107,24 @@ build/llvm.BUILT:
 		llvm-config
 	touch build/llvm.BUILT
 
-build/wasi-libc.BUILT: build/llvm.BUILT
-	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
-		CC=$(BUILD_PREFIX)/bin/clang \
-		AR=$(BUILD_PREFIX)/bin/llvm-ar \
-		NM=$(BUILD_PREFIX)/bin/llvm-nm \
-		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot
+build/wasi-libc.BUILT: build/compiler-rt.BUILT
 	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
 		CC=$(BUILD_PREFIX)/bin/clang \
 		AR=$(BUILD_PREFIX)/bin/llvm-ar \
 		NM=$(BUILD_PREFIX)/bin/llvm-nm \
 		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
+		BUILTINS_LIB=$(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi/libclang_rt.builtins-wasm32.a \
+		default libc_so
+	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
+		CC=$(BUILD_PREFIX)/bin/clang \
+		AR=$(BUILD_PREFIX)/bin/llvm-ar \
+		NM=$(BUILD_PREFIX)/bin/llvm-nm \
+		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
+		BUILTINS_LIB=$(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi/libclang_rt.builtins-wasm32.a \
 		THREAD_MODEL=posix
 	touch build/wasi-libc.BUILT
 
-build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
+build/compiler-rt.BUILT: build/llvm.BUILT
 	# Do the build, and install it.
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt && cmake -G Ninja \
@@ -151,6 +154,8 @@ build/compiler-rt.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 	touch build/compiler-rt.BUILT
 
 # Flags for libcxx and libcxxabi.
+# $(1): pthreads ON or OFF
+# $(2): shared libraries ON or OFF
 LIBCXX_CMAKE_FLAGS = \
     -DCMAKE_C_COMPILER_WORKS=ON \
     -DCMAKE_CXX_COMPILER_WORKS=ON \
@@ -161,38 +166,39 @@ LIBCXX_CMAKE_FLAGS = \
     -DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
     -DCXX_SUPPORTS_CXX11=ON \
-    -DLIBCXX_ENABLE_THREADS:BOOL=@PTHREAD@ \
-    -DLIBCXX_HAS_PTHREAD_API:BOOL=@PTHREAD@ \
+    -DLIBCXX_ENABLE_THREADS:BOOL=$(1) \
+    -DLIBCXX_HAS_PTHREAD_API:BOOL=$(1) \
     -DLIBCXX_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
     -DLIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
     -DLIBCXX_HAS_WIN32_THREAD_API:BOOL=OFF \
     -DLLVM_COMPILER_CHECKED=ON \
     -DCMAKE_BUILD_TYPE=RelWithDebugInfo \
-    -DLIBCXX_ENABLE_SHARED:BOOL=OFF \
+    -DLIBCXX_ENABLE_SHARED:BOOL=$(2) \
     -DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
     -DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
     -DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
+    -DLIBCXX_ENABLE_ABI_LINKER_SCRIPT:BOOL=OFF \
     -DLIBCXX_CXX_ABI=libcxxabi \
     -DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(LLVM_PROJ_DIR)/libcxxabi/include \
     -DLIBCXX_HAS_MUSL_LIBC:BOOL=ON \
     -DLIBCXX_ABI_VERSION=2 \
     -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF \
-    -DLIBCXXABI_ENABLE_SHARED:BOOL=OFF \
+    -DLIBCXXABI_ENABLE_SHARED:BOOL=$(2) \
     -DLIBCXXABI_SILENT_TERMINATE:BOOL=ON \
-    -DLIBCXXABI_ENABLE_THREADS:BOOL=@PTHREAD@ \
-    -DLIBCXXABI_HAS_PTHREAD_API:BOOL=@PTHREAD@ \
+    -DLIBCXXABI_ENABLE_THREADS:BOOL=$(1) \
+    -DLIBCXXABI_HAS_PTHREAD_API:BOOL=$(1) \
     -DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF \
     -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF \
     -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF \
-    -DLIBCXXABI_ENABLE_PIC:BOOL=OFF \
+    -DLIBCXXABI_ENABLE_PIC:BOOL=$(2) \
     -DWASI_SDK_PREFIX=$(BUILD_PREFIX) \
     -DUNIX:BOOL=ON \
     --debug-trycompile
 
-build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUILT
+build/libcxx.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 	# Do the build.
 	mkdir -p build/libcxx
-	cd build/libcxx && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS:@PTHREAD@=OFF) \
+	cd build/libcxx && cmake -G Ninja $(call LIBCXX_CMAKE_FLAGS,OFF,ON) \
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CFLAGS)" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CXXFLAGS)" \
@@ -202,7 +208,7 @@ build/libcxx.BUILT: build/llvm.BUILT build/compiler-rt.BUILT build/wasi-libc.BUI
 		$(LLVM_PROJ_DIR)/runtimes
 	ninja $(NINJA_FLAGS) -C build/libcxx
 	mkdir -p build/libcxx-threads
-	cd build/libcxx-threads && cmake -G Ninja $(LIBCXX_CMAKE_FLAGS:@PTHREAD@=ON) \
+	cd build/libcxx-threads && cmake -G Ninja $(call LIBCXX_CMAKE_FLAGS,ON,OFF) \
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
 		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -pthread $(EXTRA_CFLAGS)" \
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -pthread $(EXTRA_CXXFLAGS)" \
