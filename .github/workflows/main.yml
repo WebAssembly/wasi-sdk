@@ -39,7 +39,19 @@ jobs:
             0-cache-macos-latest
         if: matrix.os == 'macos-latest'
       - name: Install wasmtime for tests
-        run: curl -f -L --retry 5 https://wasmtime.dev/install.sh | bash -s -- --version v8.0.1
+        run: |
+          curl -f -L --retry 5 https://wasmtime.dev/install.sh | bash -s -- --version v16.0.0
+          ~/.wasmtime/bin/wasmtime --version
+          curl -f -L --retry 5  -o ~/.wasmtime/bin/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v16.0.0/wasi_snapshot_preview1.command.wasm
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          curl -f -OL --retry 5 https://github.com/bytecodealliance/wasm-tools/releases/download/wasm-tools-1.0.54/wasm-tools-1.0.54-x86_64-linux.tar.gz
+          tar xf wasm-tools-1.0.54-x86_64-linux.tar.gz
+          cp wasm-tools-1.0.54-x86_64-linux/wasm-tools ~/.wasmtime/bin/
+          else
+          curl -f -OL --retry 5 https://github.com/bytecodealliance/wasm-tools/releases/download/wasm-tools-1.0.54/wasm-tools-1.0.54-x86_64-macos.tar.gz
+          tar xf wasm-tools-1.0.54-x86_64-macos.tar.gz
+          cp wasm-tools-1.0.54-x86_64-macos/wasm-tools ~/.wasmtime/bin/          
+          fi
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -59,7 +71,7 @@ jobs:
         run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
       - name: Run the testsuite
-        run: NINJA_FLAGS=-v make check RUNTIME=~/.wasmtime/bin/wasmtime
+        run: NINJA_FLAGS=-v make check RUNTIME=~/.wasmtime/bin/wasmtime ADAPTER=~/.wasmtime/bin/wasi_snapshot_preview1.command.wasm WASM_TOOLS=~/.wasmtime/bin/wasm-tools
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:

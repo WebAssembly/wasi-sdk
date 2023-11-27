@@ -6,16 +6,20 @@ set -ueo pipefail
 
 # Command-line parsing; this script is meant to be run from a higher-level
 # script, so don't do anything fancy.
-runwasi="$1"
-compiler="$2"
-options="$3"
-input="$4"
+target="$1"
+runwasi="$2"
+adapter="$3"
+wasm_tools="$4"
+compiler="$5"
+options="$6"
+input="$7"
 
 # Compile names for generated files.
 wasm="$input.$options.wasm"
 stdout_observed="$input.$options.stdout.observed"
 stderr_observed="$input.$options.stderr.observed"
 exit_status_observed="$input.$options.exit_status.observed"
+run_args=""
 
 # Optionally load compiler options from a file.
 if [ -e "$input.options" ]; then
@@ -27,11 +31,16 @@ fi
 echo "Testing $input..."
 
 # Compile the testcase.
-$compiler $options $file_options "$input" -o "$wasm"
+$compiler --target=$target $options $file_options "$input" -o "$wasm"
 
 # If we don't have a runwasi command, we're just doing compile-only testing.
 if [ "$runwasi" == "" ]; then
     exit 0
+fi
+
+if [ "$target" == "wasm32-wasi-preview2" -a -n "$adapter" -a -n "$wasm_tools" ]; then
+    "$wasm_tools" component new --adapt "$adapter" "$wasm" -o "$wasm"
+    run_args="--wasm component-model"
 fi
 
 # Determine the input file to write to stdin.
@@ -59,7 +68,7 @@ fi
 
 # Run the test, capturing stdout, stderr, and the exit status.
 exit_status=0
-"$runwasi" $env $dir "$wasm" $dirarg \
+"$runwasi" $run_args $env $dir "$wasm" $dirarg \
     < "$stdin" \
     > "$stdout_observed" \
     2> "$stderr_observed" \
@@ -68,7 +77,11 @@ echo $exit_status > "$exit_status_observed"
 
 # Determine the reference files to compare with.
 if [ -e "$input.stdout.expected" ]; then
-  stdout_expected="$input.stdout.expected"
+  if [ -e "$input.$target.stdout.expected" ]; then
+      stdout_expected="$input.$target.stdout.expected"
+  else
+      stdout_expected="$input.stdout.expected"
+  fi    
 
   # Apply output filters.
   if [ -e "$input.stdout.expected.filter" ]; then
@@ -80,8 +93,13 @@ if [ -e "$input.stdout.expected" ]; then
 else
   stdout_expected="/dev/null"
 fi
+
 if [ -e "$input.stderr.expected" ]; then
-  stderr_expected="$input.stderr.expected"
+  if [ -e "$input.$target.stderr.expected" ]; then
+      stderr_expected="$input.$target.stderr.expected"
+  else
+      stderr_expected="$input.stderr.expected"
+  fi    
 
   # Apply output filters.
   if [ -e "$input.stderr.expected.filter" ]; then

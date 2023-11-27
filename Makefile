@@ -53,7 +53,7 @@ default: build
 check:
 	CC="clang --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
 	CXX="clang++ --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot -fno-exceptions" \
-	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh "$(BUILD_PREFIX)" "$(RUNTIME)"
+	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh "$(BUILD_PREFIX)" "$(RUNTIME)" "$(ADAPTER)" "$(WASM_TOOLS)"
 
 clean:
 	rm -rf build $(DESTDIR)
@@ -108,6 +108,13 @@ build/llvm.BUILT:
 	touch build/llvm.BUILT
 
 build/wasi-libc.BUILT: build/compiler-rt.BUILT
+	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
+		CC=$(BUILD_PREFIX)/bin/clang \
+		AR=$(BUILD_PREFIX)/bin/llvm-ar \
+		NM=$(BUILD_PREFIX)/bin/llvm-nm \
+		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
+		WASI_SNAPSHOT=preview2 \
+		default libc_so
 	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
 		CC=$(BUILD_PREFIX)/bin/clang \
 		AR=$(BUILD_PREFIX)/bin/llvm-ar \
@@ -196,11 +203,21 @@ LIBCXX_CMAKE_FLAGS = \
 
 build/libcxx.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 	# Do the build.
+	mkdir -p build/libcxx-preview2
+	cd build/libcxx-preview2 && cmake -G Ninja $(call LIBCXX_CMAKE_FLAGS,OFF,ON) \
+		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CFLAGS) --target=wasm32-wasi-preview2" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CXXFLAGS) --target=wasm32-wasi-preview2" \
+		-DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi-preview2 \
+		-DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi-preview2 \
+		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
+		$(LLVM_PROJ_DIR)/runtimes
+	ninja $(NINJA_FLAGS) -C build/libcxx-preview2
 	mkdir -p build/libcxx
 	cd build/libcxx && cmake -G Ninja $(call LIBCXX_CMAKE_FLAGS,OFF,ON) \
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CFLAGS)" \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CXXFLAGS)" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CFLAGS) --target=wasm32-wasi" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CXXFLAGS) --target=wasm32-wasi" \
 		-DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 		-DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi \
 		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
@@ -209,16 +226,22 @@ build/libcxx.BUILT: build/llvm.BUILT build/wasi-libc.BUILT
 	mkdir -p build/libcxx-threads
 	cd build/libcxx-threads && cmake -G Ninja $(call LIBCXX_CMAKE_FLAGS,ON,OFF) \
 		-DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -pthread $(EXTRA_CFLAGS)" \
-		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -pthread $(EXTRA_CXXFLAGS)" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) -pthread $(EXTRA_CFLAGS) --target=wasm32-wasi-threads" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -pthread $(EXTRA_CXXFLAGS) --target=wasm32-wasi-threads" \
 		-DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi-threads \
 		-DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/wasm32-wasi-threads \
 		-DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
 		$(LLVM_PROJ_DIR)/runtimes
 	ninja $(NINJA_FLAGS) -C build/libcxx-threads
 	# Do the install.
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx-preview2 install
+	mv $(BUILD_PREFIX)/share/wasi-sysroot/include/c++ $(BUILD_PREFIX)/share/wasi-sysroot/include/wasm32-wasi-preview2/
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx install
+	mv $(BUILD_PREFIX)/share/wasi-sysroot/include/c++ $(BUILD_PREFIX)/share/wasi-sysroot/include/wasm32-wasi/
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx-threads install
+	mv $(BUILD_PREFIX)/share/wasi-sysroot/include/c++ $(BUILD_PREFIX)/share/wasi-sysroot/include/wasm32-wasi-threads/
+	# As of this writing, `clang++` will ignore the above include dirs unless this one also exists:
+	mkdir -p $(BUILD_PREFIX)/share/wasi-sysroot/include/c++/v1
 	touch build/libcxx.BUILT
 
 build/config.BUILT:
