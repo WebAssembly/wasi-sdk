@@ -113,14 +113,12 @@ build/wasi-libc.BUILT: build/compiler-rt.BUILT
 		AR=$(BUILD_PREFIX)/bin/llvm-ar \
 		NM=$(BUILD_PREFIX)/bin/llvm-nm \
 		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-		BUILTINS_LIB=$(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi/libclang_rt.builtins-wasm32.a \
 		default libc_so
 	$(MAKE) -C $(ROOT_DIR)/src/wasi-libc \
 		CC=$(BUILD_PREFIX)/bin/clang \
 		AR=$(BUILD_PREFIX)/bin/llvm-ar \
 		NM=$(BUILD_PREFIX)/bin/llvm-nm \
 		SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-		BUILTINS_LIB=$(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi/libclang_rt.builtins-wasm32.a \
 		THREAD_MODEL=posix
 	touch build/wasi-libc.BUILT
 
