@@ -30,7 +30,7 @@ To publish a new version of `wasi-sdk` as a GitHub release:
    workflow completed successfully:
 
    ```shell script
-   ci/is-worfklow-valid.sh $TAG $WORKFLOW_RUN_ID $GITHUB_TOKEN
+   ci/is-workflow-valid.sh $TAG $WORKFLOW_RUN_ID $GITHUB_TOKEN
    ```
 
 4. Download and unzip the workflow artifacts. Note that artifacts with `+m` or
@@ -39,7 +39,7 @@ To publish a new version of `wasi-sdk` as a GitHub release:
    Windows, MacOS, Linux). The following script does all of this automatically:
 
    ```shell script
-   ci/download-workflow-artifacts.sh $TAG $WORKFLOW_RUN_ID $GITHUB_TOKEN
+   ci/download-workflow-artifacts.sh $WORKFLOW_RUN_ID $GITHUB_TOKEN
    ```
 
 5. Draft a new release. This could be done [manually][releases] but the
