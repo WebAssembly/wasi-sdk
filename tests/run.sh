@@ -44,9 +44,7 @@ echo $CC
 echo $CXX
 echo "SDK: $wasi_sdk"
 
-# TODO: `wasm32-wasi-threads` should be in this list, but as of this writing the
-# `signal.c` test is failing due to https://github.com/bytecodealliance/wasmtime/issues/7745
-for target in wasm32-wasi-preview2 wasm32-wasi; do
+for target in wasm32-wasi wasm32-wasi-threads wasm32-wasi-preview2; do
     echo "===== Testing target $target ====="
     cd $testdir/compile-only
     for options in -O0 -O2 "-O2 -flto"; do

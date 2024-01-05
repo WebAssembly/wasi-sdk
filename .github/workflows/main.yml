@@ -39,8 +39,9 @@ jobs:
             0-cache-macos-latest
         if: matrix.os == 'macos-latest'
       - name: Install wasmtime for tests
+        # TODO: switch to Wasmtime 17 once it's released, which will include https://github.com/bytecodealliance/wasmtime/pull/7750
         run: |
-          curl -f -L --retry 5 https://wasmtime.dev/install.sh | bash -s -- --version v16.0.0
+          curl -f -L --retry 5 https://wasmtime.dev/install.sh | bash -s -- --version dev
           ~/.wasmtime/bin/wasmtime --version
           curl -f -L --retry 5  -o ~/.wasmtime/bin/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v16.0.0/wasi_snapshot_preview1.command.wasm
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then

@@ -28,10 +28,16 @@ else
     file_options=
 fi
 
+if [ "$target" == "wasm32-wasi-threads" ]; then
+    pthread_options="-pthread"
+else
+    pthread_options=
+fi
+
 echo "Testing $input..."
 
 # Compile the testcase.
-$compiler --target=$target $options $file_options "$input" -o "$wasm"
+$compiler --target=$target $pthread_options $options $file_options "$input" -o "$wasm"
 
 # If we don't have a runwasi command, we're just doing compile-only testing.
 if [ "$runwasi" == "" ]; then
