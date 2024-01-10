@@ -46,15 +46,24 @@ To publish a new version of `wasi-sdk` as a GitHub release:
    following script simplifies the uploading of all the files and auto-generates
    the release description:
 
-  ```shell script
-  ci/draft-release.sh $TAG $ARTIFACTS_DIR $GITHUB_TOKEN
-  ```
+   ```shell script
+   ci/draft-release.sh $TAG $ARTIFACTS_DIR $GITHUB_TOKEN
+   ```
 
   [releases]: https://github.com/WebAssembly/wasi-sdk/releases
 
 6. Publish the release; the previous step only creates a draft. Follow the link
    in the previous step or navigate to the GitHub [releases] to review the
-   description, commit, tag, and assets before clicking "Publish"
+   description, commit, tag, and assets before clicking "Publish."
+
+7. Remember to tag the wasi-libc repository with the new `$TAG` version.
+
+   ```shell script
+   git submodule status -- src/wasi-libc  # grab $WASI_LIBC_COMMIT from the output
+   cd $WASI_LIBC_REPO_DIR
+   git tag $TAG $WASI_LIBC_COMMIT
+   git push origin $TAG
+   ```
 
 [^cache]: Here is an example of how to clear a cache with the GitHub CLI:
 
