@@ -71,7 +71,7 @@ tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
 
 ## Use
 
-Use the clang installed in the wasi-sdk directory:
+Use the clang installed in the `wasi-sdk` directory:
 
 ```shell script
 export WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}
@@ -111,10 +111,10 @@ in the install directory.
 
 ## Docker Image
 
-We provide a [docker image] including wasi-sdk that can be used for building
+We provide a [docker image] including WASI SDK that can be used for building
 projects without a separate installation of the SDK. Autotools, CMake, and Ninja
 are included in this image, and standard environment variables are set to use
-wasi-sdk for building.
+WASI SDK for building.
 
 [docker image]: https://github.com/WebAssembly/wasi-sdk/pkgs/container/wasi-sdk
 
@@ -127,7 +127,7 @@ docker run -v `pwd`:/src -w /src ghcr.io/webassembly/wasi-sdk make
 
 Take note of the [notable limitations](#notable-limitations) below when
 building projects, for example many projects will need threads support
-disabled in a configure step before building with wasi-sdk.
+disabled in a configure step before building with WASI SDK.
 
 ## Notable Limitations
 
