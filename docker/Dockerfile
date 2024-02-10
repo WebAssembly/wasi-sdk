@@ -30,7 +30,7 @@ RUN apt-get update && \
 \
     apt-get update && \
     apt-get install -y clang-${LLVM_VERSION} lld-${LLVM_VERSION} cmake ninja-build make autoconf autogen automake libtool && \
-    apt-get remove -y curl gnupg && \
+    apt-get autoremove -y curl gnupg && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=dist /wasi-sdk/share/wasi-sysroot/ /wasi-sysroot/
