@@ -28,7 +28,7 @@ else
     file_options=
 fi
 
-if [ "$target" == "wasm32-wasi-threads" ]; then
+if echo "$target" | grep -q -- '-threads$'; then
     pthread_options="-pthread"
 else
     pthread_options=
