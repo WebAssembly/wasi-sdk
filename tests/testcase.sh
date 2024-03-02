@@ -37,7 +37,7 @@ fi
 echo "Testing $input..."
 
 # Compile the testcase.
-$compiler --target=$target $pthread_options $options $file_options "$input" -o "$wasm"
+$compiler $pthread_options $options $file_options "$input" -o "$wasm"
 
 # If we don't have a runwasi command, we're just doing compile-only testing.
 if [ "$runwasi" == "" ]; then
@@ -87,7 +87,7 @@ if [ -e "$input.stdout.expected" ]; then
       stdout_expected="$input.$target.stdout.expected"
   else
       stdout_expected="$input.stdout.expected"
-  fi    
+  fi
 
   # Apply output filters.
   if [ -e "$input.stdout.expected.filter" ]; then
@@ -105,7 +105,7 @@ if [ -e "$input.stderr.expected" ]; then
       stderr_expected="$input.$target.stderr.expected"
   else
       stderr_expected="$input.stderr.expected"
-  fi    
+  fi
 
   # Apply output filters.
   if [ -e "$input.stderr.expected.filter" ]; then
