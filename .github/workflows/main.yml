@@ -47,7 +47,7 @@ jobs:
         with:
           version: "1.201.0"
       - name: Download latest command adapter
-        run: curl -f -L --retry 5 -o ~/.wasmtime/bin/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v18.0.2/wasi_snapshot_preview1.command.wasm
+        run: curl -f -L --retry 5 -o ${{ runner.temp }}/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v18.0.2/wasi_snapshot_preview1.command.wasm
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -67,7 +67,7 @@ jobs:
         run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
       - name: Run the testsuite
-        run: NINJA_FLAGS=-v make check RUNTIME=~/.wasmtime/bin/wasmtime ADAPTER=~/.wasmtime/bin/wasi_snapshot_preview1.command.wasm WASM_TOOLS=~/.wasmtime/bin/wasm-tools
+        run: NINJA_FLAGS=-v make check RUNTIME=wasmtime ADAPTER=${{ runner.temp }}/wasi_snapshot_preview1.command.wasm WASM_TOOLS=wasm-tools
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
