@@ -78,6 +78,8 @@ build/llvm.BUILT:
 		-DCLANG_LINKS_TO_CREATE="$(call join-with,;,$(CLANG_LINKS_TO_CREATE))" \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DLLVM_ENABLE_TERMINFO=OFF \
+		-DLLVM_LINK_LLVM_DYLIB=ON \
+		-DLLVM_VERSION_SUFFIX=-wasi-sdk \
 		-DLLVM_ENABLE_ZLIB=OFF \
 		-DLLVM_ENABLE_ZSTD=OFF \
 		-DLLVM_STATIC_LINK_CXX_STDLIB=ON \
@@ -118,6 +120,8 @@ build/llvm.BUILT:
 		install-objdump \
 		install-objcopy \
 		install-c++filt \
+		install-LLVM \
+		install-clang-cpp \
 		llvm-config
 	touch build/llvm.BUILT
 
