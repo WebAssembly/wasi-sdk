@@ -44,7 +44,7 @@ echo $CC
 echo $CXX
 echo "SDK: $wasi_sdk"
 
-for target in wasm32-wasi wasm32-wasi-threads wasm32-wasi-preview2; do
+for target in wasm32-wasi wasm32-wasip1 wasm32-wasi-threads wasm32-wasip1-threads wasm32-wasip2; do
     echo "===== Testing target $target ====="
     cd $testdir/compile-only
     for options in -O0 -O2 "-O2 -flto"; do
