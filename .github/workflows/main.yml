@@ -38,15 +38,15 @@ jobs:
           restore-keys: |
             0-cache-macos-latest
         if: matrix.os == 'macos-latest'
-      - name: Setup `wasmtime`
+      - name: Setup `wasmtime` for tests
         uses: bytecodealliance/actions/wasmtime/setup@v1
         with:
           version: "18.0.2"
-      - name: Setup `wasm-tools`
+      - name: Setup `wasm-tools` for tests
         uses: bytecodealliance/actions/wasm-tools/setup@v1
         with:
           version: "1.201.0"
-      - name: Download latest command adapter
+      - name: Download command adapter for tests
         run: curl -f -L --retry 5 -o ${{ runner.temp }}/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v18.0.2/wasi_snapshot_preview1.command.wasm
       - uses: actions/checkout@v3
         with:
