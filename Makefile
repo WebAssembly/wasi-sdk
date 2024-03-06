@@ -152,8 +152,8 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/compiler-rt install
 	# Install clang-provided headers.
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(BUILD_PREFIX)/lib/
-	cp -R $(BUILD_PREFIX)/lib/clang/17/lib/wasi $(BUILD_PREFIX)/lib/clang/17/lib/wasip1
-	cp -R $(BUILD_PREFIX)/lib/clang/17/lib/wasi $(BUILD_PREFIX)/lib/clang/17/lib/wasip2
+	cp -R $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasip1
+	cp -R $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasi $(BUILD_PREFIX)/lib/clang/$(CLANG_VERSION)/lib/wasip2
 	touch build/compiler-rt.BUILT
 
 # Flags for libcxx and libcxxabi.
