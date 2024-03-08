@@ -38,21 +38,16 @@ jobs:
           restore-keys: |
             0-cache-macos-latest
         if: matrix.os == 'macos-latest'
-      - name: Install wasmtime for tests
-        # TODO: switch to Wasmtime 17 once it's released, which will include https://github.com/bytecodealliance/wasmtime/pull/7750
-        run: |
-          curl -f -L --retry 5 https://wasmtime.dev/install.sh | bash -s -- --version dev
-          ~/.wasmtime/bin/wasmtime --version
-          curl -f -L --retry 5  -o ~/.wasmtime/bin/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/dev/wasi_snapshot_preview1.command.wasm
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-          curl -f -OL --retry 5 https://github.com/bytecodealliance/wasm-tools/releases/download/wasm-tools-1.0.54/wasm-tools-1.0.54-x86_64-linux.tar.gz
-          tar xf wasm-tools-1.0.54-x86_64-linux.tar.gz
-          cp wasm-tools-1.0.54-x86_64-linux/wasm-tools ~/.wasmtime/bin/
-          else
-          curl -f -OL --retry 5 https://github.com/bytecodealliance/wasm-tools/releases/download/wasm-tools-1.0.54/wasm-tools-1.0.54-x86_64-macos.tar.gz
-          tar xf wasm-tools-1.0.54-x86_64-macos.tar.gz
-          cp wasm-tools-1.0.54-x86_64-macos/wasm-tools ~/.wasmtime/bin/          
-          fi
+      - name: Setup `wasmtime` for tests
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: "18.0.2"
+      - name: Setup `wasm-tools` for tests
+        uses: bytecodealliance/actions/wasm-tools/setup@v1
+        with:
+          version: "1.201.0"
+      - name: Download command adapter for tests
+        run: curl -f -L --retry 5 -o ${{ runner.temp }}/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v18.0.2/wasi_snapshot_preview1.command.wasm
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -72,7 +67,7 @@ jobs:
         run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
       - name: Run the testsuite
-        run: NINJA_FLAGS=-v make check RUNTIME=~/.wasmtime/bin/wasmtime ADAPTER=~/.wasmtime/bin/wasi_snapshot_preview1.command.wasm WASM_TOOLS=~/.wasmtime/bin/wasm-tools
+        run: NINJA_FLAGS=-v make check RUNTIME=wasmtime ADAPTER=${{ runner.temp }}/wasi_snapshot_preview1.command.wasm WASM_TOOLS=wasm-tools
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
