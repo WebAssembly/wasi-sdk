@@ -1,7 +1,7 @@
 # Use a relatively old/stable distro here to maximize the supported platforms
-# and avoid depending on more recent version of, say, libc.
-# Here we choose Bionic 18.04.
-FROM ubuntu:bionic
+# and avoid depending on more recent version of, say, libc. Here we choose Jammy
+# 22.04.
+FROM ubuntu:jammy
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
