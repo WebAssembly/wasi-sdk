@@ -20,7 +20,7 @@ jobs:
           - ubuntu-latest
           - macos-latest
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/ccache
           # Bump the prefix number to evict all previous caches and
@@ -31,7 +31,7 @@ jobs:
           restore-keys: |
             0-cache-ubuntu-latest
         if: matrix.os == 'ubuntu-latest'
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/Library/Caches/ccache
           key: 0-cache-macos-latest-${{ github.run_id }}
@@ -48,7 +48,7 @@ jobs:
           version: "1.201.0"
       - name: Download command adapter for tests
         run: curl -f -L --retry 5 -o ${{ runner.temp }}/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v18.0.2/wasi_snapshot_preview1.command.wasm
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       # We can't use `--depth 1` here sadly because the GNU config
@@ -69,7 +69,7 @@ jobs:
       - name: Run the testsuite
         run: NINJA_FLAGS=-v make check RUNTIME=wasmtime ADAPTER=${{ runner.temp }}/wasi_snapshot_preview1.command.wasm WASM_TOOLS=wasm-tools
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-{0}', matrix.os) }}
@@ -89,7 +89,7 @@ jobs:
             sys: clang32
             env: clang-i686
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/AppData/Local/ccache
           key: 0-${{ format( 'cache-windows-latest-{0}', matrix.arch) }}-${{ github.run_id }}
@@ -107,7 +107,7 @@ jobs:
           msystem: ${{ matrix.sys }}
           update: true
           release: false
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - run: git submodule update --init --depth 32 --jobs 3
@@ -122,7 +122,7 @@ jobs:
           C:\wasi-sdk\bin\llvm-ar.exe --version
           C:\wasi-sdk\bin\wasm-ld.exe --version
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-windows-latest-{0}', matrix.arch) }}
@@ -132,14 +132,14 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.ccache
           key: 0-cache-ubuntu-bionic-${{ github.run_id }}
           restore-keys: |
             0-cache-ubuntu-bionic
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -168,7 +168,7 @@ jobs:
       - name: Run docker_build script
         run: ./docker_build.sh
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: dist-ubuntu-bionic
