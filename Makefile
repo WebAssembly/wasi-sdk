@@ -42,6 +42,8 @@ override LLVM_CMAKE_FLAGS += -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
 		    -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
 endif
 
+TARGETS = wasm32-wasi wasm32-wasip1 wasm32-wasip2 wasm32-wasip1-threads wasm32-wasi-threads
+
 # Only the major version is needed for Clang, see https://reviews.llvm.org/D125860.
 CLANG_VERSION=$(shell $(BASH) ./llvm_version_major.sh $(LLVM_PROJ_DIR))
 VERSION:=$(shell $(BASH) ./version.sh)
@@ -51,16 +53,29 @@ default: build
 	@echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
 check:
-	CC="clang --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot" \
-	CXX="clang++ --sysroot=$(BUILD_PREFIX)/share/wasi-sysroot -fno-exceptions" \
-	PATH="$(PATH_PREFIX)/bin:$$PATH" tests/run.sh "$(BUILD_PREFIX)" "$(RUNTIME)" "$(ADAPTER)" "$(WASM_TOOLS)"
+	TARGETS="$(TARGETS)" tests/run.sh "$(BUILD_PREFIX)" "$(RUNTIME)" "$(ADAPTER)" "$(WASM_TOOLS)"
 
 clean:
 	rm -rf build $(DESTDIR)
 
+# Default symlinks that clang creates to the `clang` executable
+CLANG_LINKS_TO_CREATE = clang++ clang-cl clang-cpp
+
+# Add target-prefixed versions of `clang` and `clang++` so they can be used
+# without `--target` as it's auto-inferred from the executable name by clang.
+CLANG_LINKS_TO_CREATE += $(foreach target,$(TARGETS),$(target)-clang)
+CLANG_LINKS_TO_CREATE += $(foreach target,$(TARGETS),$(target)-clang++)
+
+# Small helper to create a `join-with` function that can join elements of a
+# list with a defined separator.
+noop =
+space = $(noop) $(noop)
+join-with = $(subst $(space),$1,$(strip $2))
+
 build/llvm.BUILT:
 	mkdir -p build/llvm
 	cd build/llvm && cmake -G Ninja \
+		-DCLANG_LINKS_TO_CREATE="$(call join-with,;,$(CLANG_LINKS_TO_CREATE))" \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DLLVM_ENABLE_TERMINFO=OFF \
 		-DLLVM_ENABLE_ZLIB=OFF \
