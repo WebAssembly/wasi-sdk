@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - debug-a-bit
   pull_request:
   workflow_dispatch:
 
@@ -22,6 +23,7 @@ jobs:
     steps:
       - uses: actions/cache@v4
         with:
+          save-always: true
           path: ~/.cache/ccache
           # Bump the prefix number to evict all previous caches and
           # enforce a clean build, in the unlikely case that some
@@ -33,6 +35,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       - uses: actions/cache@v4
         with:
+          save-always: true
           path: ~/Library/Caches/ccache
           key: 0-cache-macos-latest-${{ github.run_id }}
           restore-keys: |
@@ -91,6 +94,7 @@ jobs:
     steps:
       - uses: actions/cache@v4
         with:
+          save-always: true
           path: ~/AppData/Local/ccache
           key: 0-${{ format( 'cache-windows-latest-{0}', matrix.arch) }}-${{ github.run_id }}
           restore-keys: |
@@ -114,7 +118,7 @@ jobs:
       - name: Build
         shell: msys2 {0}
         run: |
-          make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
+          NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
           make check
       - name: Does it work sans msys2?
         run: |
@@ -134,6 +138,7 @@ jobs:
     steps:
       - uses: actions/cache@v4
         with:
+          save-always: true
           path: ~/.ccache
           key: 0-cache-ubuntu-bionic-${{ github.run_id }}
           restore-keys: |
