@@ -125,6 +125,21 @@ jobs:
           C:\wasi-sdk\bin\clang.exe --version
           C:\wasi-sdk\bin\llvm-ar.exe --version
           C:\wasi-sdk\bin\wasm-ld.exe --version
+      - if: always()
+        shell: msys2 {0}
+        run: find build/compiler-rt
+      - if: always()
+        shell: msys2 {0}
+        run: find C:/wasi-sdk
+      - if: always()
+        shell: msys2 {0}
+        run: ls -l C:/wasi-sdk
+      - if: always()
+        shell: msys2 {0}
+        run: find /c/wasi-sdk
+      - if: always()
+        shell: msys2 {0}
+        run: ls -l /c/wasi-sdk
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
