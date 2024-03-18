@@ -5,9 +5,10 @@
 #
 # Usage: version [wasi-sdk|llvm|llvm-major|dump] [--llvm-dir=<non-project dir>]
 
-import sys
 import argparse
+import os
 import subprocess
+import sys
 
 # The number of characters to use for the abbreviated Git revision.
 GIT_REF_LEN = 12
@@ -75,7 +76,11 @@ def parse_cmake_set(line):
 
 
 def llvm_cmake_version(llvm_dir):
-    with open(f'{llvm_dir}/llvm/CMakeLists.txt') as file:
+    path = f'{llvm_dir}/cmake/Modules/LLVMVersion.cmake'
+    if not os.path.exists(path):
+        # Handle older LLVM versions; see #399.
+        path = f'{llvm_dir}/llvm/CMakeLists.txt'
+    with open(path) as file:
         for line in file:
             line = line.strip()
             if line.startswith('set(LLVM_VERSION_MAJOR'):
