@@ -256,7 +256,11 @@ build/config.BUILT:
 	cp cmake/Platform/WASI.cmake $(BUILD_PREFIX)/share/cmake/Platform
 	touch build/config.BUILT
 
-build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxx.BUILT build/config.BUILT
+build/version.BUILT:
+	$(VERSION_SCRIPT) dump > $(BUILD_PREFIX)/VERSION
+	touch build/version.BUILT
+
+build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxx.BUILT build/config.BUILT build/version.BUILT
 
 strip: build/llvm.BUILT
 	./strip_symbols.sh $(BUILD_PREFIX)/bin
