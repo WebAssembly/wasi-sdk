@@ -18,7 +18,7 @@ fi
 if [ -n "$2" ]; then
     VERSION="$2"
 else
-    VERSION=`./version.sh`
+    VERSION=`./version.py`
 fi
 
 if [ -n "$3" ]; then
