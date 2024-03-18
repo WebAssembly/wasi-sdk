@@ -3,7 +3,7 @@
 To publish a new version of `wasi-sdk` as a GitHub release:
 
 1. Tag a commit with an annotated tag. Note that this must be an annotated tag,
-   not a lightweight tag, so that `version.sh` can use it for calculating the
+   not a lightweight tag, so that `version.py` can use it for calculating the
    package version (use `git show wasi-sdk-...` to show other tag messages).
    Note that you may need to clear the repository cache to avoid problems with
    cached artifacts [^cache].
