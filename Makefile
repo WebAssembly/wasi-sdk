@@ -3,6 +3,7 @@
 
 ROOT_DIR=${CURDIR}
 LLVM_PROJ_DIR?=$(ROOT_DIR)/src/llvm-project
+VERSION_SCRIPT=python3 ./version.py
 
 # Windows needs munging
 ifeq ($(OS),Windows_NT)
@@ -45,8 +46,8 @@ endif
 TARGETS = wasm32-wasi wasm32-wasip1 wasm32-wasip2 wasm32-wasip1-threads wasm32-wasi-threads
 
 # Only the major version is needed for Clang, see https://reviews.llvm.org/D125860.
-CLANG_VERSION=$(shell $(BASH) ./llvm_version_major.sh $(LLVM_PROJ_DIR))
-VERSION:=$(shell $(BASH) ./version.sh)
+CLANG_VERSION=$(shell $(VERSION_SCRIPT) llvm-major --llvm-dir=$(LLVM_PROJ_DIR))
+VERSION:=$(shell $(VERSION_SCRIPT))
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
 default: build
@@ -255,7 +256,11 @@ build/config.BUILT:
 	cp cmake/Platform/WASI.cmake $(BUILD_PREFIX)/share/cmake/Platform
 	touch build/config.BUILT
 
-build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxx.BUILT build/config.BUILT
+build/version.BUILT:
+	$(VERSION_SCRIPT) dump > $(BUILD_PREFIX)/VERSION
+	touch build/version.BUILT
+
+build: build/llvm.BUILT build/wasi-libc.BUILT build/compiler-rt.BUILT build/libcxx.BUILT build/config.BUILT build/version.BUILT
 
 strip: build/llvm.BUILT
 	./strip_symbols.sh $(BUILD_PREFIX)/bin
