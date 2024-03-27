@@ -1,0 +1,6 @@
+raising SIGABRT...
+Program received fatal signal: Aborted
+Error: failed to run main module `sigabrt.c.---.wasm`
+
+Caused by:
+    0: failed to invoke `run` function
