@@ -42,6 +42,9 @@ jobs:
         uses: bytecodealliance/actions/wasmtime/setup@v1
         with:
           version: "18.0.2"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       # We can't use `--depth 1` here sadly because the GNU config
       # submodule is not pinned to a particular tag/branch. Please
       # bump depth (or even better, the submodule), in case of "error:
