@@ -42,15 +42,6 @@ jobs:
         uses: bytecodealliance/actions/wasmtime/setup@v1
         with:
           version: "18.0.2"
-      - name: Setup `wasm-tools` for tests
-        uses: bytecodealliance/actions/wasm-tools/setup@v1
-        with:
-          version: "1.201.0"
-      - name: Download command adapter for tests
-        run: curl -f -L --retry 5 -o ${{ runner.temp }}/wasi_snapshot_preview1.command.wasm https://github.com/bytecodealliance/wasmtime/releases/download/v18.0.2/wasi_snapshot_preview1.command.wasm
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       # We can't use `--depth 1` here sadly because the GNU config
       # submodule is not pinned to a particular tag/branch. Please
       # bump depth (or even better, the submodule), in case of "error:
@@ -67,7 +58,7 @@ jobs:
         run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
       - name: Run the testsuite
-        run: NINJA_FLAGS=-v make check RUNTIME=wasmtime ADAPTER=${{ runner.temp }}/wasi_snapshot_preview1.command.wasm WASM_TOOLS=wasm-tools
+        run: NINJA_FLAGS=-v make check RUNTIME=wasmtime
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

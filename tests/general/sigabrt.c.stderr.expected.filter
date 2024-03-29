@@ -3,5 +3,6 @@ set -euo pipefail
 
 cat \
     | sed -e 's/main module `sigabrt\.c\.[^`]*\.wasm`/main module `sigabrt.c.---.wasm`/' \
+    | sed -e 's/failed to invoke.*/failed to invoke/' \
     | sed -e 's/source location: @[[:xdigit:]]*$/source location: @----/' \
     | head -n 6

@@ -2,6 +2,6 @@ Assertion failed: false (assert-fail.c: main: 5)
 Error: failed to run main module `assert-fail.c.---.wasm`
 
 Caused by:
-    0: failed to invoke command default
+    0: failed to invoke
     1: error while executing at wasm backtrace:
     2: wasm trap: wasm `unreachable` instruction executed
