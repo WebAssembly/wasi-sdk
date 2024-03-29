@@ -101,6 +101,7 @@ jobs:
           msystem: ${{ matrix.sys }}
           update: true
           release: false
+          path-type: inherit
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
