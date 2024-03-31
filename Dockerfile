@@ -29,7 +29,9 @@ RUN curl -sSLO https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-
 ENV PATH /opt/cmake/bin:$PATH
 
 ENV RUSTUP_HOME=/rust/rustup CARGO_HOME=/rust/cargo PATH=$PATH:/rust/cargo/bin
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile=minimal
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+  sh -s -- -y --profile=minimal && \
+  chmod -R a+w /rust
 
 RUN groupadd -g ${GID} builder && \
   useradd --create-home --uid ${UID} --gid ${GID} builder
