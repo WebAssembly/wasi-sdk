@@ -17,7 +17,7 @@ RUN mv /wasi-sdk-* /wasi-sdk
 
 FROM ubuntu:22.04
 
-ENV LLVM_VERSION 17
+ENV LLVM_VERSION 18
 
 # Install build toolchain including clang, ld, make, autotools, ninja, and cmake
 RUN apt-get update && \
