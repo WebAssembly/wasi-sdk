@@ -44,7 +44,7 @@ if [ "$runwasi" == "" ]; then
     exit 0
 fi
 
-if [ "$target" == "wasm32-wasi-preview2" -a -n "$adapter" -a -n "$wasm_tools" ]; then
+if [ "$target" == "wasm32-wasip2" -a -n "$adapter" -a -n "$wasm_tools" ]; then
     "$wasm_tools" component new --adapt "$adapter" "$wasm" -o "$wasm"
     run_args="--wasm component-model"
 fi
