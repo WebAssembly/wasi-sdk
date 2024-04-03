@@ -122,6 +122,9 @@ build/llvm.BUILT:
 		llvm-config
 	touch build/llvm.BUILT
 
+# Build the `wasm-component-ld` linker from source via `cargo install`. This is
+# used for the `wasm32-wasip2` target natively by Clang. Note that `--root`
+# passed to `cargo install` will place it in the output directory automatically.
 build/wasm-component-ld.BUILT: build/llvm.BUILT
 	cargo install wasm-component-ld@0.1.5 --root $(BUILD_PREFIX)
 	touch build/wasm-component-ld.BUILT
