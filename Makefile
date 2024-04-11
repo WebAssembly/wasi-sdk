@@ -54,7 +54,7 @@ default: build
 	@echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
 check:
-	TARGETS="$(TARGETS)" tests/run.sh "$(BUILD_PREFIX)" "$(RUNTIME)" "$(ADAPTER)" "$(WASM_TOOLS)"
+	TARGETS="$(TARGETS)" tests/run.sh "$(BUILD_PREFIX)" "$(RUNTIME)"
 
 clean:
 	rm -rf build $(DESTDIR)
@@ -122,6 +122,14 @@ build/llvm.BUILT:
 		llvm-config
 	touch build/llvm.BUILT
 
+# Build the `wasm-component-ld` linker from source via `cargo install`. This is
+# used for the `wasm32-wasip2` target natively by Clang. Note that `--root`
+# passed to `cargo install` will place it in the output directory automatically.
+build/wasm-component-ld.BUILT: build/llvm.BUILT
+	cargo install wasm-component-ld@0.1.5 --root $(BUILD_PREFIX)
+	touch build/wasm-component-ld.BUILT
+
+
 # Flags for running `make` in wasi-libc
 # $(1): the target that's being built
 WASI_LIBC_MAKEFLAGS = \
@@ -132,7 +140,7 @@ WASI_LIBC_MAKEFLAGS = \
 	SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
 	TARGET_TRIPLE=$(1)
 
-build/wasi-libc.BUILT: build/compiler-rt.BUILT
+build/wasi-libc.BUILT: build/compiler-rt.BUILT build/wasm-component-ld.BUILT
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasi) default libc_so
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip1) default libc_so
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip2) WASI_SNAPSHOT=p2 default libc_so

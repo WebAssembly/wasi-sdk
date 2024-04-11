@@ -8,18 +8,15 @@ set -ueo pipefail
 # script, so don't do anything fancy.
 target="$1"
 runwasi="$2"
-adapter="$3"
-wasm_tools="$4"
-compiler="$5"
-options="$6"
-input="$7"
+compiler="$3"
+options="$4"
+input="$5"
 
 # Compile names for generated files.
 wasm="$input.$options.wasm"
 stdout_observed="$input.$options.stdout.observed"
 stderr_observed="$input.$options.stderr.observed"
 exit_status_observed="$input.$options.exit_status.observed"
-run_args=""
 
 # Optionally load compiler options from a file.
 if [ -e "$input.options" ]; then
@@ -42,11 +39,6 @@ $compiler $pthread_options $options $file_options "$input" -o "$wasm"
 # If we don't have a runwasi command, we're just doing compile-only testing.
 if [ "$runwasi" == "" ]; then
     exit 0
-fi
-
-if [ "$target" == "wasm32-wasip2" -a -n "$adapter" -a -n "$wasm_tools" ]; then
-    "$wasm_tools" component new --adapt "$adapter" "$wasm" -o "$wasm"
-    run_args="--wasm component-model"
 fi
 
 # Determine the input file to write to stdin.
@@ -74,7 +66,7 @@ fi
 
 # Run the test, capturing stdout, stderr, and the exit status.
 exit_status=0
-"$runwasi" $run_args $env $dir "$wasm" $dirarg \
+"$runwasi" $env $dir "$wasm" $dirarg \
     < "$stdin" \
     > "$stdout_observed" \
     2> "$stderr_observed" \

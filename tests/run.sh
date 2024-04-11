@@ -17,17 +17,8 @@ wasi_sdk="$1"
 # Determine the wasm runtime to use, if one is provided.
 if [ $# -gt 1 ]; then
     runwasi="$2"
-    if [ $# -gt 3 ]; then
-        adapter="$3"
-        wasm_tools="$4"
-    else
-        adapter=""
-        wasm_tools=""
-    fi
 else
     runwasi=""
-    adapter=""
-    wasm_tools=""
 fi
 
 testdir=$(dirname $0)
@@ -45,13 +36,13 @@ for target in $TARGETS; do
         echo "===== Testing compile-only with $options ====="
         for file in *.c; do
             echo "Testing compile-only $file..."
-            ../testcase.sh "$target" "" "" "" "$wasi_sdk/bin/clang" "$options --target=$target" "$file"
-            ../testcase.sh "$target" "" "" "" "$wasi_sdk/bin/$target-clang" "$options" "$file"
+            ../testcase.sh "$target" "" "$wasi_sdk/bin/clang" "$options --target=$target" "$file"
+            ../testcase.sh "$target" "" "$wasi_sdk/bin/$target-clang" "$options" "$file"
         done
         for file in *.cc; do
             echo "Testing compile-only $file..."
-            ../testcase.sh "$target" "" "" "" "$wasi_sdk/bin/clang++" "$options --target=$target -fno-exceptions" "$file"
-            ../testcase.sh "$target" "" "" "" "$wasi_sdk/bin/$target-clang++" "$options -fno-exceptions" "$file"
+            ../testcase.sh "$target" "" "$wasi_sdk/bin/clang++" "$options --target=$target -fno-exceptions" "$file"
+            ../testcase.sh "$target" "" "$wasi_sdk/bin/$target-clang++" "$options -fno-exceptions" "$file"
         done
     done
     cd - >/dev/null
@@ -61,13 +52,13 @@ for target in $TARGETS; do
         echo "===== Testing with $options ====="
         for file in *.c; do
             echo "Testing $file..."
-            ../testcase.sh "$target" "$runwasi" "$adapter" "$wasm_tools" "$wasi_sdk/bin/clang" "$options --target=$target" "$file"
-            ../testcase.sh "$target" "$runwasi" "$adapter" "$wasm_tools" "$wasi_sdk/bin/$target-clang" "$options" "$file"
+            ../testcase.sh "$target" "$runwasi" "$wasi_sdk/bin/clang" "$options --target=$target" "$file"
+            ../testcase.sh "$target" "$runwasi" "$wasi_sdk/bin/$target-clang" "$options" "$file"
         done
         for file in *.cc; do
             echo "Testing $file..."
-            ../testcase.sh "$target" "$runwasi" "$adapter" "$wasm_tools" "$wasi_sdk/bin/clang++" "$options --target=$target -fno-exceptions" "$file"
-            ../testcase.sh "$target" "$runwasi" "$adapter" "$wasm_tools" "$wasi_sdk/bin/$target-clang++" "$options -fno-exceptions" "$file"
+            ../testcase.sh "$target" "$runwasi" "$wasi_sdk/bin/clang++" "$options --target=$target -fno-exceptions" "$file"
+            ../testcase.sh "$target" "$runwasi" "$wasi_sdk/bin/$target-clang++" "$options -fno-exceptions" "$file"
         done
     done
     cd - >/dev/null
