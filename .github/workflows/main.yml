@@ -18,7 +18,8 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
+          - macos-latest # amd64
+          - macos-14     # arm64
     steps:
       - uses: actions/cache@v4
         with:
@@ -34,10 +35,10 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/Library/Caches/ccache
-          key: 0-cache-macos-latest-${{ github.run_id }}
+          key: 0-cache-${{ matrix.os }}-${{ github.run_id }}
           restore-keys: |
-            0-cache-macos-latest
-        if: matrix.os == 'macos-latest'
+            0-cache-${{ matrix.os }}
+        if: startsWith(matrix.os, 'macos')
       - name: Setup `wasmtime` for tests
         uses: bytecodealliance/actions/wasmtime/setup@v1
         with:
@@ -53,7 +54,7 @@ jobs:
       - run: git submodule update --init --depth 32 --jobs 3
       - name: Install ccache, ninja (macOS)
         run: brew install ccache ninja
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
       - name: Install ccache, ninja (Linux)
         run: sudo apt install ccache ninja-build
         if: matrix.os == 'ubuntu-latest'
