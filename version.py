@@ -39,7 +39,7 @@ def parse_git_version(version):
         next = parts.pop(0)
         if next == 'm':
             dirty = True
-        else:
+        elif minor != '0':
             git = next[1:]
 
         # Check: dirty.
@@ -53,10 +53,10 @@ def parse_git_version(version):
 
 # Some inline tests to check Git version parsing:
 assert parse_git_version(
-    'wasi-sdk-21-0-g317548590b40+m') == ('21', '0', '317548590b40', True)
+    'wasi-sdk-21-1-g317548590b40+m') == ('21', '1', '317548590b40', True)
 assert parse_git_version('wasi-sdk-21-2+m') == ('21', '2', None, True)
 assert parse_git_version(
-    'wasi-sdk-23-0-g317548590b40') == ('23', '0', '317548590b40', False)
+    'wasi-sdk-23-0-g317548590b40') == ('23', '0', None, False)
 
 
 def git_version():
