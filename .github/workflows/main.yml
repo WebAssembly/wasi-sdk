@@ -115,6 +115,7 @@ jobs:
         run: |
           make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
           make check
+      - run: git status
       - name: Does it work sans msys2?
         run: |
           C:\wasi-sdk\bin\clang.exe --version
