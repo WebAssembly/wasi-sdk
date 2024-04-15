@@ -110,12 +110,15 @@ jobs:
       - run: git fetch --tags --force
         name: Force-fetch tags to work around actions/checkout#290
       - run: git submodule update --init --depth 32 --jobs 3
+      - run: git status
+      - run: python3 ./version.py
       - name: Build
         shell: msys2 {0}
         run: |
           make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
           make check
       - run: git status
+      - run: python3 ./version.py
       - name: Does it work sans msys2?
         run: |
           C:\wasi-sdk\bin\clang.exe --version
