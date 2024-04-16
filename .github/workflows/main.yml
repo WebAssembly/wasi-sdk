@@ -126,6 +126,8 @@ jobs:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-windows-latest-{0}', matrix.arch) }}
           path: dist
+      - name: What does Git see as modified?
+        run: git diff --stat
 
   dockerbuild:
     name: Docker Build
