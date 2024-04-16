@@ -128,11 +128,21 @@ jobs:
           # Upload the dist folder. Give it a name according to the OS it was built for.
           name: ${{ format( 'dist-windows-latest-{0}', matrix.arch) }}
           path: dist
-      - name: What does Git see as modified?
-        run: git diff --stat
       - name: What files make up the artifacts?
         shell: bash
         run: find dist
+      - name: Check bash?
+        shell: bash
+        run: |
+          git status
+          git diff --stat
+          python3 version.py
+      - name: Check powershell?
+        shell: pwsh
+        run: |
+          git status
+          git diff --stat
+          python3 version.py
 
   dockerbuild:
     name: Docker Build
