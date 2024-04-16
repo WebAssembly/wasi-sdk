@@ -110,6 +110,8 @@ jobs:
       - run: git fetch --tags --force
         name: Force-fetch tags to work around actions/checkout#290
       - run: git submodule update --init --depth 32 --jobs 3
+      - name: Refresh the Git index
+        run: git update-index --refresh
       - name: Build
         shell: msys2 {0}
         run: |
