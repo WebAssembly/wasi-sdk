@@ -131,6 +131,7 @@ jobs:
       - name: What does Git see as modified?
         run: git diff --stat
       - name: What files make up the artifacts?
+        shell: bash
         run: find dist
 
   dockerbuild:
