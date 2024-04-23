@@ -43,6 +43,7 @@ The Wasm-sdk's build process needs some packages :
 * `cmake`
 * `clang`
 * `ninja`
+* `python3`
 
 Please refer to your OS documentation to install those packages.
 
