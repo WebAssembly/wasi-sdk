@@ -43,6 +43,13 @@ for A in $ARTIFACTS; do
     if [ "${NAME}" = "dist-ubuntu-latest" ]; then
         continue
     fi
+    # Exclude the 32-bit Windows artifact in favor of the 64-bit one. This helps
+    # ensure the identically-named 32-bit tarfile doesn't overwrite the 64-bit
+    # one below. See:
+    # - https://github.com/WebAssembly/wasi-sdk/issues/326
+    if [ "${NAME}" = "dist-windows-latest-x86" ]; then
+        continue
+    fi
     >&2 echo "===== Downloading: ${TO} ====="
 
     # Download the artifacts to the temporary directory.
