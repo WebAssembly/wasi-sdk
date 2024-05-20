@@ -50,6 +50,11 @@ CLANG_VERSION=$(shell $(VERSION_SCRIPT) llvm-major --llvm-dir=$(LLVM_PROJ_DIR))
 VERSION:=$(shell $(VERSION_SCRIPT))
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)
 
+# Generate debuginfo by default for wasi-sdk since it's easily strippable and
+# otherwise quite useful for debugging.
+WASI_SDK_CFLAGS := $(DEBUG_PREFIX_MAP) -g
+WASI_SDK_CXXFLAGS := $(WASI_SDK_CFLAGS)
+
 default: build
 	@echo "Use -fdebug-prefix-map=$(ROOT_DIR)=wasisdk://v$(VERSION)"
 
@@ -166,7 +171,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
 		-DWASI_SDK_PREFIX=$(BUILD_PREFIX) \
-		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_C_FLAGS="$(WASI_SDK_CFLAGS)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=wasi \
 		-DCMAKE_INSTALL_PREFIX=$(PREFIX)/lib/clang/$(CLANG_VERSION)/ \
@@ -225,8 +230,8 @@ LIBCXX_CMAKE_FLAGS = \
     -DUNIX:BOOL=ON \
     --debug-trycompile \
     -DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-    -DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CFLAGS) $(4) --target=$(3)" \
-    -DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) $(EXTRA_CXXFLAGS) $(4) --target=$(3)" \
+    -DCMAKE_C_FLAGS="$(WASI_SDK_CFLAGS) $(EXTRA_CFLAGS) $(4) --target=$(3)" \
+    -DCMAKE_CXX_FLAGS="$(WASI_SDK_CXXFLAGS) $(EXTRA_CXXFLAGS) $(4) --target=$(3)" \
     -DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/$(3) \
     -DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/$(3) \
     -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
