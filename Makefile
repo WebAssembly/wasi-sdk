@@ -143,7 +143,7 @@ WASI_LIBC_MAKEFLAGS = \
 	AR=$(BUILD_PREFIX)/bin/llvm-ar \
 	NM=$(BUILD_PREFIX)/bin/llvm-nm \
 	SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
-	EXTRA_CFLAGS="$(WASI_SDK_CFLAGS)" \
+	EXTRA_CFLAGS="$(WASI_SDK_CFLAGS) -O2 -DNDEBUG" \
 	TARGET_TRIPLE=$(1)
 
 build/wasi-libc.BUILT: build/compiler-rt.BUILT build/wasm-component-ld.BUILT
