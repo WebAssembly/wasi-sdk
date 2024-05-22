@@ -43,10 +43,20 @@ int main(int argc, char *argv[]) {
 
     assert(file_statbuf.st_dev == link_statbuf.st_dev);
 
-    // Clear out the access time fields, and they should be the same.
-    memset(&file_statbuf.st_atim, 0, sizeof(struct timespec));
-    memset(&link_statbuf.st_atim, 0, sizeof(struct timespec));
-    assert(memcmp(&file_statbuf, &link_statbuf, sizeof(struct stat)) == 0);
+    assert(file_statbuf.st_dev == link_statbuf.st_dev);
+    assert(file_statbuf.st_ino == link_statbuf.st_ino);
+    assert(file_statbuf.st_mode == link_statbuf.st_mode);
+    assert(file_statbuf.st_uid == link_statbuf.st_uid);
+    assert(file_statbuf.st_gid == link_statbuf.st_gid);
+    assert(file_statbuf.st_rdev == link_statbuf.st_rdev);
+    assert(file_statbuf.st_size == link_statbuf.st_size);
+    assert(file_statbuf.st_blksize == link_statbuf.st_blksize);
+    assert(file_statbuf.st_blocks == link_statbuf.st_blocks);
+    // NB: `atim` is explicitly not compared here
+    assert(file_statbuf.st_mtim.tv_sec == link_statbuf.st_mtim.tv_sec);
+    assert(file_statbuf.st_mtim.tv_nsec == link_statbuf.st_mtim.tv_nsec);
+    assert(file_statbuf.st_ctim.tv_sec == link_statbuf.st_ctim.tv_sec);
+    assert(file_statbuf.st_ctim.tv_nsec == link_statbuf.st_ctim.tv_nsec);
 
     // Test lstat.
 
