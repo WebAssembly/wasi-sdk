@@ -1,6 +1,7 @@
 Error: failed to run main module `abort.c.---.wasm`
 
 Caused by:
-    0: failed to invoke command default
+    0: failed to invoke ---
     1: error while executing at wasm backtrace:
+       note: using the `WASMTIME_BACKTRACE_DETAILS=1` environment variable may show more debugging information
     2: wasm trap: wasm `unreachable` instruction executed
