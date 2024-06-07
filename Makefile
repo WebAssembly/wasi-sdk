@@ -148,10 +148,15 @@ WASI_LIBC_MAKEFLAGS = \
 
 build/wasi-libc.BUILT: build/compiler-rt.BUILT build/wasm-component-ld.BUILT
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasi) default libc_so
+	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasi) LTO=full default
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip1) default libc_so
+	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip1) LTO=full default
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip2) WASI_SNAPSHOT=p2 default libc_so
+	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip2) WASI_SNAPSHOT=p2 LTO=full default
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasi-threads) THREAD_MODEL=posix
+	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasi-threads) THREAD_MODEL=posix LTO=full
 	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip1-threads) THREAD_MODEL=posix
+	$(MAKE) $(call WASI_LIBC_MAKEFLAGS,wasm32-wasip1-threads) THREAD_MODEL=posix LTO=full
 	touch build/wasi-libc.BUILT
 
 build/compiler-rt.BUILT: build/llvm.BUILT
