@@ -195,6 +195,7 @@ build/compiler-rt.BUILT: build/llvm.BUILT
 # $(2): shared libraries ON or OFF
 # $(3): the name of the target being built for
 # $(4): extra compiler flags to pass
+# $(5): extra libdir suffix
 LIBCXX_CMAKE_FLAGS = \
     -DCMAKE_C_COMPILER_WORKS=ON \
     -DCMAKE_CXX_COMPILER_WORKS=ON \
@@ -238,8 +239,8 @@ LIBCXX_CMAKE_FLAGS = \
     -DCMAKE_SYSROOT=$(BUILD_PREFIX)/share/wasi-sysroot \
     -DCMAKE_C_FLAGS="$(WASI_SDK_CFLAGS) $(EXTRA_CFLAGS) $(4) --target=$(3)" \
     -DCMAKE_CXX_FLAGS="$(WASI_SDK_CXXFLAGS) $(EXTRA_CXXFLAGS) $(4) --target=$(3)" \
-    -DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/$(3) \
-    -DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/$(3) \
+    -DLIBCXX_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/$(3)$(5) \
+    -DLIBCXXABI_LIBDIR_SUFFIX=$(ESCAPE_SLASH)/$(3)$(5) \
     -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
     $(LLVM_PROJ_DIR)/runtimes
 
@@ -252,6 +253,12 @@ define BUILD_LIBCXX
 	cd build/libcxx-$(3) && cmake -G Ninja $(call LIBCXX_CMAKE_FLAGS,$(1),$(2),$(3),$(4))
 	ninja $(NINJA_FLAGS) -C build/libcxx-$(3)
 	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx-$(3) install
+
+	mkdir -p build/libcxx-$(3)-lto
+	cd build/libcxx-$(3)-lto && cmake -G Ninja $(call LIBCXX_CMAKE_FLAGS,$(1),OFF,$(3),$(4) -flto,/llvm-lto/$(shell $(BUILD_PREFIX)/bin/clang -dumpversion))
+	ninja $(NINJA_FLAGS) -C build/libcxx-$(3)-lto
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/libcxx-$(3)-lto install
+
 	rm -rf $(BUILD_PREFIX)/share/wasi-sysroot/include/$(3)/c++
 	mv $(BUILD_PREFIX)/share/wasi-sysroot/include/c++ $(BUILD_PREFIX)/share/wasi-sysroot/include/$(3)/
 endef
