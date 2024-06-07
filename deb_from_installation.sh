@@ -27,12 +27,16 @@ else
     INSTALL_DIR=/opt/wasi-sdk
 fi
 
+if [ -n "$4" ]; then
+    ARCH="$4"
+else
+    ARCH=$(dpkg --print-architecture)
+fi
+
 if [ ! -d $INSTALL_DIR ] ; then
     echo "Directory $INSTALL_DIR doesn't exist. Nothing to copy from."
     exit 1
 fi
-
-ARCH=$(dpkg --print-architecture)
 
 rm -rf build/pkg
 mkdir -p build/pkg/opt

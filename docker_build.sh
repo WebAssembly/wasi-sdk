@@ -8,6 +8,7 @@ docker build \
 
 echo "Building the package in docker image"
 mkdir -p ~/.ccache
+arch=$(dpkg --print-architecture)
 docker run --rm \
     --user $(id -u):$(id -g) \
     -v "$PWD":/workspace:Z \
@@ -15,4 +16,4 @@ docker run --rm \
     -e NINJA_FLAGS=-v \
     --tmpfs /tmp:exec \
     wasi-sdk-builder:latest \
-    make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
+    make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON DEB_ARCH=$arch TAR_MACHINE=linux-$arch

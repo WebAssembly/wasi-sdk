@@ -60,7 +60,7 @@ jobs:
         run: sudo apt install ccache ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
+        run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON DEB_ARCH=amd64 TAR_MACHINE=linux-amd64
         shell: bash
       - name: Run the testsuite
         run: NINJA_FLAGS=-v make check RUNTIME=wasmtime
@@ -168,6 +168,22 @@ jobs:
 
       - name: Run docker_build script
         run: ./docker_build.sh
+
+      - name: Cross-compile for ARM64
+        # Hacktastic cross-compilation step: build and install an ARM64 LLVM,
+        # reusing everything else we built using the native toolchain.  Once
+        # GitHub provides ARM64 runners to open source projects (planned for
+        # second half of 2024) we'll be able to build natively and avoid this
+        # step.
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v "$PWD":/workspace:Z \
+            -v ~/.ccache:/home/builder/.ccache:Z \
+            --tmpfs /tmp:exec \
+            wasi-sdk-builder:latest \
+            bash cross_build_arm64.sh
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

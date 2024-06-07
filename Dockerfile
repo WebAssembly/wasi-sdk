@@ -18,6 +18,8 @@ RUN apt-get update \
   python3 \
   git \
   ninja-build \
+  gcc-aarch64-linux-gnu \
+  g++-aarch64-linux-gnu \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -31,7 +33,8 @@ ENV PATH /opt/cmake/bin:$PATH
 ENV RUSTUP_HOME=/rust/rustup CARGO_HOME=/rust/cargo PATH=$PATH:/rust/cargo/bin
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
   sh -s -- -y --profile=minimal && \
-  chmod -R a+w /rust
+  chmod -R a+w /rust && \
+  rustup target add aarch64-unknown-linux-gnu
 
 RUN groupadd -g ${GID} builder && \
   useradd --create-home --uid ${UID} --gid ${GID} builder

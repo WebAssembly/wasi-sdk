@@ -283,8 +283,8 @@ package: build/package.BUILT
 
 build/package.BUILT: build strip
 	mkdir -p dist
-	./deb_from_installation.sh $(shell pwd)/dist "$(VERSION)" "$(BUILD_PREFIX)"
-	./tar_from_installation.sh "$(shell pwd)/dist" "$(VERSION)" "$(BUILD_PREFIX)"
+	./deb_from_installation.sh $(shell pwd)/dist "$(VERSION)" "$(BUILD_PREFIX)" "$(DEB_ARCH)"
+	./tar_from_installation.sh "$(shell pwd)/dist" "$(VERSION)" "$(BUILD_PREFIX)" "$(TAR_MACHINE)"
 	touch build/package.BUILT
 
 .PHONY: default clean build strip package check
