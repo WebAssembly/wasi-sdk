@@ -22,13 +22,14 @@ fi
 if [ -n "$4" ]; then
     MACHINE="$4"
 else
-    case "$(uname -s)" in
-        Linux*)     MACHINE=linux;;
-        Darwin*)    MACHINE=macos;;
-        CYGWIN*)    MACHINE=cygwin;;
-        MINGW*)     MACHINE=mingw;;
-        MSYS*)      MACHINE=msys;; #MSYS_NT-10.0-19043
-        *)          MACHINE="UNKNOWN"
+    case "$(uname -s):$(uname -m)" in
+        Linux*:aarch64) MACHINE=linux-arm64;;
+        Linux*:x86_64)  MACHINE=linux-amd64;;
+        Darwin*)        MACHINE=macos;;
+        CYGWIN*)        MACHINE=cygwin;;
+        MINGW*)         MACHINE=mingw;;
+        MSYS*)          MACHINE=msys;; #MSYS_NT-10.0-19043
+        *)              MACHINE="UNKNOWN"
     esac    
 fi
 

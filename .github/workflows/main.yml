@@ -60,7 +60,7 @@ jobs:
         run: sudo apt install ccache ninja-build
         if: matrix.os == 'ubuntu-latest'
       - name: Build
-        run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON DEB_ARCH=amd64 TAR_MACHINE=linux-amd64
+        run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
         shell: bash
       - name: Run the testsuite
         run: NINJA_FLAGS=-v make check RUNTIME=wasmtime
