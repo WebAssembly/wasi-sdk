@@ -1,5 +1,8 @@
 # Release Process
 
+> **Note**: These instructions are out-of-date given the latest refactoring of
+> the build system and should get updated before the next release.
+
 To publish a new version of `wasi-sdk` as a GitHub release:
 
 1. Tag a commit with an annotated tag. Note that this must be an annotated tag,

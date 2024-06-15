@@ -1,0 +1,4 @@
+FROM wasi-sdk-builder-base
+
+ENV WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS \
+  -DWASI_SDK_ARTIFACT=x86_64-linux

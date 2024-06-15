@@ -1,1 +1,0 @@
--D_WASI_EMULATED_PROCESS_CLOCKS -lwasi-emulated-process-clocks
