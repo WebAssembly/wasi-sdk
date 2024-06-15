@@ -1,0 +1,32 @@
+# Use a relatively old/stable distro here to maximize the supported platforms
+# and avoid depending on more recent version of, say, libc.
+# Here we choose Bionic 18.04.
+
+FROM ubuntu:18.04
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  ccache \
+  curl \
+  ca-certificates \
+  build-essential \
+  clang \
+  python3 \
+  git \
+  unzip \
+  xz-utils
+
+RUN curl -sSLO https://github.com/Kitware/CMake/releases/download/v3.29.5/cmake-3.29.5-linux-x86_64.tar.gz \
+  && tar xf cmake-3.29.5-linux-x86_64.tar.gz \
+  && rm cmake-3.29.5-linux-x86_64.tar.gz \
+  && mkdir -p /opt \
+  && mv cmake-3.29.5-linux-x86_64 /opt/cmake
+
+ENV PATH /opt/cmake/bin:$PATH
+
+RUN curl -sSLO https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip \
+  && unzip ninja-linux.zip \
+  && rm *.zip \
+  && mv ninja /opt/cmake/bin
+
+ENV XDG_CACHE_HOME /tmp/cache
