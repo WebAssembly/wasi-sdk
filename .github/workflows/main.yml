@@ -156,6 +156,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch --tags --force
+        name: Force-fetch tags to work around actions/checkout#290
 
       # Download all artifacts from all platforms in `build`, merge them into
       # final wasi-sdk-* artifacts, and then upload them.
