@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 project(wasi-sdk-test)
 include(CTest)
 enable_testing()
-set(CMAKE_USE_RELATIVE_PATHS ON)
+set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 
 add_compile_options(--sysroot=${wasi_sysroot})
 add_link_options(--sysroot=${wasi_sysroot})
