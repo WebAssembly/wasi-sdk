@@ -36,11 +36,9 @@ function(add_testcase runwasi test)
       # Add a new test executable based on `test`
       add_executable(${target_name} ${test})
 
-      # Configure all the compile options necessary. For example `--sysroot`
-      # forces usage of the just-built sysroot. Use `--target` here if the
-      # target doesn't look like it's already in the name of the compiler as
-      # well.
-      target_compile_options(${target_name} PRIVATE --sysroot=${wasi_sysroot})
+      # Configure all the compile options necessary. For example `--target` here
+      # if the target doesn't look like it's already in the name of the compiler
+      # as well.
       if(NOT(CMAKE_C_COMPILER MATCHES ${target}))
         target_compile_options(${target_name} PRIVATE --target=${target})
       endif()
