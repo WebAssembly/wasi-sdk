@@ -58,7 +58,9 @@ for build in dist-*; do
   tar xf $toolchain -C dist/$sdk_dir --strip-components 1
   mkdir -p dist/$sdk_dir/share/wasi-sysroot
   tar xf $sysroot -C dist/$sdk_dir/share/wasi-sysroot --strip-components 1
-  mkdir -p dist/$sdk_dir/lib/clang/18/lib/{wasi,wasip1,wasip2}
+  mkdir -p dist/$sdk_dir/lib/clang/18/lib/wasi
+  mkdir -p dist/$sdk_dir/lib/clang/18/lib/wasip1
+  mkdir -p dist/$sdk_dir/lib/clang/18/lib/wasip2
   tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasi --strip-components 1
   tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasip1 --strip-components 1
   tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasip2 --strip-components 1
