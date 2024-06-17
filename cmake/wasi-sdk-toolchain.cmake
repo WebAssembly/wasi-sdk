@@ -74,6 +74,7 @@ ExternalProject_Add(llvm-build
     -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi
     -DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE
     -DLLVM_ENABLE_LIBXML2=OFF
+    -DDEFAULT_SYSROOT=../share/wasi-sysroot
     # Pass `-s` to strip symbols by default and shrink the size of the
     # distribution
     -DCMAKE_EXE_LINKER_FLAGS=-s

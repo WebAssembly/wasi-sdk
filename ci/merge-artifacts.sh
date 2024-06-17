@@ -16,6 +16,9 @@ make_deb() {
   build=$1
   dir=$2
 
+  if ! command -v dpkg-deb >/dev/null; then
+    return
+  fi
 
   case $build in
     dist-x86_64-linux)
@@ -39,6 +42,7 @@ make_deb() {
   (cd dist && dpkg-deb -b pkg $deb_name.deb)
   rm -rf dist/pkg
 }
+compiler_rt=`ls dist-x86_64-linux/libclang_rt*`
 
 for build in dist-*; do
   toolchain=`ls $build/wasi-toolchain-*`
@@ -52,7 +56,13 @@ for build in dist-*; do
   mkdir dist/$sdk_dir
 
   tar xf $toolchain -C dist/$sdk_dir --strip-components 1
-  tar xf $sysroot -C dist/$sdk_dir --strip-components 1
+  mkdir -p dist/$sdk_dir/share/wasi-sysroot
+  tar xf $sysroot -C dist/$sdk_dir/share/wasi-sysroot --strip-components 1
+  mkdir -p dist/$sdk_dir/lib/clang/18/lib/{wasi,wasip1,wasip2}
+  tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasi --strip-components 1
+  tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasip1 --strip-components 1
+  tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasip2 --strip-components 1
+
   tar czf dist/$sdk_dir.tar.gz -C dist $sdk_dir
 
   if echo $build | grep -q linux; then
