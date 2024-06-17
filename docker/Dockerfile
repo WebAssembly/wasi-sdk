@@ -12,8 +12,13 @@ RUN apt-get update && \
     apt-get install -y cmake ninja-build make autoconf autogen automake libtool && \
     rm -rf /var/lib/apt/lists/*
 
-ADD dist/wasi-sdk-*-x86_64-linux.deb .
-RUN dpkg -i wasi-sdk-*.deb && rm wasi-sdk-*.deb
+ADD dist/wasi-sdk-*.deb .
+RUN case `dpkg --print-architecture` in \
+  amd64) dpkg -i wasi-sdk-*-x86_64-linux.deb ;; \
+  arm64) dpkg -i wasi-sdk-*-arm64-linux.deb ;; \
+  *) exit 1 ;; \
+  esac && \
+  rm wasi-sdk-*.deb
 
 ENV CC /opt/wasi-sdk/bin/clang
 ENV CXX /opt/wasi-sdk/bin/clang++
