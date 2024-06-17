@@ -21,12 +21,8 @@ make_deb() {
   fi
 
   case $build in
-    dist-x86_64-linux)
-      deb_arch=amd64
-      ;;
-    dist-arm64-linux)
-      deb_arch=arm64
-      ;;
+    dist-x86_64-linux) deb_arch=amd64 ;;
+    dist-arm64-linux)  deb_arch=arm64 ;;
     *)
       echo "unknown build $build"
       exit 1
@@ -42,6 +38,7 @@ make_deb() {
   (cd dist && dpkg-deb -b pkg $deb_name.deb)
   rm -rf dist/pkg
 }
+
 compiler_rt=`ls dist-x86_64-linux/libclang_rt*`
 
 for build in dist-*; do
@@ -55,15 +52,18 @@ for build in dist-*; do
   sdk_dir=`basename $toolchain | sed 's/.tar.gz//' | sed s/toolchain/sdk/`
   mkdir dist/$sdk_dir
 
+  # Start with the toolchain and then overlay the sysroot into
+  # `share/wasi-sysroot`, the default sysroot.
   tar xf $toolchain -C dist/$sdk_dir --strip-components 1
   mkdir -p dist/$sdk_dir/share/wasi-sysroot
   tar xf $sysroot -C dist/$sdk_dir/share/wasi-sysroot --strip-components 1
-  mkdir -p dist/$sdk_dir/lib/clang/18/lib/wasi
-  mkdir -p dist/$sdk_dir/lib/clang/18/lib/wasip1
-  mkdir -p dist/$sdk_dir/lib/clang/18/lib/wasip2
-  tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasi --strip-components 1
-  tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasip1 --strip-components 1
-  tar xf $compiler_rt -C dist/$sdk_dir/lib/clang/18/lib/wasip2 --strip-components 1
+
+  # Setup the compiler-rt library for wasi,wasip1,wasip2
+  rtlibdir=$(dirname $(find dist/$sdk_dir/lib -name include))/lib
+  mkdir -p $rtlibdir/wasi
+  tar xf $compiler_rt -C $rtlibdir/wasi --strip-components 1
+  cp -r $rtlibdir/wasi $rtlibdir/wasip1
+  cp -r $rtlibdir/wasi $rtlibdir/wasip2
 
   tar czf dist/$sdk_dir.tar.gz -C dist $sdk_dir
 
