@@ -15,7 +15,8 @@ stdout_observed="$wasm.stdout.observed"
 stderr_observed="$wasm.stderr.observed"
 exit_status_observed="$wasm.exit_status.observed"
 
-# If we don't have a runwasi command, we're just doing compile-only testing.
+# Double-check that a runwasi command was specified since otherwise this script
+# was invoked with no arguments which isn't as intended.
 if [ "$runwasi" == "" ]; then
     exit 1
 fi
