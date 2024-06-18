@@ -267,6 +267,7 @@ build/config.BUILT:
 	mkdir -p $(BUILD_PREFIX)/share/cmake/Platform
 	cp wasi-sdk.cmake $(BUILD_PREFIX)/share/cmake
 	cp wasi-sdk-pthread.cmake $(BUILD_PREFIX)/share/cmake
+	cp wasi-sdk-p2.cmake $(BUILD_PREFIX)/share/cmake
 	cp cmake/Platform/WASI.cmake $(BUILD_PREFIX)/share/cmake/Platform
 	touch build/config.BUILT
 
