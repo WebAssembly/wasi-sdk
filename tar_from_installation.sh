@@ -19,14 +19,19 @@ else
     INSTALL_DIR=/opt/wasi-sdk
 fi
 
-case "$(uname -s)" in
-    Linux*)     MACHINE=linux;;
-    Darwin*)    MACHINE=macos;;
-    CYGWIN*)    MACHINE=cygwin;;
-    MINGW*)     MACHINE=mingw;;
-    MSYS*)      MACHINE=msys;; #MSYS_NT-10.0-19043
-    *)          MACHINE="UNKNOWN"
-esac
+if [ -n "$4" ]; then
+    MACHINE="$4"
+else
+    case "$(uname -s):$(uname -m)" in
+        Linux*:aarch64) MACHINE=linux-arm64;;
+        Linux*:x86_64)  MACHINE=linux-amd64;;
+        Darwin*)        MACHINE=macos;;
+        CYGWIN*)        MACHINE=cygwin;;
+        MINGW*)         MACHINE=mingw;;
+        MSYS*)          MACHINE=msys;; #MSYS_NT-10.0-19043
+        *)              MACHINE="UNKNOWN"
+    esac    
+fi
 
 if [ ! -d $INSTALL_DIR ] ; then
     echo "Directory $INSTALL_DIR doesn't exist.  Nothing to copy from."

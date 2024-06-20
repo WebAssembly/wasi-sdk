@@ -8,7 +8,7 @@
 # separately.
 FROM ubuntu:22.04 as dist
 
-ADD dist/wasi-sdk-*.*-linux.tar.gz /
+ADD dist/wasi-sdk-*.*-linux-amd64.tar.gz /
 ADD dist/libclang_rt.builtins-wasm32-wasi-*.*.tar.gz /wasi-sysroot-clang_rt
 
 # Move versioned folder to unversioned to using bash glob to allow
