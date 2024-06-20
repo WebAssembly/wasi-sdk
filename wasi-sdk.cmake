@@ -1,8 +1,5 @@
 # Cmake toolchain description file for the Makefile
 
-# This is arbitrary, AFAIK, for now.
-cmake_minimum_required(VERSION 3.4.0)
-
 # Until Platform/WASI.cmake is upstream we need to inject the path to it
 # into CMAKE_MODULE_PATH.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
