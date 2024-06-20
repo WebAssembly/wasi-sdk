@@ -100,31 +100,12 @@ build/llvm.BUILT:
 		          -DDEFAULT_SYSROOT=../share/wasi-sysroot, \
 			  -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot), \
 		     -DDEFAULT_SYSROOT=$(PREFIX)/share/wasi-sysroot) \
-		-DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE \
+		-DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
+		-DLLVM_INSTALL_BINUTILS_SYMLINKS=ON \
 		-DLLVM_ENABLE_LIBXML2=OFF \
 		$(LLVM_CMAKE_FLAGS) \
 		$(LLVM_PROJ_DIR)/llvm
-	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/llvm \
-		install-clang \
-		install-clang-format \
-		install-clang-tidy \
-		install-clang-apply-replacements \
-		install-lld \
-		install-llvm-mc \
-		install-llvm-ranlib \
-		install-llvm-strip \
-		install-llvm-dwarfdump \
-		install-clang-resource-headers \
-		install-ar \
-		install-ranlib \
-		install-strip \
-		install-nm \
-		install-size \
-		install-strings \
-		install-objdump \
-		install-objcopy \
-		install-c++filt \
-		llvm-config
+	DESTDIR=$(DESTDIR) ninja $(NINJA_FLAGS) -C build/llvm install
 	touch build/llvm.BUILT
 
 # Build the `wasm-component-ld` linker from source via `cargo install`. This is
