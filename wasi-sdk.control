@@ -1,6 +1,6 @@
 Package: wasi-sdk
 Version: VERSION
-Architecture: amd64
+Architecture: ARCH
 Priority: optional
 Description: Clang toolchain with wasm32-wasi default target, and the wasi sysroot
-Maintainer: Pat Hickey <phickey@fastly.com>
+Maintainer: WASI SDK Maintainers <webassembly@users.noreply.github.com>

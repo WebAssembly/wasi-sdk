@@ -1,3 +1,7 @@
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include <signal.h>
 #include <string.h>
 #include <assert.h>
@@ -6,7 +10,10 @@
 #include <errno.h>
 
 // Make sure this exists.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
 #include <sys/signal.h>
+#pragma clang diagnostic pop
 
 volatile sig_atomic_t flag = 0;
 

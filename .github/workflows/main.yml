@@ -11,37 +11,39 @@ on:
 
 jobs:
   build:
-    name: Native Build
+    name: Build ${{ matrix.artifact }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
+        include:
+          - artifact: x86_64-linux
+            os: ubuntu-latest
+
+          - artifact: arm64-linux
+            os: ubuntu-latest
+            rust_target: aarch64-unknown-linux-gnu
+
+          - artifact: arm64-macos
+            os: macos-latest
+            llvm_cmake_flags: -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 -DCMAKE_OSX_ARCHITECTURES=arm64
+            rust_target: aarch64-apple-darwin
+
+          - artifact: x86_64-macos
+            os: macos-latest
+            llvm_cmake_flags: -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 -DCMAKE_OSX_ARCHITECTURES=x86_64
+            rust_target: x86_64-apple-darwin
+            skip_sysroot: 1
+
+          - artifact: x86_64-windows
+            os: windows-latest
+            # TODO: tests are pretty close to passing on Windows but need some
+            # final tweaks, namely testing the exit code doesn't work since
+            # exit codes are different on Windows and the `mmap.c` tests seems
+            # to have issues probably with line endings. Needs someone with a
+            # Windows checkout tot test further.
+            skip_tests: 1
     steps:
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ccache
-          # Bump the prefix number to evict all previous caches and
-          # enforce a clean build, in the unlikely case that some
-          # weird build error occur and ccache becomes a potential
-          # suspect.
-          key: 0-cache-ubuntu-latest-${{ github.run_id }}
-          restore-keys: |
-            0-cache-ubuntu-latest
-        if: matrix.os == 'ubuntu-latest'
-      - uses: actions/cache@v4
-        with:
-          path: ~/Library/Caches/ccache
-          key: 0-cache-macos-latest-${{ github.run_id }}
-          restore-keys: |
-            0-cache-macos-latest
-        if: matrix.os == 'macos-latest'
-      - name: Setup `wasmtime` for tests
-        uses: bytecodealliance/actions/wasmtime/setup@v1
-        with:
-          version: "18.0.2"
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -53,108 +55,130 @@ jobs:
       # Server does not allow request for unadvertised object" in the
       # future.
       - run: git submodule update --init --depth 32 --jobs 3
+
+      # Persist ccache-based caches across builds. This directory is configured
+      # via the CCACHE_DIR env var below for ccache to use.
+      #
+      # Bump the prefix number to evict all previous caches and enforce a clean
+      # build, in the unlikely case that some weird build error occur and ccache
+      # becomes a potential suspect.
+      - uses: actions/cache@v4
+        id: cache-restore
+        with:
+          path: ${{ runner.tool_cache }}/ccache
+          key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
+          restore-keys: |
+            0-cache-${{ matrix.artifact }}-
+      - run: |
+          mkdir -p '${{ runner.tool_cache }}/ccache'
+          echo 'CCACHE_DIR=${{ runner.tool_cache }}/ccache' >> $GITHUB_ENV
+        shell: bash
+
+      # Configure CMake flags for `ci/build.sh` as necessary for each
+      # matrix entry.
+      - run: echo WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS=${{ matrix.llvm_cmake_flags }} >> $GITHUB_ENV
+        if: matrix.llvm_cmake_flags != ''
+        shell: bash
+      - run: |
+          cmake_args=-DWASI_SDK_ARTIFACT=${{ matrix.artifact }}
+          if [ "${{ matrix.rust_target }}" != "" ]; then
+            rustup target add ${{ matrix.rust_target }}
+            cmake_args="$cmake_args -DRUST_TARGET=${{ matrix.rust_target }}"
+          fi
+          echo WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS="$cmake_args" >> $GITHUB_ENV
+        shell: bash
+      - run: echo WASI_SDK_CI_SKIP_SYSROOT=1 >> $GITHUB_ENV
+        shell: bash
+        if: matrix.skip_sysroot != ''
+      - run: echo WASI_SDK_CI_SKIP_TESTS=1 >> $GITHUB_ENV
+        shell: bash
+        if: matrix.skip_tests != ''
+
+      # Add some extra installed software on each runner as necessary.
+      - name: Setup `wasmtime` for tests
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: "18.0.2"
       - name: Install ccache, ninja (macOS)
         run: brew install ccache ninja
-        if: matrix.os == 'macos-latest'
+        if: runner.os == 'macOS'
+      - name: Install ccache, ninja (Windows)
+        run: choco install ccache ninja
+        if: runner.os == 'Windows'
       - name: Install ccache, ninja (Linux)
-        run: sudo apt install ccache ninja-build
-        if: matrix.os == 'ubuntu-latest'
-      - name: Build
-        run: NINJA_FLAGS=-v make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
+        run: sudo apt install ccache
+        if: runner.os == 'Linux'
+
+      - name: Build and test (macOS)
+        run: ./ci/build.sh
+        if: runner.os == 'macOS'
+
+      - name: Build and test (Linux)
+        run: ./ci/docker-build.sh ${{ matrix.artifact }}
+        if: runner.os == 'Linux'
+
+      # Use a shorter build directory than the default on Windows to avoid
+      # hitting path length and command line length limits.
+      - name: Build and test (Windows)
+        run: ./ci/build.sh C:/wasi-sdk
         shell: bash
-      - name: Run the testsuite
-        run: NINJA_FLAGS=-v make check RUNTIME=wasmtime
+        if: runner.os == 'Windows'
+
+      # Upload the `dist` folder from the build as the artifacts for this
+      # runner.
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: ${{ format( 'dist-{0}', matrix.os) }}
-          path: dist
+          name: ${{ format( 'dist-{0}', matrix.artifact) }}
+          path: build/dist
 
-  winbuild:
-    name: Windows Build
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            sys: clang64
-            env: clang-x86_64
-          - arch: x86
-            sys: clang32
-            env: clang-i686
-    steps:
-      - uses: actions/cache@v4
-        with:
-          path: ~/AppData/Local/ccache
-          key: 0-${{ format( 'cache-windows-latest-{0}', matrix.arch) }}-${{ github.run_id }}
-          restore-keys: |
-            0-${{ format( 'cache-windows-latest-{0}', matrix.arch) }}
-      - uses: msys2/setup-msys2@v2
-        with:
-          install: >-
-            base-devel
-            git
-            mingw-w64-${{ matrix.env }}-ccache
-            mingw-w64-${{ matrix.env }}-cmake
-            mingw-w64-${{ matrix.env }}-ninja
-            mingw-w64-${{ matrix.env }}-toolchain
-          msystem: ${{ matrix.sys }}
-          update: true
-          release: false
-          path-type: inherit
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: git fetch --tags --force
-        name: Force-fetch tags to work around actions/checkout#290
-      - run: git submodule update --init --depth 32 --jobs 3
-      - name: Build
-        shell: msys2 {0}
-        run: |
-          make package LLVM_CMAKE_FLAGS=-DLLVM_CCACHE_BUILD=ON
-          make check
-      - name: Does it work sans msys2?
-        run: |
-          C:\wasi-sdk\bin\clang.exe --version
-          C:\wasi-sdk\bin\llvm-ar.exe --version
-          C:\wasi-sdk\bin\wasm-ld.exe --version
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: ${{ format( 'dist-windows-latest-{0}', matrix.arch) }}
-          path: dist
+      # Help debug ccache issues by showing what happened.
+      - if: always()
+        name: Show ccache statistics
+        run: ccache --show-stats
 
-  dockerbuild:
-    name: Docker Build
+      # Always save a cache, even if the build failed. This ensures that if
+      # live-debugging via CI the build gets to pick up where it left off last
+      # time instead of having to recreate everything each time a failure
+      # happens.
+      - if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.tool_cache }}/ccache
+          key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
+
+  # Once all of the above matrix entries have completed this job will run and
+  # assemble the final `wasi-sdk-*` artifacts by fusing the toolchain/sysroot
+  # artifacts.
+  finalize:
+    name: Finalize wasi-sdk artifacts
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/cache@v4
-        with:
-          path: ~/.ccache
-          key: 0-cache-ubuntu-bionic-${{ github.run_id }}
-          restore-keys: |
-            0-cache-ubuntu-bionic
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - run: git fetch --tags --force
         name: Force-fetch tags to work around actions/checkout#290
 
-      - run: git submodule update --init --depth 32 --jobs 3
+      # Download all artifacts from all platforms in `build`, merge them into
+      # final wasi-sdk-* artifacts, and then upload them.
+      - uses: actions/download-artifact@v4
+      - run: ./ci/merge-artifacts.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist
 
+      # Use the `wasi-sdk-*` artifacts just created to create a docker image
+      # with a toolchain pre-installed.
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
-
       - uses: docker/metadata-action@v4
         id: meta
         with:
@@ -165,16 +189,6 @@ jobs:
             type=ref,event=tag
             type=ref,event=pr
             type=sha
-
-      - name: Run docker_build script
-        run: ./docker_build.sh
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          # Upload the dist folder. Give it a name according to the OS it was built for.
-          name: dist-ubuntu-bionic
-          path: dist
-
       - name: Build and push wasi-sdk docker image
         uses: docker/build-push-action@v3
         with:
