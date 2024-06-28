@@ -131,7 +131,7 @@ build/llvm.BUILT:
 # used for the `wasm32-wasip2` target natively by Clang. Note that `--root`
 # passed to `cargo install` will place it in the output directory automatically.
 build/wasm-component-ld.BUILT: build/llvm.BUILT
-	cargo install wasm-component-ld@0.5.0 --root $(BUILD_PREFIX)
+	cargo install --no-track wasm-component-ld@0.5.0 --root $(BUILD_PREFIX)
 	touch build/wasm-component-ld.BUILT
 
 
