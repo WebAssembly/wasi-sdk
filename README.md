@@ -49,10 +49,72 @@ Please refer to your OS documentation to install those packages.
 
 ## Build
 
-To build the full package:
+Building `wasi-sdk` uses CMake and is split into two halves. First you can build
+the toolchain itself:
 
 ```shell script
-cd wasi-sdk
+cmake -G Ninja -B build/toolchain -S . -DWASI_SDK_BUILD_TOOLCHAIN=ON -DCMAKE_INSTALL_PREFIX=build/install
+cmake --build build/toolchain --target install
+```
+
+When you're developing locally you may also wish to pass
+`-DCMAKE_CXX_COMPILER_LAUNCHER=ccache` to assist with rebuilds. Other supported
+CMake flags are:
+
+* `-DLLVM_CMAKE_FLAGS` - extra flags to pass to `cmake` when building
+  LLVM/Clang.
+* `-DRUST_TARGET` - the specific Rust target triple to build `wasm-component-ld`
+  for, useful for cross-compiles.
+
+The `clang` compiler should now be located at `build/install/bin/clang` but it's
+just a compiler, the sysroot isn't built yet. Next the second step of the build
+is to build the sysroot:
+
+```shell script
+cmake -G Ninja -B build/sysroot -S . \
+    -DCMAKE_INSTALL_PREFIX=build/install \
+    -DCMAKE_TOOLCHAIN_FILE=build/install/share/cmake/wasi-sdk.cmake \
+    -DCMAKE_C_COMPILER_WORKS=ON \
+    -DCMAKE_CXX_COMPILER_WORKS=ON
+cmake --build build/sysroot --target install
+```
+
+A full toolchain should now be present at `build/install` and is ready for use
+in compiling WebAssembly code. Supported CMake flags are:
+
+* `-DWASI_SDK_DEBUG_PREFIX_MAKE=OFF` - disable `-fdebug-prefix-map` when
+  building C/C++ code to use full host paths instead.
+* `-DWASI_SDK_INCLUDE_TESTS=ON` - used for building tests.
+* `-DWASI_SDK_TARGETS=..` - a list of targets to build, by default all WASI
+  targets are compiled.
+
+If you'd like to build distribution artifacts you can use the `dist` target like
+so:
+
+```shell script
+cmake --build build/toolchain --target dist
+cmake --build build/sysroot --target dist
+```
+
+Tarballs will be created under `build/toolchain/dist` and `build/sysroot/dist`.
+Note that these are separate tarballs for the toolchain and sysroot. To create a
+single tarball for the entire SDK you'll first want to copy all tarballs into a
+new folder and then run the `./ci/merge-artifacts.sh` script:
+
+```shell script
+mkdir dist-my-platform
+cp build/toolchain/dist/* build/sysroot/dist/* dist-my-platform
+./ci/merge-artifacts.sh
+```
+
+This will produce `dist/wasi-sdk-*.tar.gz` which is the same as the release
+artifacts for this repository.
+
+Finally you can additionally bundle many of the above steps, minus
+`merge-artifact.sh` by using the CI script to perform both the toolchain and
+sysroot build:
+
+```shell script
 ./ci/build.sh
 ```
 

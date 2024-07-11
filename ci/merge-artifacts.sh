@@ -39,14 +39,17 @@ make_deb() {
   rm -rf dist/pkg
 }
 
-compiler_rt=`ls dist-x86_64-linux/libclang_rt*`
-
 for build in dist-*; do
   toolchain=`ls $build/wasi-toolchain-*`
   if [ -f $build/wasi-sysroot-* ]; then
     sysroot=`ls $build/wasi-sysroot-*`
   else
     sysroot=`ls dist-x86_64-linux/wasi-sysroot-*`
+  fi
+  if [ -f $build/libclang_rt* ]; then
+    compiler_rt=`ls $build/libclang_rt*`
+  else
+    compiler_rt=`ls dist-x86_64-linux/libclang_rt*`
   fi
 
   sdk_dir=`basename $toolchain | sed 's/.tar.gz//' | sed s/toolchain/sdk/`
@@ -75,5 +78,7 @@ done
 
 # In addition to `wasi-sdk-*` also preserve artifacts for just the sysroot
 # and just compiler-rt.
-cp dist-x86_64-linux/wasi-sysroot-* dist
-cp dist-x86_64-linux/libclang_rt* dist
+if [ -d dist-x86_64-linux ]; then
+  cp dist-x86_64-linux/wasi-sysroot-* dist
+  cp dist-x86_64-linux/libclang_rt* dist
+fi
