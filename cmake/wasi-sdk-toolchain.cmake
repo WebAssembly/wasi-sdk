@@ -118,7 +118,7 @@ install(
   PROGRAMS src/config/config.sub src/config/config.guess
   DESTINATION ${CMAKE_INSTALL_PREFIX}/share/misc)
 install(
-  FILES wasi-sdk.cmake wasi-sdk-pthread.cmake
+  FILES wasi-sdk.cmake wasi-sdk-pthread.cmake wasi-sdk-p2.cmake
   DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake)
 install(
   DIRECTORY cmake/Platform
