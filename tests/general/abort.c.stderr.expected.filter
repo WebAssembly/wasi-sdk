@@ -2,6 +2,6 @@
 set -euo pipefail
 
 cat \
-    | sed -e 's/main module `abort\.c\.[^`]*\.wasm`/main module `abort.c.---.wasm`/' \
+    | sed -e 's/main module `.*abort\.c\.wasm`/main module `abort.c.---.wasm`/' \
     | sed -e 's/failed to invoke.*/failed to invoke ---/' \
     | sed -E '/0x[[:xdigit:]]+/d'
