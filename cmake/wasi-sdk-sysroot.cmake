@@ -102,10 +102,13 @@ function(define_wasi_libc target)
 
   if(${target} MATCHES threads)
     set(extra_make_flags THREAD_MODEL=posix)
+    set(extra_make_flags_lto LTO=full THREAD_MODEL=posix)
   elseif(${target} MATCHES p2)
     set(extra_make_flags WASI_SNAPSHOT=p2 default libc_so)
+    set(extra_make_flags_lto LTO=full WASI_SNAPSHOT=p2 default)
   else()
     set(extra_make_flags default libc_so)
+    set(extra_make_flags_lto LTO=full default)
   endif()
 
   string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
@@ -129,8 +132,17 @@ function(define_wasi_libc target)
         NM=${CMAKE_NM}
         SYSROOT=${wasi_sysroot}
         EXTRA_CFLAGS=${extra_cflags}
-	TARGET_TRIPLE=${target}
+        TARGET_TRIPLE=${target}
         ${extra_make_flags}
+    COMMAND
+      ${MAKE} -j8 -C ${build_dir}
+        CC=${CMAKE_C_COMPILER}
+        AR=${CMAKE_AR}
+        NM=${CMAKE_NM}
+        SYSROOT=${wasi_sysroot}
+        EXTRA_CFLAGS=${extra_cflags}
+        TARGET_TRIPLE=${target}
+        ${extra_make_flags_lto}
     INSTALL_COMMAND ""
     DEPENDS compiler-rt
     EXCLUDE_FROM_ALL ON
