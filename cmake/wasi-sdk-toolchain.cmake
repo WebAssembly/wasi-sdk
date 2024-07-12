@@ -55,6 +55,19 @@ set(tools
   c++filt
   llvm-config)
 
+# By default link LLVM dynamically to all the various tools. This greatly
+# reduces the binary size of all the tools through a shared library rather than
+# statically linking LLVM to each individual tool. This requires a few other
+# install targets as well to ensure the appropriate libraries are all installed.
+#
+# Also note that the `-wasi-sdk` version suffix is intended to help prevent
+# these dynamic libraries from clashing with other system libraries in case the
+# `lib` dir gets put on `LD_LIBRARY_PATH` or similar.
+if(NOT WIN32)
+  list(APPEND default_cmake_args -DLLVM_LINK_LLVM_DYLIB=ON -DLLVM_VERSION_SUFFIX=-wasi-sdk)
+  list(APPEND tools LLVM clang-cpp)
+endif()
+
 list(TRANSFORM tools PREPEND --target= OUTPUT_VARIABLE build_targets)
 list(TRANSFORM tools PREPEND --target=install- OUTPUT_VARIABLE install_targets)
 
