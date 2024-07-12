@@ -160,7 +160,12 @@ endforeach()
 # libcxx build logic
 # =============================================================================
 
-function(define_libcxx target)
+execute_process(
+  COMMAND ${CMAKE_C_COMPILER} -dumpversion
+  OUTPUT_VARIABLE llvm_version
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_suffix)
   if(${target} MATCHES threads)
     set(threads ON)
     set(pic OFF)
@@ -170,6 +175,10 @@ function(define_libcxx target)
     set(pic ON)
     set(target_flags "")
   endif()
+  if(${target_suffix} MATCHES lto)
+    set(pic OFF)
+  endif()
+  list(APPEND target_flags ${extra_target_flags})
 
   set(runtimes "libcxx;libcxxabi")
 
@@ -188,7 +197,7 @@ function(define_libcxx target)
   set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${extra_flags})
   list(JOIN extra_cxxflags_list " " extra_cxxflags)
 
-  ExternalProject_Add(libcxx-${target}-build
+  ExternalProject_Add(libcxx-${target}${target_suffix}-build
     SOURCE_DIR ${llvm_proj_dir}/runtimes
     CMAKE_ARGS
       ${default_cmake_args}
@@ -226,8 +235,8 @@ function(define_libcxx target)
       -DUNIX:BOOL=ON
       -DCMAKE_C_FLAGS=${extra_cflags}
       -DCMAKE_CXX_FLAGS=${extra_cxxflags}
-      -DLIBCXX_LIBDIR_SUFFIX=/${target}
-      -DLIBCXXABI_LIBDIR_SUFFIX=/${target}
+      -DLIBCXX_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
+      -DLIBCXXABI_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
 
     # See https://www.scivision.dev/cmake-externalproject-list-arguments/ for
     # why this is in `CMAKE_CACHE_ARGS` instead of above
@@ -241,6 +250,11 @@ function(define_libcxx target)
     USES_TERMINAL_BUILD ON
     USES_TERMINAL_INSTALL ON
   )
+endfunction()
+
+function(define_libcxx target)
+  define_libcxx_sub(${target} "" "" "")
+  define_libcxx_sub(${target} "-lto" "-flto=full" "/llvm-lto/${llvm_version}")
 
   # As of this writing, `clang++` will ignore the target-specific include dirs
   # unless this one also exists:
@@ -248,7 +262,7 @@ function(define_libcxx target)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${wasi_sysroot}/include/c++/v1
     COMMENT "creating libcxx-specific header file folder")
   add_custom_target(libcxx-${target}
-    DEPENDS libcxx-${target}-build libcxx-${target}-extra-dir)
+    DEPENDS libcxx-${target}-build libcxx-${target}-lto-build libcxx-${target}-extra-dir)
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
