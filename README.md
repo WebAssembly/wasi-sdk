@@ -53,11 +53,12 @@ To build the full package:
 
 ```shell script
 cd wasi-sdk
-NINJA_FLAGS=-v make package
+./ci/build.sh
 ```
 
-The built package can be found into `dist` directory. For releasing a new
-version of the package on GitHub, see [RELEASING.md](RELEASING.md).
+The built package can be found into `build/dist` directory.
+For releasing a new version of the package on GitHub,
+see [RELEASING.md](RELEASING.md).
 
 ## Install
 
