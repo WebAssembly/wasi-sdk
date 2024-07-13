@@ -1,11 +1,12 @@
 name: CI
 
 on:
-  create:
-    tags:
   push:
+    tags:
+      - 'wasi-sdk-*'
     branches:
       - main
+
   pull_request:
   workflow_dispatch:
 
@@ -200,3 +201,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Publish a draft release
+        if: startsWith(github.ref, 'refs/tags')
+        run: gh release create --draft --prerelease --generate-notes ${{ github.ref_name }} ./dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
