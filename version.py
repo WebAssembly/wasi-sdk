@@ -14,13 +14,13 @@ import sys
 GIT_REF_LEN = 12
 
 
-def exec(command, cwd=None):
+def exec(command, cwd):
     result = subprocess.run(command, stdout=subprocess.PIPE,
                             universal_newlines=True, check=True, cwd=cwd)
     return result.stdout.strip()
 
 
-def git_commit(dir='.'):
+def git_commit(dir):
     return exec(['git', 'rev-parse', f'--short={GIT_REF_LEN}', 'HEAD'], dir)
 
 
@@ -61,7 +61,8 @@ assert parse_git_version(
 
 def git_version():
     version = exec(['git', 'describe', '--long', '--candidates=999',
-                    '--match=wasi-sdk-*', '--dirty=+m', f'--abbrev={GIT_REF_LEN}'])
+                    '--match=wasi-sdk-*', '--dirty=+m', f'--abbrev={GIT_REF_LEN}'],
+                    os.path.dirname(sys.argv[0]))
     major, minor, git, dirty = parse_git_version(version)
     version = f'{major}.{minor}'
     if git:
