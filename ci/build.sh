@@ -11,19 +11,19 @@ set -ex
 # Optionally allow the first argument to this script to be the install
 # location.
 if [ "$1" = "" ]; then
-  install_dir=`pwd`/build/install
+  build_dir=`pwd`/build
 else
-  install_dir="$1"
+  build_dir="$1"
 fi
 
-cmake -G Ninja -B build/toolchain -S . \
+cmake -G Ninja -B $build_dir/toolchain -S . \
   -DWASI_SDK_BUILD_TOOLCHAIN=ON \
-  "-DCMAKE_INSTALL_PREFIX=$install_dir" \
+  "-DCMAKE_INSTALL_PREFIX=$build_dir/install" \
   $WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS \
   "-DLLVM_CMAKE_FLAGS=$WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS"
-ninja -C build/toolchain install dist -v
+ninja -C $build_dir/toolchain install dist -v
 
-mv build/toolchain/dist build/dist
+mv $build_dir/toolchain/dist $build_dir/dist
 
 if [ "$WASI_SDK_CI_SKIP_SYSROOT" = "1" ]; then
   exit 0
@@ -31,19 +31,19 @@ fi
 
 # Use the just-built toolchain and its `CMAKE_TOOLCHAIN_FILE` to build a
 # sysroot.
-cmake -G Ninja -B build/sysroot -S . \
-  "-DCMAKE_TOOLCHAIN_FILE=$install_dir/share/cmake/wasi-sdk.cmake" \
+cmake -G Ninja -B $build_dir/sysroot -S . \
+  "-DCMAKE_TOOLCHAIN_FILE=$build_dir/install/share/cmake/wasi-sdk.cmake" \
   -DCMAKE_C_COMPILER_WORKS=ON \
   -DCMAKE_CXX_COMPILER_WORKS=ON \
   -DWASI_SDK_INCLUDE_TESTS=ON \
-  "-DCMAKE_INSTALL_PREFIX=$install_dir"
-ninja -C build/sysroot install dist -v
+  "-DCMAKE_INSTALL_PREFIX=$build_dir/install"
+ninja -C $build_dir/sysroot install dist -v
 
-mv build/sysroot/dist/* build/dist
+mv $build_dir/sysroot/dist/* $build_dir/dist
 
 if [ "$WASI_SDK_CI_SKIP_TESTS" = "1" ]; then
   exit 0
 fi
 
 # Run tests to ensure that the sysroot works.
-ctest --output-on-failure --parallel 10 --test-dir build/sysroot/tests
+ctest --output-on-failure --parallel 10 --test-dir $build_dir/sysroot/tests

@@ -119,9 +119,13 @@ jobs:
         if: runner.os == 'Linux'
 
       # Use a shorter build directory than the default on Windows to avoid
-      # hitting path length and command line length limits.
+      # hitting path length and command line length limits. See
+      # WebAssembly/wasi-libc#514
       - name: Build and test (Windows)
-        run: ./ci/build.sh C:/wasi-sdk
+        run: |
+          ./ci/build.sh C:/wasi-sdk
+          mkdir build
+          cp -r C:/wasi-sdk/build/dist build
         shell: bash
         if: runner.os == 'Windows'
 
