@@ -254,6 +254,8 @@ endfunction()
 
 function(define_libcxx target)
   define_libcxx_sub(${target} "" "" "")
+  # Note: clang knows this /llvm-lto/${llvm_version} convention.
+  # https://github.com/llvm/llvm-project/blob/llvmorg-18.1.8/clang/lib/Driver/ToolChains/WebAssembly.cpp#L204-L210
   define_libcxx_sub(${target} "-lto" "-flto=full" "/llvm-lto/${llvm_version}")
 
   # As of this writing, `clang++` will ignore the target-specific include dirs
