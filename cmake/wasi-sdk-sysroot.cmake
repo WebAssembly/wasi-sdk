@@ -249,12 +249,15 @@ endforeach()
 
 # Install a `VERSION` file in the output prefix with a dump of version
 # information.
-set(version_file_tmp ${wasi_tmp_install}/VERSION)
 execute_process(
   COMMAND ${PYTHON} ${version_script} dump
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  OUTPUT_FILE ${version_file_tmp})
-install(FILES ${wasi_tmp_install}/VERSION
+  OUTPUT_VARIABLE version_dump)
+set(version_file_tmp ${CMAKE_CURRENT_BINARY_DIR}/VERSION)
+file(GENERATE OUTPUT ${version_file_tmp} CONTENT ${version_dump})
+add_custom_target(version-file DEPENDS ${version_file_tmp})
+add_dependencies(build version-file)
+install(FILES ${version_file_tmp}
         DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 if(WASI_SDK_INCLUDE_TESTS)
@@ -275,6 +278,6 @@ add_dependencies(dist-compiler-rt compiler-rt)
 wasi_sdk_add_tarball(dist-sysroot
   ${dist_dir}/wasi-sysroot-${wasi_sdk_version}.tar.gz
   ${wasi_tmp_install}/share/wasi-sysroot)
-add_dependencies(dist-sysroot build install)
+add_dependencies(dist-sysroot build)
 
 add_custom_target(dist DEPENDS dist-compiler-rt dist-sysroot)
