@@ -97,18 +97,27 @@ add_custom_target(compiler-rt DEPENDS compiler-rt-build compiler-rt-post-build)
 # wasi-libc build logic
 # =============================================================================
 
-function(define_wasi_libc target)
-  set(build_dir ${CMAKE_CURRENT_BINARY_DIR}/wasi-libc-${target})
+function(define_wasi_libc_sub target target_suffix lto)
+  set(build_dir ${CMAKE_CURRENT_BINARY_DIR}/wasi-libc-${target}${target_suffix})
 
   if(${target} MATCHES threads)
-    set(extra_make_flags THREAD_MODEL=posix)
-    set(extra_make_flags_lto LTO=full THREAD_MODEL=posix)
+    if(lto)
+      set(extra_make_flags LTO=full THREAD_MODEL=posix)
+    else()
+      set(extra_make_flags THREAD_MODEL=posix)
+    endif()
   elseif(${target} MATCHES p2)
-    set(extra_make_flags WASI_SNAPSHOT=p2 default libc_so)
-    set(extra_make_flags_lto LTO=full WASI_SNAPSHOT=p2 default)
+    if(lto)
+      set(extra_make_flags LTO=full WASI_SNAPSHOT=p2 default)
+    else()
+      set(extra_make_flags WASI_SNAPSHOT=p2 default libc_so)
+    endif()
   else()
-    set(extra_make_flags default libc_so)
-    set(extra_make_flags_lto LTO=full default)
+    if(lto)
+      set(extra_make_flags LTO=full default)
+    else()
+      set(extra_make_flags default libc_so)
+    endif()
   endif()
 
   string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
@@ -117,7 +126,7 @@ function(define_wasi_libc target)
     "${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
   list(JOIN extra_cflags_list " " extra_cflags)
 
-  ExternalProject_Add(wasi-libc-${target}
+  ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
     # Currently wasi-libc doesn't support out-of-tree builds so feigh a
     # "download command" which copies the source tree to a different location
     # so out-of-tree builds are supported.
@@ -134,15 +143,6 @@ function(define_wasi_libc target)
         EXTRA_CFLAGS=${extra_cflags}
         TARGET_TRIPLE=${target}
         ${extra_make_flags}
-    COMMAND
-      ${MAKE} -j8 -C ${build_dir}
-        CC=${CMAKE_C_COMPILER}
-        AR=${CMAKE_AR}
-        NM=${CMAKE_NM}
-        SYSROOT=${wasi_sysroot}
-        EXTRA_CFLAGS=${extra_cflags}
-        TARGET_TRIPLE=${target}
-        ${extra_make_flags_lto}
     INSTALL_COMMAND ""
     DEPENDS compiler-rt
     EXCLUDE_FROM_ALL ON
@@ -150,6 +150,14 @@ function(define_wasi_libc target)
     USES_TERMINAL_BUILD ON
     USES_TERMINAL_INSTALL ON
   )
+endfunction()
+
+function(define_wasi_libc target)
+  define_wasi_libc_sub (${target} "" OFF)
+  define_wasi_libc_sub (${target} "-lto" ON)
+
+  add_custom_target(wasi-libc-${target}
+    DEPENDS wasi-libc-${target}-build wasi-libc-${target}-lto-build)
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
