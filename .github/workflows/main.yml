@@ -125,7 +125,7 @@ jobs:
         run: |
           ./ci/build.sh C:/wasi-sdk
           mkdir build
-          cp -r C:/wasi-sdk/build/dist build
+          cp -r C:/wasi-sdk/dist build
         shell: bash
         if: runner.os == 'Windows'
 
