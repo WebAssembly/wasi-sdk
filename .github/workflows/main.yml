@@ -222,6 +222,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch --tags --force
+        name: Force-fetch tags to work around actions/checkout#290
       - name: Setup `wasmtime` for tests
         uses: bytecodealliance/actions/wasmtime/setup@v1
         with:
