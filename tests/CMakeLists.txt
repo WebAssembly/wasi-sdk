@@ -5,8 +5,12 @@ include(CTest)
 enable_testing()
 set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 
-add_compile_options(--sysroot=${wasi_sysroot} -resource-dir ${wasi_resource_dir})
-add_link_options(--sysroot=${wasi_sysroot} -resource-dir ${wasi_resource_dir})
+option(WASI_SDK_TEST_HOST_TOOLCHAIN "Test against the host toolchain, not a fresh sysroot" OFF)
+
+if(NOT WASI_SDK_TEST_HOST_TOOLCHAIN)
+  add_compile_options(--sysroot=${wasi_sysroot} -resource-dir ${wasi_resource_dir})
+  add_link_options(--sysroot=${wasi_sysroot} -resource-dir ${wasi_resource_dir})
+endif()
 
 # Sanity check setup
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL WASI)
@@ -22,6 +26,8 @@ set(WASI_SDK_RUNWASI "wasmtime" CACHE STRING "Runner for tests")
 # Test everything at O0, O2, and O2+LTO
 set(opt_flags -O0 -O2 "-O2 -flto")
 
+add_custom_target(build-tests)
+
 # Executes a single `test` specified.
 #
 # This will compile `test` for all the various targets and with various
@@ -35,6 +41,7 @@ function(add_testcase runwasi test)
 
       # Add a new test executable based on `test`
       add_executable(${target_name} ${test})
+      add_dependencies(build-tests ${target_name})
 
       # Configure all the compile options necessary. For example `--target` here
       # if the target doesn't look like it's already in the name of the compiler
@@ -60,9 +67,13 @@ function(add_testcase runwasi test)
       # Apply language-specific options and dependencies.
       if(test MATCHES "cc$")
         target_compile_options(${target_name} PRIVATE -fno-exceptions)
-        add_dependencies(${target_name} libcxx-${target})
+        if(NOT WASI_SDK_TEST_HOST_TOOLCHAIN)
+          add_dependencies(${target_name} libcxx-${target})
+        endif()
       else()
-        add_dependencies(${target_name} wasi-libc-${target})
+        if(NOT WASI_SDK_TEST_HOST_TOOLCHAIN)
+          add_dependencies(${target_name} wasi-libc-${target})
+        endif()
       endif()
 
       # Apply target-specific options.
