@@ -7,6 +7,8 @@ set(WASI_SDK_ARTIFACT "" CACHE STRING "Name of the wasi-sdk artifact being produ
 
 string(REGEX REPLACE "[ ]+" ";" llvm_cmake_flags_list "${LLVM_CMAKE_FLAGS}")
 
+set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE MinSizeRel)
 endif()
@@ -16,7 +18,7 @@ set(default_cmake_args
   -DCMAKE_AR=${CMAKE_AR}
   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+  -DCMAKE_INSTALL_PREFIX=${wasi_tmp_install})
 
 if(CMAKE_C_COMPILER_LAUNCHER)
   list(APPEND default_cmake_args -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
@@ -106,6 +108,14 @@ ExternalProject_Add(llvm-build
   USES_TERMINAL_INSTALL ON
 )
 
+add_custom_target(build ALL DEPENDS llvm-build)
+
+# Installation target for this outer project for installing the toolchain to the
+# system.
+install(DIRECTORY ${wasi_tmp_install}/bin ${wasi_tmp_install}/lib ${wasi_tmp_install}/share
+        USE_SOURCE_PERMISSIONS
+        DESTINATION ${CMAKE_INSTALL_PREFIX})
+
 # Build logic for `wasm-component-ld` installed from Rust code.
 set(wasm_component_ld_root ${CMAKE_CURRENT_BINARY_DIR}/wasm-component-ld)
 set(wasm_component_ld ${wasm_component_ld_root}/bin/wasm-component-ld${CMAKE_EXECUTABLE_SUFFIX})
@@ -118,24 +128,34 @@ add_custom_command(
   COMMAND
     cargo install --root ${wasm_component_ld_root} ${rust_target_flag}
       wasm-component-ld@${wasm_component_ld_version}
+  COMMAND
+    cmake -E make_directory ${wasi_tmp_install}/bin
+  COMMAND
+    cmake -E copy ${wasm_component_ld} ${wasi_tmp_install}/bin
   COMMENT "Building `wasm-component-ld` ...")
-
-add_custom_target(wasm-component-ld ALL DEPENDS ${wasm_component_ld})
-
-install(
-  PROGRAMS ${wasm_component_ld}
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+add_custom_target(wasm-component-ld DEPENDS ${wasm_component_ld})
+add_dependencies(build wasm-component-ld)
 
 # Setup installation logic for CMake support files.
-install(
-  PROGRAMS src/config/config.sub src/config/config.guess
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/misc)
-install(
-  FILES wasi-sdk.cmake wasi-sdk-pthread.cmake wasi-sdk-p2.cmake
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake)
-install(
-  DIRECTORY cmake/Platform
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake)
+add_custom_target(misc-files)
+add_dependencies(build misc-files)
+
+function(copy_misc_file src dst_folder)
+  cmake_path(GET src FILENAME src_filename)
+  set(dst ${wasi_tmp_install}/share/${dst_folder}/${src_filename})
+  add_custom_command(
+    OUTPUT ${dst}
+    COMMAND cmake -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${src} ${dst})
+  add_custom_target(copy-${src_filename} DEPENDS ${dst})
+  add_dependencies(misc-files copy-${src_filename})
+endfunction()
+
+copy_misc_file(src/config/config.sub misc)
+copy_misc_file(src/config/config.guess misc)
+copy_misc_file(wasi-sdk.cmake cmake)
+copy_misc_file(wasi-sdk-pthread.cmake cmake)
+copy_misc_file(wasi-sdk-p2.cmake cmake)
+copy_misc_file(cmake/Platform/WASI.cmake cmake/Platform)
 
 include(wasi-sdk-dist)
 
@@ -156,6 +176,6 @@ endif()
 set(dist_dir ${CMAKE_CURRENT_BINARY_DIR}/dist)
 wasi_sdk_add_tarball(dist-toolchain
   ${dist_dir}/wasi-toolchain-${wasi_sdk_version}-${wasi_sdk_artifact}.tar.gz
-  ${CMAKE_INSTALL_PREFIX})
-add_dependencies(dist-toolchain llvm-build install)
+  ${wasi_tmp_install})
+add_dependencies(dist-toolchain build)
 add_custom_target(dist DEPENDS dist-toolchain)

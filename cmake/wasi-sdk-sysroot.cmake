@@ -10,7 +10,8 @@ find_program(MAKE make REQUIRED)
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 
-set(wasi_sysroot ${CMAKE_INSTALL_PREFIX}/share/wasi-sysroot)
+set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
+set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
 
 if(WASI_SDK_DEBUG_PREFIX_MAP)
   add_compile_options(
@@ -44,7 +45,7 @@ endif()
 # compiler-rt build logic
 # =============================================================================
 
-set(compiler_rt_dst ${CMAKE_INSTALL_PREFIX}/lib/clang/${clang_version})
+set(compiler_rt_dst ${wasi_tmp_install}/lib/clang/${clang_version})
 ExternalProject_Add(compiler-rt-build
   SOURCE_DIR "${llvm_proj_dir}/compiler-rt"
   CMAKE_ARGS
@@ -234,6 +235,10 @@ endforeach()
 # misc build logic
 # =============================================================================
 
+install(DIRECTORY ${wasi_tmp_install}/lib ${wasi_tmp_install}/share
+        USE_SOURCE_PERMISSIONS
+        DESTINATION ${CMAKE_INSTALL_PREFIX})
+
 # Add a top-level `build` target as well as `build-$target` targets.
 add_custom_target(build ALL)
 foreach(target IN LISTS WASI_SDK_TARGETS)
@@ -244,14 +249,16 @@ endforeach()
 
 # Install a `VERSION` file in the output prefix with a dump of version
 # information.
-set(version_file_tmp ${CMAKE_CURRENT_BINARY_DIR}/VERSION)
 execute_process(
   COMMAND ${PYTHON} ${version_script} dump
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  OUTPUT_FILE ${version_file_tmp})
-install(
-  FILES ${version_file_tmp}
-  DESTINATION ${CMAKE_INSTALL_PREFIX})
+  OUTPUT_VARIABLE version_dump)
+set(version_file_tmp ${CMAKE_CURRENT_BINARY_DIR}/VERSION)
+file(GENERATE OUTPUT ${version_file_tmp} CONTENT ${version_dump})
+add_custom_target(version-file DEPENDS ${version_file_tmp})
+add_dependencies(build version-file)
+install(FILES ${version_file_tmp}
+        DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 if(WASI_SDK_INCLUDE_TESTS)
   add_subdirectory(tests)
@@ -264,13 +271,13 @@ set(dist_dir ${CMAKE_CURRENT_BINARY_DIR}/dist)
 # Tarball with just `compiler-rt` builtins within it
 wasi_sdk_add_tarball(dist-compiler-rt
   ${dist_dir}/libclang_rt.builtins-wasm32-wasi-${wasi_sdk_version}.tar.gz
-  ${CMAKE_INSTALL_PREFIX}/lib/clang/${clang_version}/lib/wasi)
+  ${wasi_tmp_install}/lib/clang/${clang_version}/lib/wasi)
 add_dependencies(dist-compiler-rt compiler-rt)
 
 # Tarball with the whole sysroot
 wasi_sdk_add_tarball(dist-sysroot
   ${dist_dir}/wasi-sysroot-${wasi_sdk_version}.tar.gz
-  ${CMAKE_INSTALL_PREFIX}/share/wasi-sysroot)
-add_dependencies(dist-sysroot build install)
+  ${wasi_tmp_install}/share/wasi-sysroot)
+add_dependencies(dist-sysroot build)
 
 add_custom_target(dist DEPENDS dist-compiler-rt dist-sysroot)
