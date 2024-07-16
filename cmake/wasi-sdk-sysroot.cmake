@@ -10,6 +10,7 @@ find_program(MAKE make REQUIRED)
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
+option(WASI_SDK_LTO "Whether or not to build LTO assets" ON)
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
@@ -154,10 +155,12 @@ endfunction()
 
 function(define_wasi_libc target)
   define_wasi_libc_sub (${target} "" OFF)
-  define_wasi_libc_sub (${target} "-lto" ON)
+  if(WASI_SDK_LTO)
+    define_wasi_libc_sub (${target} "-lto" ON)
+  endif()
 
   add_custom_target(wasi-libc-${target}
-    DEPENDS wasi-libc-${target}-build wasi-libc-${target}-lto-build)
+    DEPENDS wasi-libc-${target}-build $<$<BOOL:${WASI_SDK_LTO}>:wasi-libc-${target}-lto-build>)
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
@@ -262,9 +265,11 @@ endfunction()
 
 function(define_libcxx target)
   define_libcxx_sub(${target} "" "" "")
-  # Note: clang knows this /llvm-lto/${llvm_version} convention.
-  # https://github.com/llvm/llvm-project/blob/llvmorg-18.1.8/clang/lib/Driver/ToolChains/WebAssembly.cpp#L204-L210
-  define_libcxx_sub(${target} "-lto" "-flto=full" "/llvm-lto/${llvm_version}")
+  if(WASI_SDK_LTO)
+    # Note: clang knows this /llvm-lto/${llvm_version} convention.
+    # https://github.com/llvm/llvm-project/blob/llvmorg-18.1.8/clang/lib/Driver/ToolChains/WebAssembly.cpp#L204-L210
+    define_libcxx_sub(${target} "-lto" "-flto=full" "/llvm-lto/${llvm_version}")
+  endif()
 
   # As of this writing, `clang++` will ignore the target-specific include dirs
   # unless this one also exists:
@@ -272,7 +277,7 @@ function(define_libcxx target)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${wasi_sysroot}/include/c++/v1
     COMMENT "creating libcxx-specific header file folder")
   add_custom_target(libcxx-${target}
-    DEPENDS libcxx-${target}-build libcxx-${target}-lto-build libcxx-${target}-extra-dir)
+    DEPENDS libcxx-${target}-build $<$<BOOL:${WASI_SDK_LTO}>:libcxx-${target}-lto-build> libcxx-${target}-extra-dir)
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
