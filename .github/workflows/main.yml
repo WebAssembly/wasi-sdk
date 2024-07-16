@@ -233,6 +233,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dist-x86_64-linux
+          path: dist-x86_64-linux
       - run: ./ci/merge-artifacts.sh
       - run: tar xf dist/wasi-sdk-*.tar.gz
       - run: |
