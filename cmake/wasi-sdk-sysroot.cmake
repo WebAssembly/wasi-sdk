@@ -14,11 +14,6 @@ set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
 set(wasi_resource_dir ${wasi_tmp_install}/lib/clang/${clang_version})
 
-# Force usage of the custom-built resource-dir and sysroot for the rest of the
-# wasi compiles.
-add_compile_options(-resource-dir ${wasi_resource_dir})
-add_compile_options(--sysroot ${wasi_sysroot})
-
 if(WASI_SDK_DEBUG_PREFIX_MAP)
   add_compile_options(
     -fdebug-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=wasisdk://v${wasi_sdk_version})
@@ -167,9 +162,17 @@ function(define_libcxx target)
 
   get_property(dir_compile_opts DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   get_property(dir_link_opts DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY LINK_OPTIONS)
-  set(extra_cflags_list ${CMAKE_C_FLAGS} ${target_flags} --target=${target} ${dir_compile_opts} ${dir_link_opts})
+  set(extra_flags
+    ${target_flags}
+    --target=${target}
+    ${dir_compile_opts}
+    ${dir_link_opts}
+    --sysroot ${wasi_sysroot}
+    -resource-dir ${wasi_resource_dir})
+
+  set(extra_cflags_list ${CMAKE_C_FLAGS} ${extra_flags})
   list(JOIN extra_cflags_list " " extra_cflags)
-  set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${target_flags} --target=${target} ${dir_compile_opts} ${dir_link_opts})
+  set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${extra_flags})
   list(JOIN extra_cxxflags_list " " extra_cxxflags)
 
   ExternalProject_Add(libcxx-${target}-build
