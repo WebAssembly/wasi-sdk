@@ -12,12 +12,17 @@ option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
+set(wasi_resource_dir ${wasi_tmp_install}/lib/clang/${clang_version})
+
+# Force usage of the custom-built resource-dir and sysroot for the rest of the
+# wasi compiles.
+add_compile_options(-resource-dir ${wasi_resource_dir})
+add_compile_options(--sysroot ${wasi_sysroot})
 
 if(WASI_SDK_DEBUG_PREFIX_MAP)
   add_compile_options(
     -fdebug-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=wasisdk://v${wasi_sdk_version})
 endif()
-
 
 # Default arguments for builds of cmake projects (mostly LLVM-based) to forward
 # along much of our own configuration into these projects.
@@ -45,7 +50,6 @@ endif()
 # compiler-rt build logic
 # =============================================================================
 
-set(compiler_rt_dst ${wasi_tmp_install}/lib/clang/${clang_version})
 ExternalProject_Add(compiler-rt-build
   SOURCE_DIR "${llvm_proj_dir}/compiler-rt"
   CMAKE_ARGS
@@ -58,7 +62,7 @@ ExternalProject_Add(compiler-rt-build
       -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
       -DCMAKE_C_COMPILER_TARGET=wasm32-wasi
       -DCOMPILER_RT_OS_DIR=wasi
-      -DCMAKE_INSTALL_PREFIX=${compiler_rt_dst}
+      -DCMAKE_INSTALL_PREFIX=${wasi_resource_dir}
   EXCLUDE_FROM_ALL ON
   USES_TERMINAL_CONFIGURE ON
   USES_TERMINAL_BUILD ON
@@ -69,25 +73,29 @@ ExternalProject_Add(compiler-rt-build
 # around some headers and make copies of the `wasi` directory as `wasip1` and
 # `wasip2`
 execute_process(
-  COMMAND ${CMAKE_C_COMPILER} -print-runtime-dir
-  OUTPUT_VARIABLE clang_runtime_dir
+  COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
+  OUTPUT_VARIABLE clang_resource_dir
   OUTPUT_STRIP_TRAILING_WHITESPACE)
-cmake_path(GET clang_runtime_dir PARENT_PATH clang_runtime_libdir) # chop off `wasi`
-cmake_path(GET clang_runtime_libdir PARENT_PATH clang_sysroot_dir) # chop off `lib`
 add_custom_target(compiler-rt-post-build
+  # The `${wasi_resource_dir}` folder is going to get used as `-resource-dir`
+  # for future compiles. Copy the host compiler's own headers into this
+  # directory to ensure that all host-defined headers all work as well.
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${clang_sysroot_dir} ${compiler_rt_dst}
+    ${clang_resource_dir}/include ${wasi_resource_dir}/include
+
+  # Copy the `lib/wasi` folder to `libc/wasi{p1,p2}` to ensure that those
+  # OS-strings also work for looking up the compiler-rt.a file.
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${compiler_rt_dst}/lib/wasi ${compiler_rt_dst}/lib/wasip1
+    ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasip1
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${compiler_rt_dst}/lib/wasi ${compiler_rt_dst}/lib/wasip2
-  COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
-    ${compiler_rt_dst}/lib ${clang_runtime_libdir}
+    ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasip2
+
   COMMENT "finalizing compiler-rt installation"
 )
 add_dependencies(compiler-rt-post-build compiler-rt-build)
 
 add_custom_target(compiler-rt DEPENDS compiler-rt-build compiler-rt-post-build)
+
 
 # =============================================================================
 # wasi-libc build logic

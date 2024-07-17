@@ -5,8 +5,8 @@ include(CTest)
 enable_testing()
 set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 
-add_compile_options(--sysroot=${wasi_sysroot})
-add_link_options(--sysroot=${wasi_sysroot})
+add_compile_options(--sysroot=${wasi_sysroot} -resource-dir ${wasi_resource_dir})
+add_link_options(--sysroot=${wasi_sysroot} -resource-dir ${wasi_resource_dir})
 
 # Sanity check setup
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL WASI)
