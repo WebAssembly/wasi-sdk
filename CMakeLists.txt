@@ -25,15 +25,10 @@ find_program(PYTHON python3 python REQUIRED)
 # Set some variables based on the `version.py` script
 set(version_script ${CMAKE_CURRENT_SOURCE_DIR}/version.py)
 execute_process(
-  COMMAND ${PYTHON} ${version_script} llvm-major --llvm-dir=${llvm_proj_dir}
-  OUTPUT_VARIABLE clang_version
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(
   COMMAND ${PYTHON} ${version_script}
   OUTPUT_VARIABLE wasi_sdk_version
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-message(STATUS "wasi-sdk toolchain LLVM version is ${clang_version}")
 message(STATUS "wasi-sdk version is ${wasi_sdk_version}")
 
 # Only include one version of the build logic as pulling in both isn't
