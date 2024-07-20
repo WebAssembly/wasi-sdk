@@ -246,9 +246,14 @@ endforeach()
 install(DIRECTORY ${wasi_tmp_install}/share
         USE_SOURCE_PERMISSIONS
         DESTINATION ${CMAKE_INSTALL_PREFIX})
-install(DIRECTORY ${wasi_resource_dir}/lib
-        USE_SOURCE_PERMISSIONS
-        DESTINATION ${clang_resource_dir})
+cmake_path(IS_PREFIX CMAKE_INSTALL_PREFIX ${clang_resource_dir} NORMALIZE install_resource_dir)
+if(install_resource_dir)
+  install(DIRECTORY ${wasi_resource_dir}/lib
+          USE_SOURCE_PERMISSIONS
+          DESTINATION ${clang_resource_dir})
+else()
+  message(STATUS "The resource dir (${clang_resource_dir}) will not be updated by the install target because it's out of CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}")
+endif()
 
 # Add a top-level `build` target as well as `build-$target` targets.
 add_custom_target(build ALL)
