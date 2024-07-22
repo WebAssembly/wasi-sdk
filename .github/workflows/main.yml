@@ -133,11 +133,23 @@ jobs:
         run: ./ci/docker-build.sh ${{ matrix.artifact }}
         if: runner.os == 'Linux'
 
-      # Use a shorter build directory than the default on Windows to avoid
-      # hitting path length and command line length limits. See
-      # WebAssembly/wasi-libc#514
+      # Setup the VS Developoer Prompt environment variables to explicitly use
+      # MSVC to compile LLVM as that avoids extra runtime dependencies
+      # msys/mingw might bring.
+      #
+      # As of 2024-07-22 this sha is the "v1" tag.
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        if: runner.os == 'Windows'
       - name: Build and test (Windows)
         run: |
+          # Delete a troublesome binary as recommended here
+          # https://github.com/ilammy/msvc-dev-cmd?tab=readme-ov-file#name-conflicts-with-shell-bash
+          rm /usr/bin/link
+          # Use a shorter build directory than the default on Windows to avoid
+          # hitting path length and command line length limits. See
+          # WebAssembly/wasi-libc#514. Despite using a different build directory
+          # though still move the `dist` folder to `build/dist` so the upload
+          # step below doesn't need a windows-specific hook.
           ./ci/build.sh C:/wasi-sdk
           mkdir build
           cp -r C:/wasi-sdk/dist build
