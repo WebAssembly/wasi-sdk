@@ -137,6 +137,15 @@ jobs:
           name: ${{ format( 'dist-{0}', matrix.artifact) }}
           path: build/dist
 
+      # Caches are persisted across runs by restoring the latest cache which
+      # means that quite a lot of cruft can accumulate. Prune older entries that
+      # haven't been used by this run to avoid the cache continuously getting
+      # larger. In theory this should use `--evict-older-than $dur` where `$dur`
+      # is the time since the start of the run, but I'm not sure how to easily
+      # calculate that so pick something loose like one day instead.
+      - name: Prune ccache objects
+        run: ccache --evict-older-than 1d
+
       # Help debug ccache issues by showing what happened.
       - if: always()
         name: Show ccache statistics
