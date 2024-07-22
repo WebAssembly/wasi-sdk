@@ -4,6 +4,7 @@
 
 FROM ubuntu:18.04
 
+# Various build tooling and such necessary to build LLVM and a wasi-sysroot
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   ccache \
@@ -16,6 +17,8 @@ RUN apt-get update \
   unzip \
   xz-utils
 
+# Install a more recent version of CMake than what 18.04 has since that's what
+# LLVM requires.
 RUN curl -sSLO https://github.com/Kitware/CMake/releases/download/v3.29.5/cmake-3.29.5-linux-x86_64.tar.gz \
   && tar xf cmake-3.29.5-linux-x86_64.tar.gz \
   && rm cmake-3.29.5-linux-x86_64.tar.gz \
@@ -24,9 +27,12 @@ RUN curl -sSLO https://github.com/Kitware/CMake/releases/download/v3.29.5/cmake-
 
 ENV PATH /opt/cmake/bin:$PATH
 
+# As with CMake install a later version of Ninja than waht 18.04 has.
 RUN curl -sSLO https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip \
   && unzip ninja-linux.zip \
   && rm *.zip \
   && mv ninja /opt/cmake/bin
 
+# Tell programs to cache in a location that both isn't a `--volume` mounted root
+# and isn't `/root` in the container as that won't be writable during the build.
 ENV XDG_CACHE_HOME /tmp/cache

@@ -1,1 +1,7 @@
 FROM wasi-sdk-builder-base
+
+# No extra configuration necessary for x86_64 over what `Dockerfile.common`
+# already has.
+#
+# Note though that `.github/workflows/main.yml` still sets various bits and bobs
+# of configuration and cmake flags that may get passed to the underlying build.
