@@ -1,23 +1,11 @@
 FROM wasi-sdk-builder-base
 
+# Install an extra C++ toolchain which can target arm64 linux.
 RUN apt-get install -y g++-aarch64-linux-gnu
 
-# Don't build a sysroot for this cross-compiled target since it would require a
-# host compiler and the sysroot is otherwise already built on other CI builders.
-ENV WASI_SDK_CI_SKIP_SYSROOT 1
-
-ENV WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS \
-  -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
-  -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-  -DCMAKE_CROSSCOMPILING=True \
-  -DCMAKE_CXX_FLAGS=-march=armv8-a \
-  -DCMAKE_SYSTEM_PROCESSOR=arm64 \
-  -DCMAKE_SYSTEM_NAME=Linux \
-  -DLLVM_HOST_TRIPLE=aarch64-linux-gnu \
-  -DRUST_TARGET=aarch64-unknown-linux-gnu
-
-ENV WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS \
-  -DWASI_SDK_ARTIFACT=arm64-linux \
-  -DRUST_TARGET=aarch64-unknown-linux-gnu
-
+# Configure Rust to use this new compiler for linking Rust executables.
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER aarch64-linux-gnu-gcc
+
+# Note that `.github/workflows/main.yml` sets various bits and bobs of
+# configuration and cmake flags that may get passed to the underlying build. For
+# example LLVM is instructed to use the toolchain installed above.

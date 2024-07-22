@@ -24,26 +24,50 @@ jobs:
           - artifact: arm64-linux
             os: ubuntu-latest
             rust_target: aarch64-unknown-linux-gnu
+            env:
+              # Don't build a sysroot for this cross-compiled target since it
+              # would require a host compiler and the sysroot is otherwise
+              # already built on other CI builders.
+              WASI_SDK_CI_SKIP_SYSROOT: 1
+
+              WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
+                -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+                -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+                -DCMAKE_CROSSCOMPILING=True
+                -DCMAKE_CXX_FLAGS=-march=armv8-a
+                -DCMAKE_SYSTEM_PROCESSOR=arm64
+                -DCMAKE_SYSTEM_NAME=Linux
+                -DLLVM_HOST_TRIPLE=aarch64-linux-gnu
+                -DRUST_TARGET=aarch64-unknown-linux-gnu
 
           - artifact: arm64-macos
             os: macos-latest
-            llvm_cmake_flags: -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 -DCMAKE_OSX_ARCHITECTURES=arm64
             rust_target: aarch64-apple-darwin
+            env:
+              WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
+                -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
+                -DCMAKE_OSX_ARCHITECTURES=arm64
 
           - artifact: x86_64-macos
             os: macos-latest
-            llvm_cmake_flags: -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12 -DCMAKE_OSX_ARCHITECTURES=x86_64
             rust_target: x86_64-apple-darwin
-            skip_sysroot: 1
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
+              WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
+                -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
+                -DCMAKE_OSX_ARCHITECTURES=x86_64
 
           - artifact: x86_64-windows
             os: windows-latest
-            # TODO: tests are pretty close to passing on Windows but need some
-            # final tweaks, namely testing the exit code doesn't work since
-            # exit codes are different on Windows and the `mmap.c` tests seems
-            # to have issues probably with line endings. Needs someone with a
-            # Windows checkout tot test further.
-            skip_tests: 1
+            env:
+              # TODO: tests are pretty close to passing on Windows but need some
+              # final tweaks, namely testing the exit code doesn't work since
+              # exit codes are different on Windows and the `mmap.c` tests seems
+              # to have issues probably with line endings. Needs someone with a
+              # Windows checkout tot test further.
+              WASI_SDK_CI_SKIP_TESTS: 1
+
+    env: ${{ matrix.env || fromJSON('{}') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -77,9 +101,6 @@ jobs:
 
       # Configure CMake flags for `ci/build.sh` as necessary for each
       # matrix entry.
-      - run: echo WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS=${{ matrix.llvm_cmake_flags }} >> $GITHUB_ENV
-        if: matrix.llvm_cmake_flags != ''
-        shell: bash
       - run: |
           cmake_args=-DWASI_SDK_ARTIFACT=${{ matrix.artifact }}
           if [ "${{ matrix.rust_target }}" != "" ]; then
@@ -88,12 +109,6 @@ jobs:
           fi
           echo WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS="$cmake_args" >> $GITHUB_ENV
         shell: bash
-      - run: echo WASI_SDK_CI_SKIP_SYSROOT=1 >> $GITHUB_ENV
-        shell: bash
-        if: matrix.skip_sysroot != ''
-      - run: echo WASI_SDK_CI_SKIP_TESTS=1 >> $GITHUB_ENV
-        shell: bash
-        if: matrix.skip_tests != ''
 
       # Add some extra installed software on each runner as necessary.
       - name: Setup `wasmtime` for tests
