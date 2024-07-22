@@ -137,7 +137,7 @@ jobs:
       # MSVC to compile LLVM as that avoids extra runtime dependencies
       # msys/mingw might bring.
       #
-      # As of 2024-07-22 this sha is the "v1" tag.
+      # As of 2024-07-22 this sha is the "v1.13.0" tag.
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
         if: runner.os == 'Windows'
       - name: Build and test (Windows)
