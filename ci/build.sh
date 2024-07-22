@@ -18,6 +18,7 @@ fi
 
 cmake -G Ninja -B $build_dir/toolchain -S . \
   -DWASI_SDK_BUILD_TOOLCHAIN=ON \
+  -DCMAKE_BUILD_TYPE=MinSizeRel \
   "-DCMAKE_INSTALL_PREFIX=$build_dir/install" \
   $WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS \
   "-DLLVM_CMAKE_FLAGS=$WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS"
