@@ -48,6 +48,12 @@ args="$args --volume $ccache_dir:/ccache:Z --env CCACHE_DIR=/ccache"
 args="$args --volume `rustc --print sysroot`:/rustc:ro"
 args="$args --volume $(dirname $(which wasmtime)):/wasmtime:ro"
 
+# Pass through some env vars that `build.sh` reads
+args="$args --env WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS"
+args="$args --env WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS"
+args="$args --env WASI_SDK_CI_SKIP_SYSROOT"
+args="$args --env WASI_SDK_CI_SKIP_TESTS"
+
 # Before running `ci/build.sh` set up some rust/PATH related info to use what
 # was just mounted above, and then execute the build.
 docker run \
