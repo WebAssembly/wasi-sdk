@@ -211,3 +211,39 @@ jobs:
         run: gh release create --draft --prerelease --generate-notes ${{ github.ref_name }} ./dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Test the final artifacts as-is without passing `--sysroot` or
+  # `-resource-dir` or any extra flags. This exercises running the compiler
+  # as-is from the distribution tarballs and ensuring that it can build and pass
+  # all tests.
+  test-standalone:
+    name: Test standalone toolchain
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch --tags --force
+        name: Force-fetch tags to work around actions/checkout#290
+      - run: git submodule update --init --depth 32 --jobs 3
+      - name: Setup `wasmtime` for tests
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: "18.0.2"
+      - name: Install ninja
+        run: sudo apt-get install -y ninja-build
+        if: runner.os == 'Linux'
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-x86_64-linux
+          path: dist-x86_64-linux
+      - run: ./ci/merge-artifacts.sh
+      - run: tar xf dist/wasi-sdk-*.tar.gz
+      - run: |
+          cmake -G Ninja -B build -S . \
+            -DWASI_SDK_INCLUDE_TESTS=ON \
+            -DWASI_SDK_TEST_HOST_TOOLCHAIN=ON \
+            -DCMAKE_TOOLCHAIN_FILE=$(ls ./wasi-sdk-*/share/cmake/wasi-sdk.cmake)
+      - run: ninja -C build build-tests
+      - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
