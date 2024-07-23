@@ -9,10 +9,11 @@ find_program(MAKE make REQUIRED)
 
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
+option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
-set(wasi_resource_dir ${wasi_tmp_install}/lib/clang/${clang_version})
+set(wasi_resource_dir ${wasi_tmp_install}/wasi-resource-dir)
 
 if(WASI_SDK_DEBUG_PREFIX_MAP)
   add_compile_options(
@@ -246,9 +247,18 @@ endforeach()
 # misc build logic
 # =============================================================================
 
-install(DIRECTORY ${wasi_tmp_install}/lib ${wasi_tmp_install}/share
+install(DIRECTORY ${wasi_tmp_install}/share
         USE_SOURCE_PERMISSIONS
         DESTINATION ${CMAKE_INSTALL_PREFIX})
+if(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR)
+  install(DIRECTORY ${wasi_resource_dir}/lib
+          USE_SOURCE_PERMISSIONS
+          DESTINATION ${clang_resource_dir})
+else()
+  install(DIRECTORY ${wasi_resource_dir}/lib
+          USE_SOURCE_PERMISSIONS
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/clang-resource-dir)
+endif()
 
 # Add a top-level `build` target as well as `build-$target` targets.
 add_custom_target(build ALL)
@@ -282,7 +292,7 @@ set(dist_dir ${CMAKE_CURRENT_BINARY_DIR}/dist)
 # Tarball with just `compiler-rt` builtins within it
 wasi_sdk_add_tarball(dist-compiler-rt
   ${dist_dir}/libclang_rt.builtins-wasm32-wasi-${wasi_sdk_version}.tar.gz
-  ${wasi_tmp_install}/lib/clang/${clang_version}/lib/wasi)
+  ${wasi_resource_dir}/lib/wasi)
 add_dependencies(dist-compiler-rt compiler-rt)
 
 # Tarball with the whole sysroot
