@@ -9,6 +9,7 @@ find_program(MAKE make REQUIRED)
 
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
+option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
@@ -246,13 +247,14 @@ endforeach()
 install(DIRECTORY ${wasi_tmp_install}/share
         USE_SOURCE_PERMISSIONS
         DESTINATION ${CMAKE_INSTALL_PREFIX})
-cmake_path(IS_PREFIX CMAKE_INSTALL_PREFIX ${clang_resource_dir} NORMALIZE install_resource_dir)
-if(install_resource_dir)
+if(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR)
   install(DIRECTORY ${wasi_resource_dir}/lib
           USE_SOURCE_PERMISSIONS
           DESTINATION ${clang_resource_dir})
 else()
-  message(STATUS "The resource dir (${clang_resource_dir}) will not be updated by the install target because it's out of CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}")
+  install(DIRECTORY ${wasi_resource_dir}/lib
+          USE_SOURCE_PERMISSIONS
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/clang-resource-dir)
 endif()
 
 # Add a top-level `build` target as well as `build-$target` targets.
