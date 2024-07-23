@@ -110,9 +110,6 @@ jobs:
           echo WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS="$cmake_args" >> $GITHUB_ENV
         shell: bash
 
-      - name: Clear ccache statistics
-        run: ccache --zero-stats
-
       # Add some extra installed software on each runner as necessary.
       - name: Setup `wasmtime` for tests
         uses: bytecodealliance/actions/wasmtime/setup@v1
@@ -127,6 +124,9 @@ jobs:
       - name: Install ccache, ninja (Linux)
         run: sudo apt install ccache
         if: runner.os == 'Linux'
+
+      - name: Clear ccache statistics
+        run: ccache --zero-stats
 
       - name: Build and test (macOS)
         run: ./ci/build.sh
