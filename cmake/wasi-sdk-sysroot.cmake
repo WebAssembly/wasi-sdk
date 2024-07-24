@@ -10,6 +10,7 @@ find_program(MAKE make REQUIRED)
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
+option(WASI_SDK_LTO "Whether or not to build LTO assets" ON)
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
@@ -97,15 +98,27 @@ add_custom_target(compiler-rt DEPENDS compiler-rt-build compiler-rt-post-build)
 # wasi-libc build logic
 # =============================================================================
 
-function(define_wasi_libc target)
-  set(build_dir ${CMAKE_CURRENT_BINARY_DIR}/wasi-libc-${target})
+function(define_wasi_libc_sub target target_suffix lto)
+  set(build_dir ${CMAKE_CURRENT_BINARY_DIR}/wasi-libc-${target}${target_suffix})
 
   if(${target} MATCHES threads)
-    set(extra_make_flags THREAD_MODEL=posix)
+    if(lto)
+      set(extra_make_flags LTO=full THREAD_MODEL=posix)
+    else()
+      set(extra_make_flags THREAD_MODEL=posix)
+    endif()
   elseif(${target} MATCHES p2)
-    set(extra_make_flags WASI_SNAPSHOT=p2 default libc_so)
+    if(lto)
+      set(extra_make_flags LTO=full WASI_SNAPSHOT=p2 default)
+    else()
+      set(extra_make_flags WASI_SNAPSHOT=p2 default libc_so)
+    endif()
   else()
-    set(extra_make_flags default libc_so)
+    if(lto)
+      set(extra_make_flags LTO=full default)
+    else()
+      set(extra_make_flags default libc_so)
+    endif()
   endif()
 
   string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
@@ -114,7 +127,7 @@ function(define_wasi_libc target)
     "${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
   list(JOIN extra_cflags_list " " extra_cflags)
 
-  ExternalProject_Add(wasi-libc-${target}
+  ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
     # Currently wasi-libc doesn't support out-of-tree builds so feigh a
     # "download command" which copies the source tree to a different location
     # so out-of-tree builds are supported.
@@ -129,7 +142,7 @@ function(define_wasi_libc target)
         NM=${CMAKE_NM}
         SYSROOT=${wasi_sysroot}
         EXTRA_CFLAGS=${extra_cflags}
-	TARGET_TRIPLE=${target}
+        TARGET_TRIPLE=${target}
         ${extra_make_flags}
     INSTALL_COMMAND ""
     DEPENDS compiler-rt
@@ -140,6 +153,16 @@ function(define_wasi_libc target)
   )
 endfunction()
 
+function(define_wasi_libc target)
+  define_wasi_libc_sub (${target} "" OFF)
+  if(WASI_SDK_LTO)
+    define_wasi_libc_sub (${target} "-lto" ON)
+  endif()
+
+  add_custom_target(wasi-libc-${target}
+    DEPENDS wasi-libc-${target}-build $<$<BOOL:${WASI_SDK_LTO}>:wasi-libc-${target}-lto-build>)
+endfunction()
+
 foreach(target IN LISTS WASI_SDK_TARGETS)
   define_wasi_libc(${target})
 endforeach()
@@ -148,7 +171,12 @@ endforeach()
 # libcxx build logic
 # =============================================================================
 
-function(define_libcxx target)
+execute_process(
+  COMMAND ${CMAKE_C_COMPILER} -dumpversion
+  OUTPUT_VARIABLE llvm_version
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_suffix)
   if(${target} MATCHES threads)
     set(threads ON)
     set(pic OFF)
@@ -158,6 +186,10 @@ function(define_libcxx target)
     set(pic ON)
     set(target_flags "")
   endif()
+  if(${target_suffix} MATCHES lto)
+    set(pic OFF)
+  endif()
+  list(APPEND target_flags ${extra_target_flags})
 
   set(runtimes "libcxx;libcxxabi")
 
@@ -176,7 +208,7 @@ function(define_libcxx target)
   set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${extra_flags})
   list(JOIN extra_cxxflags_list " " extra_cxxflags)
 
-  ExternalProject_Add(libcxx-${target}-build
+  ExternalProject_Add(libcxx-${target}${target_suffix}-build
     SOURCE_DIR ${llvm_proj_dir}/runtimes
     CMAKE_ARGS
       ${default_cmake_args}
@@ -214,8 +246,8 @@ function(define_libcxx target)
       -DUNIX:BOOL=ON
       -DCMAKE_C_FLAGS=${extra_cflags}
       -DCMAKE_CXX_FLAGS=${extra_cxxflags}
-      -DLIBCXX_LIBDIR_SUFFIX=/${target}
-      -DLIBCXXABI_LIBDIR_SUFFIX=/${target}
+      -DLIBCXX_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
+      -DLIBCXXABI_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
 
     # See https://www.scivision.dev/cmake-externalproject-list-arguments/ for
     # why this is in `CMAKE_CACHE_ARGS` instead of above
@@ -229,6 +261,15 @@ function(define_libcxx target)
     USES_TERMINAL_BUILD ON
     USES_TERMINAL_INSTALL ON
   )
+endfunction()
+
+function(define_libcxx target)
+  define_libcxx_sub(${target} "" "" "")
+  if(WASI_SDK_LTO)
+    # Note: clang knows this /llvm-lto/${llvm_version} convention.
+    # https://github.com/llvm/llvm-project/blob/llvmorg-18.1.8/clang/lib/Driver/ToolChains/WebAssembly.cpp#L204-L210
+    define_libcxx_sub(${target} "-lto" "-flto=full" "/llvm-lto/${llvm_version}")
+  endif()
 
   # As of this writing, `clang++` will ignore the target-specific include dirs
   # unless this one also exists:
@@ -236,7 +277,7 @@ function(define_libcxx target)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${wasi_sysroot}/include/c++/v1
     COMMENT "creating libcxx-specific header file folder")
   add_custom_target(libcxx-${target}
-    DEPENDS libcxx-${target}-build libcxx-${target}-extra-dir)
+    DEPENDS libcxx-${target}-build $<$<BOOL:${WASI_SDK_LTO}>:libcxx-${target}-lto-build> libcxx-${target}-extra-dir)
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
