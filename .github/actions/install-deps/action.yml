@@ -1,0 +1,22 @@
+name: 'Install wasi-sdk dependencies'
+description: 'Install wasi-sdk dependencies'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup `wasmtime` for tests
+      uses: bytecodealliance/actions/wasmtime/setup@v1
+      with:
+        version: "18.0.2"
+    - name: Install ccache, ninja (macOS)
+      run: brew install ccache ninja
+      if: runner.os == 'macOS'
+      shell: bash
+    - name: Install ccache, ninja (Windows)
+      run: choco install ccache ninja
+      if: runner.os == 'Windows'
+      shell: bash
+    - name: Install ccache, ninja (Linux)
+      run: sudo apt-get install -y ccache ninja-build
+      if: runner.os == 'Linux'
+      shell: bash

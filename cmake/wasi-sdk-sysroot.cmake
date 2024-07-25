@@ -15,6 +15,9 @@ if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${minimum_clang_required})
   message(FATAL_ERROR "compiler version ${CMAKE_C_COMPILER_VERSION} is less than the required version ${minimum_clang_required}")
 endif()
 
+message(STATUS "Found executable for `nm`: ${CMAKE_NM}")
+message(STATUS "Found executable for `ar`: ${CMAKE_AR}")
+
 find_program(MAKE make REQUIRED)
 
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
@@ -133,6 +136,7 @@ function(define_wasi_libc_sub target target_suffix lto)
 
   string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
+  list(APPEND directory_cflags -resource-dir ${wasi_resource_dir})
   set(extra_cflags_list
     "${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
   list(JOIN extra_cflags_list " " extra_cflags)
