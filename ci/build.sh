@@ -47,4 +47,5 @@ if [ "$WASI_SDK_CI_SKIP_TESTS" = "1" ]; then
 fi
 
 # Run tests to ensure that the sysroot works.
-ctest --output-on-failure --parallel 10 --test-dir $build_dir/sysroot/tests
+ctest --output-on-failure --parallel 10 --test-dir $build_dir/sysroot/tests \
+  --timeout 60
