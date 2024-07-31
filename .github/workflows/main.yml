@@ -59,13 +59,6 @@ jobs:
 
           - artifact: x86_64-windows
             os: windows-latest
-            env:
-              # TODO: tests are pretty close to passing on Windows but need some
-              # final tweaks, namely testing the exit code doesn't work since
-              # exit codes are different on Windows and the `mmap.c` tests seems
-              # to have issues probably with line endings. Needs someone with a
-              # Windows checkout tot test further.
-              WASI_SDK_CI_SKIP_TESTS: 1
 
     env: ${{ matrix.env || fromJSON('{}') }}
     steps:

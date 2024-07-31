@@ -53,6 +53,14 @@ exit_status=0
     || exit_status=$?
 echo $exit_status > "$exit_status_observed"
 
+# On Windows Wasmtime will exit with error code 3 for aborts. On Unix Wasmtime
+# will exit with status 134. Paper over this difference by pretending to be Unix
+# on Windows and converting exit code 3 into 134 for the purposes of asserting
+# test output.
+if [ "$OSTYPE" = "msys" ] && [ "$exit_status" = "3" ]; then
+  echo 134 > "$exit_status_observed"
+fi
+
 # Determine the reference files to compare with.
 if [ -e "$input.stdout.expected" ]; then
   stdout_expected="$input.stdout.expected"
