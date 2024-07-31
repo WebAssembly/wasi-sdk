@@ -5,6 +5,16 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
+if(NOT CMAKE_C_COMPILER_ID MATCHES Clang)
+  message(FATAL_ERROR "C compiler ${CMAKE_C_COMPILER} is not `Clang`, it is ${CMAKE_C_COMPILER_ID}")
+endif()
+
+set(minimum_clang_required 18.0.0)
+
+if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${minimum_clang_required})
+  message(FATAL_ERROR "compiler version ${CMAKE_C_COMPILER_VERSION} is less than the required version ${minimum_clang_required}")
+endif()
+
 find_program(MAKE make REQUIRED)
 
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)

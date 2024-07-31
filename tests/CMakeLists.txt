@@ -48,6 +48,7 @@ function(add_testcase runwasi test)
       # as well.
       if(NOT(CMAKE_C_COMPILER MATCHES ${target}))
         target_compile_options(${target_name} PRIVATE --target=${target})
+        target_link_options(${target_name} PRIVATE --target=${target})
       endif()
 
       # Apply test-specific compile options and link flags.
@@ -79,6 +80,7 @@ function(add_testcase runwasi test)
       # Apply target-specific options.
       if(target MATCHES threads)
         target_compile_options(${target_name} PRIVATE -pthread)
+        target_link_options(${target_name} PRIVATE -pthread)
       endif()
 
       if(runwasi)
