@@ -7,6 +7,7 @@
 # the host.
 
 cmake_minimum_required(VERSION 3.26)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(wasi-sdk)
 include(ExternalProject)
 
@@ -17,7 +18,6 @@ option(WASI_SDK_BUILD_TOOLCHAIN "Build a toolchain instead of the sysroot" OFF)
 set(llvm_proj_dir ${CMAKE_CURRENT_SOURCE_DIR}/src/llvm-project)
 set(wasi_libc ${CMAKE_CURRENT_SOURCE_DIR}/src/wasi-libc)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(wasi-sdk-enable-ccache)
 
 find_program(PYTHON python3 python REQUIRED)
