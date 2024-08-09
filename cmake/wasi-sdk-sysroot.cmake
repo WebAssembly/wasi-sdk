@@ -334,7 +334,7 @@ file(GENERATE OUTPUT ${version_file_tmp} CONTENT ${version_dump})
 add_custom_target(version-file DEPENDS ${version_file_tmp})
 add_dependencies(build version-file)
 install(FILES ${version_file_tmp}
-        DESTINATION ${CMAKE_INSTALL_PREFIX})
+        DESTINATION ${wasi_sysroot})
 
 if(WASI_SDK_INCLUDE_TESTS)
   add_subdirectory(tests)
@@ -353,7 +353,7 @@ add_dependencies(dist-compiler-rt compiler-rt)
 # Tarball with the whole sysroot
 wasi_sdk_add_tarball(dist-sysroot
   ${dist_dir}/wasi-sysroot-${wasi_sdk_version}.tar.gz
-  ${wasi_tmp_install}/share/wasi-sysroot)
+  ${wasi_sysroot})
 add_dependencies(dist-sysroot build)
 
 add_custom_target(dist DEPENDS dist-compiler-rt dist-sysroot)
