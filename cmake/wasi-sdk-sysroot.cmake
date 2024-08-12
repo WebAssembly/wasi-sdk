@@ -329,12 +329,10 @@ execute_process(
   COMMAND ${PYTHON} ${version_script} dump
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   OUTPUT_VARIABLE version_dump)
-set(version_file_tmp ${CMAKE_CURRENT_BINARY_DIR}/VERSION)
+set(version_file_tmp ${wasi_sysroot}/VERSION)
 file(GENERATE OUTPUT ${version_file_tmp} CONTENT ${version_dump})
 add_custom_target(version-file DEPENDS ${version_file_tmp})
 add_dependencies(build version-file)
-install(FILES ${version_file_tmp}
-        DESTINATION ${wasi_sysroot})
 
 if(WASI_SDK_INCLUDE_TESTS)
   add_subdirectory(tests)
