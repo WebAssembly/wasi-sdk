@@ -142,7 +142,7 @@ function(define_wasi_libc_sub target target_suffix lto)
   list(JOIN extra_cflags_list " " extra_cflags)
 
   ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
-    # Currently wasi-libc doesn't support out-of-tree builds so feigh a
+    # Currently wasi-libc doesn't support out-of-tree builds so feign a
     # "download command" which copies the source tree to a different location
     # so out-of-tree builds are supported.
     DOWNLOAD_COMMAND
