@@ -45,6 +45,7 @@ set(tools
   llvm-ranlib
   llvm-strip
   llvm-dwarfdump
+  llvm-dwp
   clang-resource-headers
   ar
   ranlib
