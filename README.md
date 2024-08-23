@@ -201,11 +201,15 @@ disabled in a configure step before building with WASI SDK.
 ## Notable Limitations
 
 This repository does not yet support __C++ exceptions__. C++ code is supported
-only with -fno-exceptions for now. Similarly, there is not yet support for
-setjmp/longjmp. Work on support for [exception handling] is underway at the
-language level which will support both of these features.
+only with -fno-exceptions for now.
+Work on support for [exception handling] is underway at the
+language level which will support the features.
 
 [exception handling]: https://github.com/WebAssembly/exception-handling/
+
+See [C setjmp/longjmp support] about setjmp/longjmp support.
+
+[C setjmp/longjmp support]: SetjmpLongjmp.md
 
 This repository experimentally supports __threads__ with
 `--target=wasm32-wasi-threads`. It uses WebAssembly's [threads] primitives
