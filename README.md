@@ -89,6 +89,9 @@ in compiling WebAssembly code. Supported CMake flags are:
   sysroot libraries, don't build or use fresh libraries for tests.
 * `-DWASI_SDK_TARGETS=..` - a list of targets to build, by default all WASI
   targets are compiled.
+* `-DWASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR=ON` - install compiler-rt
+  to the compiler's resource directory. might be convenient if you want to
+  use the toolchain (eg. `./build/install/bin/clang`) in-place.
 
 If you'd like to build distribution artifacts you can use the `dist` target like
 so:
