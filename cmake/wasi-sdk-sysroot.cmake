@@ -142,7 +142,7 @@ function(define_wasi_libc_sub target target_suffix lto)
   list(JOIN extra_cflags_list " " extra_cflags)
 
   ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
-    # Currently wasi-libc doesn't support out-of-tree builds so feigh a
+    # Currently wasi-libc doesn't support out-of-tree builds so feign a
     # "download command" which copies the source tree to a different location
     # so out-of-tree builds are supported.
     DOWNLOAD_COMMAND
@@ -262,6 +262,8 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DCMAKE_CXX_FLAGS=${extra_cxxflags}
       -DLIBCXX_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
       -DLIBCXXABI_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
+      -DLIBCXX_INCLUDE_TESTS=OFF
+      -DLIBCXX_INCLUDE_BENCHMARKS=OFF
 
     # See https://www.scivision.dev/cmake-externalproject-list-arguments/ for
     # why this is in `CMAKE_CACHE_ARGS` instead of above
