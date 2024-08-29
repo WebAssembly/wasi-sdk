@@ -44,7 +44,7 @@ The Wasm-sdk's build process needs some packages :
 * `clang`
 * `ninja`
 * `python3`
-* The latest rust toolchain
+* rust toolchain (`cargo` and dependencies)
 
 Please refer to your OS documentation to install those packages.
 
