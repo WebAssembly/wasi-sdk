@@ -336,6 +336,19 @@ file(GENERATE OUTPUT ${version_file_tmp} CONTENT ${version_dump})
 add_custom_target(version-file DEPENDS ${version_file_tmp})
 add_dependencies(build version-file)
 
+# Install a `version.h` script in each sysroot's include directory.
+execute_process(
+  COMMAND ${PYTHON} ${version_script} header
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  OUTPUT_VARIABLE version_header)
+foreach(target IN LISTS WASI_SDK_TARGETS)
+  message(STATUS "Creating version.h in ${version_dir}")
+  set(version_header_path ${wasi_sysroot}/include/${target}/wasi/version.h)
+  file(GENERATE OUTPUT ${version_header_path} CONTENT ${version_header})
+  add_custom_target(version-header-${target} DEPENDS ${version_header_path})
+  add_dependencies(build version-header-${target})
+endforeach()
+
 if(WASI_SDK_INCLUDE_TESTS)
   add_subdirectory(tests)
 endif()
