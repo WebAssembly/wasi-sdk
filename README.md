@@ -132,9 +132,9 @@ see [RELEASING.md](RELEASING.md).
 A typical installation from the release binaries might look like the following:
 
 ```shell script
-export WASI_ARCH=x86_64
-export WASI_VERSION=24
-export WASI_VERSION_FULL=${WASI_VERSION}.0
+WASI_ARCH=x86_64
+WASI_VERSION=24
+WASI_VERSION_FULL=${WASI_VERSION}.0
 wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION_FULL}-${WASI_ARCH}-linux.tar.gz
 tar xvf wasi-sdk-${WASI_VERSION_FULL}-${WASI_ARCH}-linux.tar.gz
 ```
