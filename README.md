@@ -132,10 +132,12 @@ see [RELEASING.md](RELEASING.md).
 A typical installation from the release binaries might look like the following:
 
 ```shell script
-export WASI_VERSION=20
-export WASI_VERSION_FULL=${WASI_VERSION}.0
-wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
-tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
+WASI_OS=linux
+WASI_ARCH=x86_64
+WASI_VERSION=24
+WASI_VERSION_FULL=${WASI_VERSION}.0
+wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_VERSION}/wasi-sdk-${WASI_VERSION_FULL}-${WASI_ARCH}-${WASI_OS}.tar.gz
+tar xvf wasi-sdk-${WASI_VERSION_FULL}-${WASI_ARCH}-${WASI_OS}.tar.gz
 ```
 
 ## Use
@@ -143,7 +145,7 @@ tar xvf wasi-sdk-${WASI_VERSION_FULL}-linux.tar.gz
 Use the clang installed in the `wasi-sdk` directory:
 
 ```shell script
-export WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}
+WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}-${WASI_ARCH}-${WASI_OS}
 CC="${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 $CC foo.c -o foo.wasm
 ```
