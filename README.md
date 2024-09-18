@@ -144,7 +144,7 @@ tar xvf wasi-sdk-${WASI_VERSION_FULL}-${WASI_ARCH}-linux.tar.gz
 Use the clang installed in the `wasi-sdk` directory:
 
 ```shell script
-export WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}-{WASI_ARCH}-linux
+export WASI_SDK_PATH=`pwd`/wasi-sdk-${WASI_VERSION_FULL}-${WASI_ARCH}-linux
 CC="${WASI_SDK_PATH}/bin/clang --sysroot=${WASI_SDK_PATH}/share/wasi-sysroot"
 $CC foo.c -o foo.wasm
 ```
