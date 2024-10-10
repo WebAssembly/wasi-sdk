@@ -93,10 +93,14 @@ add_custom_target(compiler-rt-post-build
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${clang_resource_dir}/include ${wasi_resource_dir}/include
 
-  # Copy the `lib/wasi` folder to `libc/wasi{p1,p2}` to ensure that those
-  # OS-strings also work for looking up the compiler-rt.a file.
+  # Copy the `lib/wasi` folder to `libc/wasi{p1,p2}{-threads}?` to ensure that
+  # those OS-strings also work for looking up the compiler-rt.a file.
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasi-threads
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasip1
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasip1-threads
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasip2
 
