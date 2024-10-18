@@ -4,7 +4,7 @@
 #include <assert.h>
 
 int main() {
-  tf_float f = __floatditf(0);
+  double f = __floatdidf(0);
   assert(f == 0.0);
   return 0;
 }
