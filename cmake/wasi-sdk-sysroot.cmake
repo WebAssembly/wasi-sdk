@@ -192,13 +192,11 @@ execute_process(
 
 function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_suffix)
   if(${target} MATCHES threads)
-    set(threads ON)
     set(pic OFF)
     set(target_flags -pthread)
   else()
-    set(threads OFF)
     set(pic ON)
-    set(target_flags "")
+    set(target_flags -D_WASI_EMULATED_PTHREAD)
   endif()
   if(${target_suffix} MATCHES lto)
     set(pic OFF)
@@ -232,8 +230,8 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DCMAKE_STAGING_PREFIX=${wasi_sysroot}
       -DCMAKE_POSITION_INDEPENDENT_CODE=${pic}
       -DCXX_SUPPORTS_CXX11=ON
-      -DLIBCXX_ENABLE_THREADS:BOOL=${threads}
-      -DLIBCXX_HAS_PTHREAD_API:BOOL=${threads}
+      -DLIBCXX_ENABLE_THREADS:BOOL=ON
+      -DLIBCXX_HAS_PTHREAD_API:BOOL=ON
       -DLIBCXX_HAS_EXTERNAL_THREAD_API:BOOL=OFF
       -DLIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF
       -DLIBCXX_HAS_WIN32_THREAD_API:BOOL=OFF
@@ -250,8 +248,8 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF
       -DLIBCXXABI_ENABLE_SHARED:BOOL=${pic}
       -DLIBCXXABI_SILENT_TERMINATE:BOOL=ON
-      -DLIBCXXABI_ENABLE_THREADS:BOOL=${threads}
-      -DLIBCXXABI_HAS_PTHREAD_API:BOOL=${threads}
+      -DLIBCXXABI_ENABLE_THREADS:BOOL=ON
+      -DLIBCXXABI_HAS_PTHREAD_API:BOOL=ON
       -DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF
       -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF
       -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF
