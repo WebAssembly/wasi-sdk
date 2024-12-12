@@ -90,7 +90,6 @@ ExternalProject_Add(llvm-build
     -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi
     -DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE
     -DLLVM_ENABLE_LIBXML2=OFF
-    -DDEFAULT_SYSROOT=../share/wasi-sysroot
     # Pass `-s` to strip symbols by default and shrink the size of the
     # distribution
     -DCMAKE_EXE_LINKER_FLAGS=-s
@@ -158,6 +157,18 @@ copy_misc_file(wasi-sdk-pthread.cmake cmake)
 copy_misc_file(wasi-sdk-p1.cmake cmake)
 copy_misc_file(wasi-sdk-p2.cmake cmake)
 copy_misc_file(cmake/Platform/WASI.cmake cmake/Platform)
+
+function(copy_cfg_file compiler)
+  set(dst ${wasi_tmp_install}/bin/${compiler}.cfg)
+  add_custom_command(
+    OUTPUT ${dst}
+    COMMAND cmake -E copy ${CMAKE_CURRENT_SOURCE_DIR}/clang.cfg ${dst})
+  add_custom_target(copy-${compiler} DEPENDS ${dst})
+  add_dependencies(misc-files copy-${compiler})
+endfunction()
+
+copy_cfg_file(clang)
+copy_cfg_file(clang++)
 
 include(wasi-sdk-dist)
 
