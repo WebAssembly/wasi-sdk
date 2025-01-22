@@ -1,8 +1,8 @@
 # Use a relatively old/stable distro here to maximize the supported platforms
 # and avoid depending on more recent version of, say, libc.
-# Here we choose Bionic 18.04.
+# Here we choose Ubuntu 20.04.
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 # Various build tooling and such necessary to build LLVM and a wasi-sysroot
 RUN apt-get update \
