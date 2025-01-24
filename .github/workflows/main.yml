@@ -178,7 +178,8 @@ jobs:
             -DCMAKE_C_COMPILER=/usr/lib/llvm-18/bin/clang \
             -DCMAKE_SYSTEM_NAME=WASI \
             -DWASI_SDK_INCLUDE_TESTS=ON \
-            -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF
+            -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF \
+            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF
       - run: ninja -C build
       - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
 

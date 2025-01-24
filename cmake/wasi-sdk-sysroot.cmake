@@ -52,7 +52,8 @@ set(default_cmake_args
   # is just a bare "clang" installation then it can mistakenly deduce that this
   # feature is supported when it's not actually supported for WASI targets.
   # Currently `wasm-ld` does not support the linker flag for this.
-  -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF)
+  -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF
+  -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF)
 
 if(CMAKE_C_COMPILER_LAUNCHER)
   list(APPEND default_cmake_args -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})
