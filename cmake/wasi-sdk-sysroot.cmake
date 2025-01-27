@@ -47,7 +47,13 @@ set(default_cmake_args
   -DCMAKE_C_COMPILER_WORKS=ON
   -DCMAKE_CXX_COMPILER_WORKS=ON
   -DCMAKE_SYSROOT=${wasi_sysroot}
-  -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+  -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/cmake
+  # CMake detects this based on `CMAKE_C_COMPILER` alone and when that compiler
+  # is just a bare "clang" installation then it can mistakenly deduce that this
+  # feature is supported when it's not actually supported for WASI targets.
+  # Currently `wasm-ld` does not support the linker flag for this.
+  -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF
+  -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF)
 
 if(CMAKE_C_COMPILER_LAUNCHER)
   list(APPEND default_cmake_args -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER})

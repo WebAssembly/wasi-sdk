@@ -19,10 +19,10 @@ jobs:
       matrix:
         include:
           - artifact: x86_64-linux
-            os: ubuntu-latest
+            os: ubuntu-24.04
 
           - artifact: arm64-linux
-            os: ubuntu-latest
+            os: ubuntu-24.04
             rust_target: aarch64-unknown-linux-gnu
             env:
               # Don't build a sysroot for this cross-compiled target since it
@@ -41,7 +41,7 @@ jobs:
                 -DRUST_TARGET=aarch64-unknown-linux-gnu
 
           - artifact: arm64-macos
-            os: macos-latest
+            os: macos-14
             rust_target: aarch64-apple-darwin
             env:
               WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
@@ -49,7 +49,7 @@ jobs:
                 -DCMAKE_OSX_ARCHITECTURES=arm64
 
           - artifact: x86_64-macos
-            os: macos-latest
+            os: macos-14
             rust_target: x86_64-apple-darwin
             env:
               WASI_SDK_CI_SKIP_SYSROOT: 1
@@ -58,7 +58,7 @@ jobs:
                 -DCMAKE_OSX_ARCHITECTURES=x86_64
 
           - artifact: x86_64-windows
-            os: windows-latest
+            os: windows-2022
 
     env: ${{ matrix.env || fromJSON('{}') }}
     steps:
@@ -165,25 +165,21 @@ jobs:
 
   build-only-sysroot:
     name: Build only sysroot
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
       - uses: ./.github/actions/install-deps
-      - run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          name=$(lsb_release -s -c)
-          sudo add-apt-repository -y "deb http://apt.llvm.org/$name/ llvm-toolchain-$name-18 main"
-          sudo add-apt-repository -y "deb-src http://apt.llvm.org/$name/ llvm-toolchain-$name-18 main"
-          sudo apt-get install -y clang-18 llvm-18 lld-18
-      - run: cargo install wasm-component-ld@0.5.5
+      - run: cargo install wasm-component-ld@0.5.12
       - run: |
           cmake -G Ninja -B build -S . \
             -DCMAKE_C_COMPILER=/usr/lib/llvm-18/bin/clang \
             -DCMAKE_SYSTEM_NAME=WASI \
-            -DWASI_SDK_INCLUDE_TESTS=ON
+            -DWASI_SDK_INCLUDE_TESTS=ON \
+            -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF \
+            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF
       - run: ninja -C build
       - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
 
@@ -193,7 +189,7 @@ jobs:
   finalize:
     name: Finalize wasi-sdk artifacts
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -253,7 +249,7 @@ jobs:
   test-standalone:
     name: Test standalone toolchain
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
