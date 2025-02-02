@@ -58,7 +58,7 @@ jobs:
                 -DCMAKE_OSX_ARCHITECTURES=x86_64
 
           - artifact: x86_64-windows
-            os: windows-2022
+            os: windows-2025
 
     env: ${{ matrix.env || fromJSON('{}') }}
     steps:
