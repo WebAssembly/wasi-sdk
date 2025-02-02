@@ -1,8 +1,7 @@
 #!/bin/sh
 
 # This is a helper script invoked from CI which will execute the `ci/build.sh`
-# script within a docker container. This builds `ci/docker/Dockerfile.common`
-# along with the specified `ci/docker/Dockerfile.$x` from the command line.
+# script within a docker container. This contain is built using the Dockerfile located at `ci/docker/Dockerfile`
 # This container is then used to execute `ci/build.sh`.
 
 set -e
@@ -16,17 +15,8 @@ fi
 
 set -x
 
-# Build the base image which the image below can used.
-docker build \
-  --file ci/docker/Dockerfile.common \
-  --tag wasi-sdk-builder-base \
-  ci/docker
-
-# Build the container that is going to be used
-docker build \
-  --file ci/docker/Dockerfile.$1 \
-  --tag wasi-sdk-builder \
-  ci/docker
+# Build the Docker imager
+docker build --tag wasi-sdk-builder ci/docker
 
 # Perform the build in `/src`. The current directory is mounted read-write at
 # this location as well. To ensure that container-created files are reasonable
