@@ -73,12 +73,6 @@ jobs:
           mkdir -p '${{ runner.tool_cache }}/ccache'
           echo 'CCACHE_DIR=${{ runner.tool_cache }}/ccache' >> $GITHUB_ENV
         shell: bash
-      # Remove and reinstall rust as default install seems broken on Ubuntu arm
-      - run: rm -rf $HOME/.rustup $HOME/.cargo
-        if: matrix.os == 'ubuntu-24.04-arm'
-
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        if: matrix.os == 'ubuntu-24.04-arm'
 
       # Configure CMake flags for `ci/build.sh` as necessary for each
       # matrix entry.
