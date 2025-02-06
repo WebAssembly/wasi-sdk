@@ -26,7 +26,7 @@ jobs:
             os: ubuntu-24.04
 
           - artifact: arm64-linux
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm
 
           - artifact: arm64-macos
             os: macos-14
