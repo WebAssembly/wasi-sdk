@@ -19,17 +19,20 @@ RUN apt-get update \
 
 # Install a more recent version of CMake than what 18.04 has since that's what
 # LLVM requires.
-RUN curl -sSLO https://github.com/Kitware/CMake/releases/download/v3.29.5/cmake-3.29.5-linux-x86_64.tar.gz \
-  && tar xf cmake-3.29.5-linux-x86_64.tar.gz \
-  && rm cmake-3.29.5-linux-x86_64.tar.gz \
+RUN ARCH=$(uname -m) \
+  && curl -sSLO https://github.com/Kitware/CMake/releases/download/v3.29.5/cmake-3.29.5-linux-${ARCH}.tar.gz \
+  && tar xf cmake-3.29.5-linux-${ARCH}.tar.gz \
+  && rm cmake-3.29.5-linux-${ARCH}.tar.gz \
   && mkdir -p /opt \
-  && mv cmake-3.29.5-linux-x86_64 /opt/cmake
+  && mv cmake-3.29.5-linux-${ARCH} /opt/cmake
 
 ENV PATH /opt/cmake/bin:$PATH
 
 # As with CMake install a later version of Ninja than waht 18.04 has.
-RUN curl -sSLO https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip \
-  && unzip ninja-linux.zip \
+RUN ARCH=$(uname -m) \
+  && if [ "$ARCH" = "aarch64"  ]; then SUFFIX=-aarch64; fi \
+  && curl -sSL -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux${SUFFIX}.zip \
+  && unzip ninja.zip \
   && rm *.zip \
   && mv ninja /opt/cmake/bin
 
