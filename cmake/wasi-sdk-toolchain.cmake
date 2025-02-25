@@ -78,7 +78,6 @@ ExternalProject_Add(llvm-build
   SOURCE_DIR "${llvm_proj_dir}/llvm"
   CMAKE_ARGS
     ${default_cmake_args}
-    -DLLVM_ENABLE_TERMINFO=OFF
     -DLLVM_ENABLE_ZLIB=OFF
     -DLLVM_ENABLE_ZSTD=OFF
     -DLLVM_STATIC_LINK_CXX_STDLIB=ON
