@@ -20,8 +20,8 @@ RUN case `dpkg --print-architecture` in \
   esac && \
   rm wasi-sdk-*.deb
 
-ENV CC /opt/wasi-sdk/bin/clang
-ENV CXX /opt/wasi-sdk/bin/clang++
-ENV LD /opt/wasi-sdk/bin/wasm-ld
-ENV AR /opt/wasi-sdk/bin/llvm-ar
-ENV RANLIB /opt/wasi-sdk/bin/llvm-ranlib
+ENV CC="/opt/wasi-sdk/bin/clang"
+ENV CXX="/opt/wasi-sdk/bin/clang++"
+ENV LD="/opt/wasi-sdk/bin/wasm-ld"
+ENV AR="/opt/wasi-sdk/bin/llvm-ar"
+ENV RANLIB="/opt/wasi-sdk/bin/llvm-ranlib"
