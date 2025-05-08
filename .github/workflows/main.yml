@@ -48,6 +48,9 @@ jobs:
           - artifact: x86_64-windows
             os: windows-2022
 
+          - artifact: arm64-windows
+            os: windows-11-arm
+
     env: ${{ matrix.env || fromJSON('{}') }}
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +105,7 @@ jobs:
       #
       # As of 2024-07-22 this sha is the "v1.13.0" tag.
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
-        if: runner.os == 'Windows'
+        if: startsWith(matrix.os, 'windows')
       - name: Build and test (Windows)
         run: |
           # Delete a troublesome binary as recommended here
@@ -117,7 +120,7 @@ jobs:
           mkdir build
           cp -r C:/wasi-sdk/dist build
         shell: bash
-        if: runner.os == 'Windows'
+        if: startsWith(matrix.os, 'windows')
 
       # Upload the `dist` folder from the build as the artifacts for this
       # runner.
