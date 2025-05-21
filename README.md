@@ -1,5 +1,7 @@
 # WASI SDK
 
+test
+
 ## Quick Start
 
 [Download SDK packages here.][releases]
