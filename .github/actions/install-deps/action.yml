@@ -14,7 +14,13 @@ runs:
       shell: bash
     - name: Install ccache, ninja (Windows)
       run: choco install ccache ninja
-      if: runner.os == 'Windows'
+      if: startsWith(matrix.os, 'windows')
+      shell: bash
+      # Windows arm runners don't come with rust by default (see https://github.com/actions/partner-runner-images/blob/main/images/arm-windows-11-image.md)
+      # but the x86 ones do (see https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md)
+    - name: Install cargo (Windows-arm)
+      run: choco install rust
+      if: matrix.os == 'windows-11-arm'
       shell: bash
     - name: Install ccache, ninja (Linux)
       run: sudo apt-get install -y ccache ninja-build
