@@ -1,5 +1,10 @@
 # C setjmp/longjmp support
 
+WASI-SDK provides basic setjmp/longjmp support.
+
+Note that it's still under active development and may change in
+future versions.
+
 ## Build an application
 
 To build an application using setjmp/longjmp, you need two things:
