@@ -11,13 +11,13 @@ To build an application using setjmp/longjmp, you need two things:
 ### Example without LTO
 
 ```shell
-clang -Os -mllvm -wasm-enable-sjlj -o your_app.phase3.wasm your_app.c -lsetjmp
+clang -Os -mllvm -wasm-enable-sjlj -o your_app.legacy.wasm your_app.c -lsetjmp
 ```
 
 ### Example with LTO
 
 ```shell
-clang -Os -flto=full -mllvm -wasm-enable-sjlj -Wl,-mllvm,-wasm-enable-sjlj -o your_app.phase3.wasm your_app.c -lsetjmp
+clang -Os -flto=full -mllvm -wasm-enable-sjlj -Wl,-mllvm,-wasm-enable-sjlj -o your_app.legacy.wasm your_app.c -lsetjmp
 ```
 
 ## Run an application
@@ -30,11 +30,11 @@ Unfortunately, there are two incompatible versions of
 
 * The latest version with `exnref`
 
-* The [phase3] version
+* The legacy [phase3] version
 
 ### Example with the latest exception handling proposal
 
-By default, the current version of WASI-SDK produces the
+By default, the current version of WASI-SDK produces the legacy
 "phase3" version of [exception handling proposal] instructions.
 
 You can tell the llvm to produce the latest version of proposal by
@@ -42,10 +42,10 @@ specifying `-mllvm -wasm-use-legacy-eh=false`. This is expected
 to be the default in a future version.
 
 Alternatively, you can use binaryen `wasm-opt` command to convert
-existing modules from the "phase3" version to the "exnref" version.
+existing modules from the legacy "phase3" version to the "exnref" version.
 
 ```shell
-wasm-opt --translate-to-exnref -all -o your_app.wasm your_app.phase3.wasm
+wasm-opt --translate-to-exnref -all -o your_app.wasm your_app.legacy.wasm
 ```
 
 Then you can run it with a runtime supporting the "exnref" version of
@@ -57,9 +57,9 @@ toywasm --wasi your_app.wasm
 ```
 (You may need to enable the support with `-D TOYWASM_ENABLE_WASM_EXCEPTION_HANDLING=ON`.)
 
-### Example with the phase3 exception handling proposal (a bit older version)
+### Example with the legacy phase3 exception handling proposal
 
-If your runtime supports the [phase3] version of
+If your runtime supports the legacy [phase3] version of
 [exception handling proposal], which is the same version as what WASI-SDK
 currently produces by default, you can run the produced module as it is.
 
@@ -67,7 +67,7 @@ For example, the classic interpreter of [wasm-micro-runtime] is
 one of such runtimes.
 
 ```shell
-iwasm your_app.phase3.wasm
+iwasm your_app.legacy.wasm
 ```
 (You may need to enable the support with `-D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0`.)
 
