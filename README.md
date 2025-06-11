@@ -24,9 +24,9 @@ convenience.
 One could also use a standard Clang installation, build a sysroot from the
 sources mentioned above, and compile with `--target=wasm32-wasi
 --sysroot=/path/to/sysroot`. In this scenario, one would also need the
-`libclang_rt.builtins-wasm32.a` objects available separately in the [release
+`libclang_rt.*.a` objects available separately in the [release
 downloads][releases] which must be extracted into
-`$CLANG_INSTALL_DIR/$CLANG_VERSION/lib/wasi/`.
+`$CLANG_INSTALL_DIR/$CLANG_VERSION/lib/`.
 
 ## Clone
 

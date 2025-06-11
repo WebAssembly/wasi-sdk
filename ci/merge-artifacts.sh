@@ -62,12 +62,10 @@ for build in dist-*; do
   tar xf $sysroot -C dist/$sdk_dir/share/wasi-sysroot --strip-components 1
   mv dist/$sdk_dir/share/wasi-sysroot/VERSION dist/$sdk_dir
 
-  # Setup the compiler-rt library for wasi,wasip1,wasip2
+  # Setup the compiler-rt library for all targets.
   rtlibdir=$(dirname $(find dist/$sdk_dir/lib -name include))/lib
-  mkdir -p $rtlibdir/wasi
-  tar xf $compiler_rt -C $rtlibdir/wasi --strip-components 1
-  cp -r $rtlibdir/wasi $rtlibdir/wasip1
-  cp -r $rtlibdir/wasi $rtlibdir/wasip2
+  mkdir -p $rtlibdir
+  tar xf $compiler_rt -C $rtlibdir --strip-components 1
 
   tar czf dist/$sdk_dir.tar.gz -C dist $sdk_dir
 
