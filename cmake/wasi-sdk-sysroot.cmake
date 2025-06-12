@@ -66,31 +66,38 @@ endif()
 # compiler-rt build logic
 # =============================================================================
 
-ExternalProject_Add(compiler-rt-build
-  SOURCE_DIR "${llvm_proj_dir}/compiler-rt"
-  CMAKE_ARGS
-      ${default_cmake_args}
-      -DCOMPILER_RT_BAREMETAL_BUILD=ON
-      -DCOMPILER_RT_BUILD_XRAY=OFF
-      -DCOMPILER_RT_INCLUDE_TESTS=OFF
-      -DCOMPILER_RT_HAS_FPIC_FLAG=OFF
-      -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
-      -DCOMPILER_RT_BUILD_SANITIZERS=OFF
-      -DCOMPILER_RT_BUILD_XRAY=OFF
-      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
-      -DCOMPILER_RT_BUILD_PROFILE=OFF
-      -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
-      -DCOMPILER_RT_BUILD_MEMPROF=OFF
-      -DCOMPILER_RT_BUILD_ORC=OFF
-      -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
-      -DCMAKE_C_COMPILER_TARGET=wasm32-wasi
-      -DCOMPILER_RT_OS_DIR=wasi
-      -DCMAKE_INSTALL_PREFIX=${wasi_resource_dir}
-  EXCLUDE_FROM_ALL ON
-  USES_TERMINAL_CONFIGURE ON
-  USES_TERMINAL_BUILD ON
-  USES_TERMINAL_INSTALL ON
-)
+add_custom_target(compiler-rt-build)
+function(define_compiler_rt target)
+  ExternalProject_Add(compiler-rt-build-${target}
+    SOURCE_DIR "${llvm_proj_dir}/compiler-rt"
+    CMAKE_ARGS
+        ${default_cmake_args}
+        -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
+        -DCOMPILER_RT_BAREMETAL_BUILD=ON
+        -DCOMPILER_RT_BUILD_XRAY=OFF
+        -DCOMPILER_RT_INCLUDE_TESTS=OFF
+        -DCOMPILER_RT_HAS_FPIC_FLAG=OFF
+        -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON
+        -DCOMPILER_RT_BUILD_SANITIZERS=OFF
+        -DCOMPILER_RT_BUILD_XRAY=OFF
+        -DCOMPILER_RT_BUILD_LIBFUZZER=OFF
+        -DCOMPILER_RT_BUILD_PROFILE=OFF
+        -DCOMPILER_RT_BUILD_CTX_PROFILE=OFF
+        -DCOMPILER_RT_BUILD_MEMPROF=OFF
+        -DCOMPILER_RT_BUILD_ORC=OFF
+        -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
+        -DCMAKE_C_COMPILER_TARGET=${target}
+        -DCMAKE_INSTALL_PREFIX=${wasi_resource_dir}
+    EXCLUDE_FROM_ALL ON
+    USES_TERMINAL_CONFIGURE ON
+    USES_TERMINAL_BUILD ON
+    USES_TERMINAL_INSTALL ON
+  )
+  add_dependencies(compiler-rt-build compiler-rt-build-${target})
+endfunction()
+
+define_compiler_rt(wasm32-wasi)
+define_compiler_rt(wasm32-wasip1-threads)
 
 # In addition to the default installation of `compiler-rt` itself also copy
 # around some headers and make copies of the `wasi` directory as `wasip1` and
@@ -106,12 +113,15 @@ add_custom_target(compiler-rt-post-build
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${clang_resource_dir}/include ${wasi_resource_dir}/include
 
-  # Copy the `lib/wasi` folder to `libc/wasi{p1,p2}` to ensure that those
+  # Copy the `lib/wasm32-unknown-wasi` folder to `lib/wasm32-unknown-wasi{p1,p2}` to ensure that those
   # OS-strings also work for looking up the compiler-rt.a file.
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasip1
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasi ${wasi_resource_dir}/lib/wasm32-unknown-wasip1
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasi ${wasi_resource_dir}/lib/wasip2
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasi ${wasi_resource_dir}/lib/wasm32-unknown-wasip2
+  # Copy the `lib/wasm32-unknown-wasip1-threads` folder to `lib/wasm32-unknown-wasi-threads`
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads ${wasi_resource_dir}/lib/wasm32-unknown-wasi-threads
 
   COMMENT "finalizing compiler-rt installation"
 )
@@ -357,10 +367,10 @@ include(wasi-sdk-dist)
 
 set(dist_dir ${CMAKE_CURRENT_BINARY_DIR}/dist)
 
-# Tarball with just `compiler-rt` builtins within it
+# Tarball with just `compiler-rt` libraries within it
 wasi_sdk_add_tarball(dist-compiler-rt
-  ${dist_dir}/libclang_rt.builtins-wasm32-wasi-${wasi_sdk_version}.tar.gz
-  ${wasi_resource_dir}/lib/wasi)
+  ${dist_dir}/libclang_rt-${wasi_sdk_version}.tar.gz
+  ${wasi_resource_dir}/lib)
 add_dependencies(dist-compiler-rt compiler-rt)
 
 # Tarball with the whole sysroot
