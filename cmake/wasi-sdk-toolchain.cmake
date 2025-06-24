@@ -118,7 +118,7 @@ install(DIRECTORY ${wasi_tmp_install}/bin ${wasi_tmp_install}/lib ${wasi_tmp_ins
 # Build logic for `wasm-component-ld` installed from Rust code.
 set(wasm_component_ld_root ${CMAKE_CURRENT_BINARY_DIR}/wasm-component-ld)
 set(wasm_component_ld ${wasm_component_ld_root}/bin/wasm-component-ld${CMAKE_EXECUTABLE_SUFFIX})
-set(wasm_component_ld_version 0.5.13)
+set(wasm_component_ld_version 0.5.14)
 if(RUST_TARGET)
   set(rust_target_flag --target=${RUST_TARGET})
 endif()
