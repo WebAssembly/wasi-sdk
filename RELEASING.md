@@ -1,5 +1,11 @@
 # Release Process
 
+We (maintainers) plan to release a new version of wasi-sdk every three months,
+coinciding with our monthly meeting to discuss latest issues and pull requests.
+This provides regularity to the release cadence, though we also reserve the
+right to publish at any intervening time if there is a pressing need (i.e., open
+an issue to discuss).
+
 To publish a new version of `wasi-sdk` as a GitHub release:
 
 1. Tag a commit with an annotated tag. Note that this must be an annotated tag,
