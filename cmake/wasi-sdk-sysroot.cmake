@@ -164,6 +164,8 @@ function(define_wasi_libc_sub target target_suffix lto)
     "${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
   list(JOIN extra_cflags_list " " extra_cflags)
 
+  set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasi/libclang_rt.builtins.a)
+
   ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
     # Currently wasi-libc doesn't support out-of-tree builds so feign a
     # "download command" which copies the source tree to a different location
@@ -180,6 +182,7 @@ function(define_wasi_libc_sub target target_suffix lto)
         SYSROOT=${wasi_sysroot}
         EXTRA_CFLAGS=${extra_cflags}
         TARGET_TRIPLE=${target}
+        BUILTINS_LIB=${libcompiler_rt_a}
         ${extra_make_flags}
     INSTALL_COMMAND ""
     DEPENDS compiler-rt
