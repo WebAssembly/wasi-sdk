@@ -85,6 +85,8 @@ in compiling WebAssembly code. Supported CMake flags are:
 * `-DWASI_SDK_DEBUG_PREFIX_MAKE=OFF` - disable `-fdebug-prefix-map` when
   building C/C++ code to use full host paths instead.
 * `-DWASI_SDK_INCLUDE_TESTS=ON` - used for building tests.
+* `-DWASI_SDK_CPU_CFLAGS=..` - used to specify CFLAGS to tweak wasm features
+  to enable/disable. The default is `-mcpu=lime1`.
 * `-DWASI_SDK_TEST_HOST_TOOLCHAIN=ON` - test the host toolchain's wasi-libc and
   sysroot libraries, don't build or use fresh libraries for tests.
 * `-DWASI_SDK_TARGETS=..` - a list of targets to build, by default all WASI
