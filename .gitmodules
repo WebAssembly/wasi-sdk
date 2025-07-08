@@ -6,4 +6,4 @@
 	url = https://github.com/WebAssembly/wasi-libc
 [submodule "src/config"]
 	path = src/config
-	url = https://git.savannah.gnu.org/git/config.git
+	url = https://https.git.savannah.gnu.org/git/config.git
