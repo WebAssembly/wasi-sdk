@@ -214,9 +214,20 @@ See [C setjmp/longjmp support] about setjmp/longjmp support.
 [C setjmp/longjmp support]: SetjmpLongjmp.md
 
 This repository experimentally supports __threads__ with
-`--target=wasm32-wasi-threads`. It uses WebAssembly's [threads] primitives
+`--target=wasm32-wasip1-threads`. It uses WebAssembly's [threads] primitives
 (atomics, `wait`/`notify`, shared memory) and [wasi-threads] for spawning
 threads. Note: this is experimental &mdash; do not expect long-term stability!
+
+Note that the `pthread_*` family of functions, as well as C++ threading primitives
+such as `<atomic>`, `<mutex>`, and `<thread>` are available on all targets.
+Any attempt to spawn a thread will fail on `--target=wasm32-wasip1` or
+`--target=wasm32-wasip2`, but other functionality, such as locks, still works.
+This makes it easier to port C++ codebases, as only a fraction of code needs
+to be modified to build for the single-threaded targets.
+
+Defining a macro `_WASI_STRICT_PTHREAD` will make `pthread_create`,
+`pthread_detach`, `pthread_join`, `pthread_tryjoin_np`, and `pthread_timedjoin_np`
+fail with a compile time error when building for single-threaded targets.
 
 [threads]: https://github.com/WebAssembly/threads
 [wasi-threads]: https://github.com/WebAssembly/wasi-threads
