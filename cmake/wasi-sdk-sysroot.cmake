@@ -24,6 +24,7 @@ option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts"
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
 option(WASI_SDK_LTO "Whether or not to build LTO assets" ON)
+set(WASI_SDK_CPU_CFLAGS "-mcpu=lime1" CACHE STRING "CFLAGS to specify wasm features to enable")
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
@@ -87,6 +88,7 @@ function(define_compiler_rt target)
         -DCOMPILER_RT_BUILD_ORC=OFF
         -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
         -DCMAKE_C_COMPILER_TARGET=${target}
+        -DCMAKE_C_FLAGS=${WASI_SDK_CPU_CFLAGS}
         -DCMAKE_INSTALL_PREFIX=${wasi_resource_dir}
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
@@ -161,7 +163,7 @@ function(define_wasi_libc_sub target target_suffix lto)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   list(APPEND directory_cflags -resource-dir ${wasi_resource_dir})
   set(extra_cflags_list
-    "${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+    "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
   list(JOIN extra_cflags_list " " extra_cflags)
 
   if(${target} MATCHES threads)
@@ -238,6 +240,7 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
   get_property(dir_compile_opts DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   get_property(dir_link_opts DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY LINK_OPTIONS)
   set(extra_flags
+    ${WASI_SDK_CPU_CFLAGS}
     ${target_flags}
     --target=${target}
     ${dir_compile_opts}
