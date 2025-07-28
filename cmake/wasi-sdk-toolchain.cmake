@@ -41,6 +41,7 @@ set(tools
   clang-tidy
   clang-apply-replacements
   lld
+  llvm-addr2line
   llvm-mc
   llvm-ranlib
   llvm-strip
