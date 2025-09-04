@@ -164,7 +164,7 @@ jobs:
       - uses: ./.github/actions/checkout
       - uses: ./.github/actions/install-deps
       - run: cargo install wasm-component-ld@0.5.12
-      - run: apt-get update -y && apt-get install -y clang-20
+      - run: sudo apt-get update -y && sudo apt-get install -y clang-20
       - run: |
           cmake -G Ninja -B build -S . \
             -DCMAKE_C_COMPILER=/usr/lib/llvm-20/bin/clang \
