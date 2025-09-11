@@ -5,78 +5,107 @@ WASI-SDK provides basic setjmp/longjmp support.
 Note that it's still under active development and may change in
 future versions.
 
+## Implementation Primitives
+
+Support for `setjmp` and `longjmp` is built on top of the
+[exception-handling](https://github.com/WebAssembly/exception-handling)
+WebAssembly proposal. This proposal is now [phase
+5](https://github.com/WebAssembly/proposals) and becoming part of the official
+specification. Note, however, that the exception-handling proposal has a long
+history and has a "legacy" version which shipped in browsers as well. This means
+that there are two different, but similar, sets of instructions that can be
+emitted to support `setjmp` and `longjmp`. LLVM is capable of emitting both at
+this time.
+
+Another important point is that exception-handling only provides structured
+control flow primitives for exceptions. This means it is not possible to purely
+define `setjmp` in C as otherwise it must be a function that returns twice. This
+means that support for `setjmp` and `longjmp` in WebAssembly relies on a
+compiler pass to transform invocations of `setjmp` at a compiler IR level. This
+means that the `setjmp` symbol is not defined in wasi-libc, for example, but
+instead primitives used to implement `setjmp`, in conjunction with LLVM, are
+found in wasi-libc.
+
 ## Build an application
 
-To build an application using setjmp/longjmp, you need two things:
+To build an application using setjmp/longjmp, you need three sets of compiler
+flags:
 
-* Enable the necessary LLVM translation (`-mllvm -wasm-enable-sjlj`)
+1. `-mllvm -wasm-enable-sjlj`: Enable LLVM compiler pass which replaces calls to
+   `setjmp` and `longjmp` with a different implementation that wasi-libc
+   implements and hooks into.
+2. `-lsetjmp`: Link the setjmp library that wasi-libc provides which contains
+   these hooks that LLVM uses.
+2. `-mllvm -wasm-use-legacy-eh=false`: Specify which version of the
+   exception-handling instructions will be emitted. Note that if this is omitted
+   it currently defaults to `true` meaning that the legacy instructions are
+   emitted, not the standard instructions.
 
-* Link the setjmp library (`-lsetjmp`)
+In short, these flags are required to use `setjmp`/`longjmp`
 
-### Example without LTO
-
-```shell
-clang -Os -mllvm -wasm-enable-sjlj -o your_app.legacy.wasm your_app.c -lsetjmp
+```
+-mllvm -wasm-enable-sjlj -lsetjmp mllvm -wasm-use-legacy-eh=false
 ```
 
-### Example with LTO
+### Examples
 
-```shell
-clang -Os -flto=full -mllvm -wasm-enable-sjlj -Wl,-mllvm,-wasm-enable-sjlj -o your_app.legacy.wasm your_app.c -lsetjmp
+This source code:
+
+```c
+#include <assert.h>
+#include <setjmp.h>
+#include <stdbool.h>
+#include <stdio.h>
+
+static jmp_buf env;
+
+static bool test_if_longjmp(void(*f)(void)) {
+  if (setjmp(env))
+    return true;
+  f();
+  return false;
+}
+
+static void do_not_longjmp() {
+}
+
+static void do_longjmp() {
+  longjmp(env, 1);
+}
+
+int main() {
+  bool longjmped = test_if_longjmp(do_not_longjmp);
+  assert(!longjmped);
+  longjmped = test_if_longjmp(do_longjmp);
+  assert(longjmped);
+  return 0;
+}
 ```
 
-## Run an application
-
-To run the application built as in the previous section,
-you need to use a runtime with [exception handling proposal] support.
-
-Unfortunately, there are two incompatible versions of
-[exception handling proposal], which is commonly implemented by runtimes.
-
-* The latest version with `exnref`
-
-* The legacy [phase3] version
-
-### Example with the latest exception handling proposal
-
-By default, the current version of WASI-SDK produces the legacy
-"phase3" version of [exception handling proposal] instructions.
-
-You can tell the llvm to produce the latest version of proposal by
-specifying `-mllvm -wasm-use-legacy-eh=false`. This is expected
-to be the default in a future version.
-
-Alternatively, you can use binaryen `wasm-opt` command to convert
-existing modules from the legacy "phase3" version to the "exnref" version.
+can be compiled using the standard set of instructions as:
 
 ```shell
-wasm-opt --translate-to-exnref -all -o your_app.wasm your_app.legacy.wasm
+clang -Os -o test.wasm test.c \
+    -mllvm -wasm-enable-sjlj -lsetjmp -mllvm -wasm-use-legacy-eh=false
 ```
 
-Then you can run it with a runtime supporting the "exnref" version of
-the proposal.
-[toywasm] is an example of such runtimes.
+and then `test.wasm` can be executed in a WebAssembly runtime supporting WASI.
+
+You can also compile for the legacy exceptions proposal with:
 
 ```shell
-toywasm --wasi your_app.wasm
+clang -Os -o test.wasm test.c \
+    -mllvm -wasm-enable-sjlj -lsetjmp -mllvm -wasm-use-legacy-eh=true
 ```
-(You may need to enable the support with `-D TOYWASM_ENABLE_WASM_EXCEPTION_HANDLING=ON`.)
 
-### Example with the legacy phase3 exception handling proposal
+and then `test.wasm` can be executed in a WebAssembly runtime supporting the
+legacy WebAssembly instructions.
 
-If your runtime supports the legacy [phase3] version of
-[exception handling proposal], which is the same version as what WASI-SDK
-currently produces by default, you can run the produced module as it is.
-
-For example, the classic interpreter of [wasm-micro-runtime] is
-one of such runtimes.
+Note that when compiling with LTO you'll need to pass `-mllvm` flags to the
+linker in addition to Clang itself, such as:
 
 ```shell
-iwasm your_app.legacy.wasm
+clang -Os -flto=full -o test.wasm test.c \
+    -mllvm -wasm-enable-sjlj -lsetjmp -mllvm -wasm-use-legacy-eh=false \
+    -Wl,-mllvm,-wasm-enable-sjlj,-mllvm,-wasm-use-legacy-eh=false
 ```
-(You may need to enable the support with `-D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0`.)
-
-[exception handling proposal]: https://github.com/WebAssembly/exception-handling/
-[phase3]: https://github.com/WebAssembly/exception-handling/tree/main/proposals/exception-handling/legacy
-[toywasm]: https://github.com/yamt/toywasm
-[wasm-micro-runtime]: https://github.com/bytecodealliance/wasm-micro-runtime
