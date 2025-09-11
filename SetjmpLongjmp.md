@@ -3,7 +3,12 @@
 WASI-SDK provides basic setjmp/longjmp support.
 
 Note that it's still under active development and may change in
-future versions.
+future versions. The tl;dr; version of this document is to pass these flags to
+the C compiler:
+
+```
+-mllvm -wasm-enable-sjlj -lsetjmp -mllvm -wasm-use-legacy-eh=false
+```
 
 ## Implementation Primitives
 
@@ -14,8 +19,9 @@ WebAssembly proposal. This proposal is now [phase
 specification. Note, however, that the exception-handling proposal has a long
 history and has a "legacy" version which shipped in browsers as well. This means
 that there are two different, but similar, sets of instructions that can be
-emitted to support `setjmp` and `longjmp`. LLVM is capable of emitting both at
-this time.
+emitted to support `setjmp` and `longjmp`. Clang 20 and later (wasi-sdk-26 and
+later) is capable of emitting both at this time via `-mllvm
+-wasm-use-legacy-eh={false,true}` compiler flags.
 
 Another important point is that exception-handling only provides structured
 control flow primitives for exceptions. This means it is not possible to purely
@@ -44,7 +50,7 @@ flags:
 In short, these flags are required to use `setjmp`/`longjmp`
 
 ```
--mllvm -wasm-enable-sjlj -lsetjmp mllvm -wasm-use-legacy-eh=false
+-mllvm -wasm-enable-sjlj -lsetjmp -mllvm -wasm-use-legacy-eh=false
 ```
 
 ### Examples
