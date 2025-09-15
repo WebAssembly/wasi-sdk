@@ -139,31 +139,32 @@ add_custom_target(compiler-rt DEPENDS compiler-rt-build compiler-rt-post-build)
 function(define_wasi_libc_sub target target_suffix lto)
   set(build_dir ${CMAKE_CURRENT_BINARY_DIR}/wasi-libc-${target}${target_suffix})
 
-  if(${target} MATCHES threads)
-    if(lto)
-      set(extra_make_flags LTO=full THREAD_MODEL=posix)
-    else()
-      set(extra_make_flags THREAD_MODEL=posix)
-    endif()
-  elseif(${target} MATCHES p2)
-    if(lto)
-      set(extra_make_flags LTO=full WASI_SNAPSHOT=p2 default)
-    else()
-      set(extra_make_flags WASI_SNAPSHOT=p2 default libc_so)
-    endif()
-  else()
-    if(lto)
-      set(extra_make_flags LTO=full default)
-    else()
-      set(extra_make_flags default libc_so)
-    endif()
-  endif()
-
   string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   list(APPEND directory_cflags -resource-dir ${wasi_resource_dir})
   set(extra_cflags_list
     "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+
+  set(extra_make_flags default)
+
+  # If LTO is enabled then pass that on to wasi-libc, and otherwise make sure to
+  # build a `libc.so` dynamic library where possible (not compatible with
+  # threads though)
+  if(lto)
+    list(APPEND extra_make_flags LTO=full)
+  elseif(NOT ${target} MATCHES threads)
+    list(APPEND extra_make_flags libc_so)
+  endif()
+
+  if(${target} MATCHES threads)
+    list(APPEND extra_make_flags THREAD_MODEL=posix)
+  elseif(${target} MATCHES p2)
+    list(APPEND extra_make_flags WASI_SNAPSHOT=p2)
+    # Always enable `-fPIC` for the `wasm32-wasip2` target. This makes `libc.a`
+    # more flexible and usable in dynamic linking situations.
+    list(APPEND extra_cflags_list -fPIC)
+  endif()
+
   list(JOIN extra_cflags_list " " extra_cflags)
 
   if(${target} MATCHES threads)
