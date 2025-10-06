@@ -259,6 +259,6 @@ jobs:
           cmake -G Ninja -B build -S . \
             -DWASI_SDK_INCLUDE_TESTS=ON \
             -DWASI_SDK_TEST_HOST_TOOLCHAIN=ON \
-            -DCMAKE_TOOLCHAIN_FILE=$(ls ./wasi-sdk-*/share/cmake/wasi-sdk.cmake)
+            -DCMAKE_TOOLCHAIN_FILE=$(ls ./wasi-sdk-*/share/cmake/wasi-sdk-p1.cmake)
       - run: ninja -C build build-tests
       - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
