@@ -14,13 +14,10 @@ RUN dnf install -y \
   unzip \
   cmake
 
-RUN ARCH=$(uname -m) \
-  && curl -sSLO https://github.com/ccache/ccache/releases/download/v4.12.1/ccache-4.12.1-linux-${ARCH}.tar.xz \
-  && tar -xf ccache-4.12.1-linux-${ARCH}.tar.xz \
-  && rm ccache-4.12.1-linux-${ARCH}.tar.xz \
-  && mv ccache-4.12.1-linux-${ARCH} /opt/ccache
+COPY ./install-ccache.sh .
+RUN ./install-ccache.sh
 
-ENV PATH /opt/ccache:$PATH
+ENV PATH /opt/ccache/bin:$PATH
 
 # AlmaLinux 8 doesn't seem to have ninja, so install it manually.
 RUN ARCH=$(uname -m) \
@@ -28,7 +25,7 @@ RUN ARCH=$(uname -m) \
   && curl -sSL -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux${SUFFIX}.zip \
   && unzip ninja.zip \
   && rm *.zip \
-  && mv ninja /opt/ccache
+  && mv ninja /opt/ccache/bin
 
 # Tell programs to cache in a location that both isn't a `--volume` mounted root
 # and isn't `/root` in the container as that won't be writable during the build.
