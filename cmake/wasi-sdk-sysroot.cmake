@@ -137,29 +137,11 @@ add_custom_target(compiler-rt DEPENDS compiler-rt-build compiler-rt-post-build)
 # =============================================================================
 
 function(define_wasi_libc_sub target target_suffix lto)
-  set(build_dir ${CMAKE_CURRENT_BINARY_DIR}/wasi-libc-${target}${target_suffix})
-
   string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
-  list(APPEND directory_cflags -resource-dir ${wasi_resource_dir})
-  set(extra_cflags_list
-    "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+  set(extra_cflags_list "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags}")
 
-  set(extra_make_flags default)
-
-  # If LTO is enabled then pass that on to wasi-libc, and otherwise make sure to
-  # build a `libc.so` dynamic library where possible (not compatible with
-  # threads though)
-  if(lto)
-    list(APPEND extra_make_flags LTO=full)
-  elseif(NOT ${target} MATCHES threads)
-    list(APPEND extra_make_flags libc_so)
-  endif()
-
-  if(${target} MATCHES threads)
-    list(APPEND extra_make_flags THREAD_MODEL=posix)
-  elseif(${target} MATCHES p2)
-    list(APPEND extra_make_flags WASI_SNAPSHOT=p2)
+  if(${target} MATCHES p2)
     # Always enable `-fPIC` for the `wasm32-wasip2` target. This makes `libc.a`
     # more flexible and usable in dynamic linking situations.
     list(APPEND extra_cflags_list -fPIC)
@@ -173,25 +155,25 @@ function(define_wasi_libc_sub target target_suffix lto)
     set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip1/libclang_rt.builtins.a)
   endif()
 
+  set(extra_cmake_args)
+
+  # Configure LTO in wasi libc if it's enabled. Be sure to disable shared
+  # libraries as well since that's not currently supported.
+  if (lto)
+    list(APPEND extra_cmake_args -DLTO=full -DBUILD_SHARED=OFF)
+  endif()
+
   ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
-    # Currently wasi-libc doesn't support out-of-tree builds so feign a
-    # "download command" which copies the source tree to a different location
-    # so out-of-tree builds are supported.
-    DOWNLOAD_COMMAND
-      ${CMAKE_COMMAND} -E copy_directory ${wasi_libc} ${build_dir}
-    SOURCE_DIR "${build_dir}"
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND
-      ${MAKE} -j8 -C ${build_dir}
-        CC=${CMAKE_C_COMPILER}
-        AR=${CMAKE_AR}
-        NM=${CMAKE_NM}
-        SYSROOT=${wasi_sysroot}
-        EXTRA_CFLAGS=${extra_cflags}
-        TARGET_TRIPLE=${target}
-        BUILTINS_LIB=${libcompiler_rt_a}
-        ${extra_make_flags}
-    INSTALL_COMMAND ""
+    SOURCE_DIR ${wasi_libc}
+    CMAKE_ARGS
+      ${default_cmake_args}
+      ${extra_cmake_args}
+      -DTARGET_TRIPLE=${target}
+      -DCMAKE_INSTALL_PREFIX=${wasi_sysroot}
+      -DCMAKE_C_FLAGS=${extra_cflags}
+      -DBUILTINS_LIB=${libcompiler_rt_a}
+      -DUSE_WASM_COMPONENT_LD=OFF
+      -DBINDINGS_TARGET=OFF
     DEPENDS compiler-rt
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
