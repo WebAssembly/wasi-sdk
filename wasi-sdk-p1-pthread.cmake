@@ -1,13 +1,16 @@
 # Cmake toolchain description file for the Makefile
 
-# Until Platform/WASI.cmake is upstream we need to inject the path to it
-# into CMAKE_MODULE_PATH.
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
-
 set(CMAKE_SYSTEM_NAME WASI)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR wasm32)
-set(triple wasm32-wasi)
+set(triple wasm32-wasip1-threads)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+# wasi-threads requires --import-memory.
+# wasi requires --export-memory.
+# (--export-memory is implicit unless --import-memory is given)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--import-memory")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--export-memory")
 
 if(WIN32)
 	set(WASI_HOST_EXE_SUFFIX ".exe")

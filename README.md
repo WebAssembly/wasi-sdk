@@ -73,7 +73,7 @@ is to build the sysroot:
 ```shell script
 cmake -G Ninja -B build/sysroot -S . \
     -DCMAKE_INSTALL_PREFIX=build/install \
-    -DCMAKE_TOOLCHAIN_FILE=build/install/share/cmake/wasi-sdk.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=build/install/share/cmake/wasi-sdk-p1.cmake \
     -DCMAKE_C_COMPILER_WORKS=ON \
     -DCMAKE_CXX_COMPILER_WORKS=ON
 cmake --build build/sysroot --target install
@@ -159,16 +159,16 @@ includes/libraries/etc. The `--sysroot=...` option is not necessary if
 
 ### Integrating with a CMake build system
 
-Use a toolchain file to setup the *wasi-sdk* platform.
+Use a toolchain file to setup the *wasi-sdk-p1* platform.
 
 ```
-$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk.cmake ...
+$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p1.cmake ...
 ```
 
-or the *wasi-sdk-thread* platform
+or the *wasi-sdk-p1-pthread* platform
 
 ```
-$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-pthread.cmake ...
+$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p1-pthread.cmake ...
 ```
 
 ## Notes for Autoconf

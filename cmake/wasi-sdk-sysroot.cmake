@@ -98,7 +98,7 @@ function(define_compiler_rt target)
   add_dependencies(compiler-rt-build compiler-rt-build-${target})
 endfunction()
 
-define_compiler_rt(wasm32-wasi)
+define_compiler_rt(wasm32-wasip1)
 define_compiler_rt(wasm32-wasip1-threads)
 
 # In addition to the default installation of `compiler-rt` itself also copy
@@ -115,15 +115,11 @@ add_custom_target(compiler-rt-post-build
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${clang_resource_dir}/include ${wasi_resource_dir}/include
 
-  # Copy the `lib/wasm32-unknown-wasi` folder to `lib/wasm32-unknown-wasi{p1,p2}` to ensure that those
-  # OS-strings also work for looking up the compiler-rt.a file.
+  # Copy the `lib/wasm32-unknown-wasip1` folder to `lib/wasm32-unknown-wasip2`
+  # to ensure that those OS-strings also work for looking up the compiler-rt.a
+  # file.
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasm32-unknown-wasi ${wasi_resource_dir}/lib/wasm32-unknown-wasip1
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasm32-unknown-wasi ${wasi_resource_dir}/lib/wasm32-unknown-wasip2
-  # Copy the `lib/wasm32-unknown-wasip1-threads` folder to `lib/wasm32-unknown-wasi-threads`
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads ${wasi_resource_dir}/lib/wasm32-unknown-wasi-threads
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-wasip2
 
   COMMENT "finalizing compiler-rt installation"
 )
