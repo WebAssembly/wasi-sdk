@@ -83,6 +83,11 @@ function(add_testcase runwasi test)
         target_link_options(${target_name} PRIVATE -pthread)
       endif()
 
+      if(target STREQUAL wasm32-wasi OR target STREQUAL wasm32-wasi-threads)
+        target_compile_options(${target_name} PRIVATE -Wno-deprecated)
+        target_link_options(${target_name} PRIVATE -Wno-deprecated)
+      endif()
+
       if(runwasi)
         add_test(
           NAME test-${target_name}
