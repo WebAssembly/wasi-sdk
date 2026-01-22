@@ -87,7 +87,7 @@ ExternalProject_Add(llvm-build
     -DLLVM_INCLUDE_BENCHMARKS=OFF
     -DLLVM_INCLUDE_EXAMPLES=OFF
     -DLLVM_TARGETS_TO_BUILD=WebAssembly
-    -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi
+    -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasip1
     -DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE
     -DLLVM_ENABLE_LIBXML2=OFF
     # Pass `-s` to strip symbols by default and shrink the size of the
@@ -152,8 +152,7 @@ endfunction()
 
 copy_misc_file(src/config/config.sub misc)
 copy_misc_file(src/config/config.guess misc)
-copy_misc_file(wasi-sdk.cmake cmake)
-copy_misc_file(wasi-sdk-pthread.cmake cmake)
+copy_misc_file(wasi-sdk-p1-pthread.cmake cmake)
 copy_misc_file(wasi-sdk-p1.cmake cmake)
 copy_misc_file(wasi-sdk-p2.cmake cmake)
 copy_misc_file(cmake/Platform/WASI.cmake cmake/Platform)
