@@ -173,7 +173,6 @@ function(define_wasi_libc_sub target target_suffix lto)
       -DCMAKE_C_FLAGS=${extra_cflags}
       -DBUILTINS_LIB=${libcompiler_rt_a}
       -DUSE_WASM_COMPONENT_LD=OFF
-      -DBINDINGS_TARGET=OFF
       -DWASI_SDK_VERSION=${wasi_sdk_version}
     DEPENDS compiler-rt
     EXCLUDE_FROM_ALL ON
