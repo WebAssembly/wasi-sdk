@@ -33,7 +33,7 @@ fi
 # Use the just-built toolchain and its `CMAKE_TOOLCHAIN_FILE` to build a
 # sysroot.
 cmake -G Ninja -B $build_dir/sysroot -S . \
-  "-DCMAKE_TOOLCHAIN_FILE=$build_dir/install/share/cmake/wasi-sdk.cmake" \
+  "-DCMAKE_TOOLCHAIN_FILE=$build_dir/install/share/cmake/wasi-sdk-p1.cmake" \
   -DCMAKE_C_COMPILER_WORKS=ON \
   -DCMAKE_CXX_COMPILER_WORKS=ON \
   -DWASI_SDK_INCLUDE_TESTS=ON \
