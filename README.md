@@ -88,6 +88,10 @@ in compiling WebAssembly code. Supported CMake flags are:
 * `-DWASI_SDK_INCLUDE_TESTS=ON` - used for building tests.
 * `-DWASI_SDK_CPU_CFLAGS=..` - used to specify CFLAGS to tweak wasm features
   to enable/disable. The default is `-mcpu=lime1`.
+* `-DWASI_SDK_LTO=ON` - whether to enable/disable builds of LTO-capable
+  libraries as part of the build.
+* `-DWASI_SDK_EXCEPTIONS=ON` - whether to enable/disable support for C++
+  exceptions, see [CppExceptions.md](./CppExceptions.md) for more information.
 * `-DWASI_SDK_TEST_HOST_TOOLCHAIN=ON` - test the host toolchain's wasi-libc and
   sysroot libraries, don't build or use fresh libraries for tests.
 * `-DWASI_SDK_TARGETS=..` - a list of targets to build, by default all WASI

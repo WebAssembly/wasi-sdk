@@ -24,6 +24,7 @@ option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts"
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
 option(WASI_SDK_LTO "Whether or not to build LTO assets" ON)
+option(WASI_SDK_EXCEPTIONS "Whether or not C++ exceptions are enabled" OFF)
 set(WASI_SDK_CPU_CFLAGS "-mcpu=lime1" CACHE STRING "CFLAGS to specify wasm features to enable")
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
@@ -89,6 +90,8 @@ function(define_compiler_rt target)
         -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
         -DCMAKE_C_COMPILER_TARGET=${target}
         -DCMAKE_C_FLAGS=${WASI_SDK_CPU_CFLAGS}
+        -DCMAKE_CXX_FLAGS=${WASI_SDK_CPU_CFLAGS}
+        -DCMAKE_ASM_FLAGS=${WASI_SDK_CPU_CFLAGS}
         -DCMAKE_INSTALL_PREFIX=${wasi_resource_dir}
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
@@ -231,6 +234,17 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     --sysroot ${wasi_sysroot}
     -resource-dir ${wasi_resource_dir})
 
+  if (WASI_SDK_EXCEPTIONS)
+    # TODO: lots of builds fail with shared libraries and `-fPIC`. Looks like
+    # things are maybe changing in llvm/llvm-project#159143 but otherwise I'm at
+    # least not really sure what the state of shared libraries and exceptions
+    # are. For now shared libraries are disabled and supporting them is left for
+    # a future endeavor.
+    set(pic OFF)
+    set(runtimes "libunwind;${runtimes}")
+    list(APPEND extra_flags -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false)
+  endif()
+
   set(extra_cflags_list ${CMAKE_C_FLAGS} ${extra_flags})
   list(JOIN extra_cflags_list " " extra_cflags)
   set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${extra_flags})
@@ -254,14 +268,14 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DLLVM_COMPILER_CHECKED=ON
       -DLIBCXX_ENABLE_SHARED:BOOL=${pic}
       -DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF
-      -DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF
+      -DLIBCXX_ENABLE_EXCEPTIONS:BOOL=${WASI_SDK_EXCEPTIONS}
       -DLIBCXX_ENABLE_FILESYSTEM:BOOL=ON
       -DLIBCXX_ENABLE_ABI_LINKER_SCRIPT:BOOL=OFF
       -DLIBCXX_CXX_ABI=libcxxabi
       -DLIBCXX_CXX_ABI_INCLUDE_PATHS=${llvm_proj_dir}/libcxxabi/include
       -DLIBCXX_HAS_MUSL_LIBC:BOOL=ON
       -DLIBCXX_ABI_VERSION=2
-      -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF
+      -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=${WASI_SDK_EXCEPTIONS}
       -DLIBCXXABI_ENABLE_SHARED:BOOL=${pic}
       -DLIBCXXABI_SILENT_TERMINATE:BOOL=ON
       -DLIBCXXABI_ENABLE_THREADS:BOOL=ON
@@ -270,12 +284,18 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF
       -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF
       -DLIBCXXABI_ENABLE_PIC:BOOL=${pic}
-      -DLIBCXXABI_USE_LLVM_UNWINDER:BOOL=OFF
+      -DLIBCXXABI_USE_LLVM_UNWINDER:BOOL=${WASI_SDK_EXCEPTIONS}
+      -DLIBUNWIND_ENABLE_SHARED:BOOL=${pic}
+      -DLIBUNWIND_ENABLE_THREADS:BOOL=ON
+      -DLIBUNWIND_USE_COMPILER_RT:BOOL=ON
+      -DLIBUNWIND_INCLUDE_TESTS:BOOL=OFF
       -DUNIX:BOOL=ON
       -DCMAKE_C_FLAGS=${extra_cflags}
+      -DCMAKE_ASM_FLAGS=${extra_cflags}
       -DCMAKE_CXX_FLAGS=${extra_cxxflags}
       -DLIBCXX_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
       -DLIBCXXABI_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
+      -DLIBUNWIND_LIBDIR_SUFFIX=/${target}${extra_libdir_suffix}
       -DLIBCXX_INCLUDE_TESTS=OFF
       -DLIBCXX_INCLUDE_BENCHMARKS=OFF
 
@@ -290,6 +310,9 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     USES_TERMINAL_CONFIGURE ON
     USES_TERMINAL_BUILD ON
     USES_TERMINAL_INSTALL ON
+    PATCH_COMMAND
+      ${CMAKE_COMMAND} -E chdir .. bash -c
+        "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-168449.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-168449.patch -R --check"
   )
 endfunction()
 

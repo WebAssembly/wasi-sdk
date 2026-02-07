@@ -67,7 +67,12 @@ function(add_testcase runwasi test)
 
       # Apply language-specific options and dependencies.
       if(test MATCHES "cc$")
-        target_compile_options(${target_name} PRIVATE -fno-exceptions)
+        if(WASI_SDK_EXCEPTIONS)
+          target_compile_options(${target_name} PRIVATE -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false)
+          target_link_options(${target_name} PRIVATE -lunwind)
+        else()
+          target_compile_options(${target_name} PRIVATE -fno-exceptions)
+        endif()
         if(NOT WASI_SDK_TEST_HOST_TOOLCHAIN)
           add_dependencies(${target_name} libcxx-${target})
         endif()
@@ -84,11 +89,20 @@ function(add_testcase runwasi test)
       endif()
 
       if(runwasi)
+        set(runner ${runwasi})
+        if(${runner} MATCHES wasmtime)
+          if(target MATCHES threads)
+            set(runner "${runner} -Wshared-memory")
+          endif()
+          if(WASI_SDK_EXCEPTIONS)
+            set(runner "${runner} -Wexceptions")
+          endif()
+        endif()
         add_test(
           NAME test-${target_name}
           COMMAND
             bash ../testcase.sh
-            "${runwasi}"
+            ${runner}
             ${test}
             $<TARGET_FILE:${target_name}>
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
