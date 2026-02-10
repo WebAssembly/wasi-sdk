@@ -35,7 +35,8 @@ Without these flags programs using C++ exceptions will not work correctly:
 This can be specified for example with:
 
 ```shell script
-$ export CFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false -lunwind"
+$ export CFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
+$ export LDFLAGS="-lunwind"
 ```
 
 ## Limitations
