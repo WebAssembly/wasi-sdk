@@ -11,7 +11,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(wasi-sdk)
 include(ExternalProject)
 
-set(WASI_SDK_TARGETS "wasm32-wasi;wasm32-wasip1;wasm32-wasip2;wasm32-wasip1-threads;wasm32-wasi-threads"
+set(WASI_SDK_TARGETS "wasm32-wasi;wasm32-wasip1;wasm32-wasip2;wasm32-wasip3;wasm32-wasip1-threads;wasm32-wasi-threads"
   CACHE STRING "List of WASI targets to build")
 option(WASI_SDK_BUILD_TOOLCHAIN "Build a toolchain instead of the sysroot" OFF)
 
