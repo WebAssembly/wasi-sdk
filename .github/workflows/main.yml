@@ -155,8 +155,14 @@ jobs:
           key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
 
   build-only-sysroot:
-    name: Build only sysroot
+    name: Build only sysroot - ${{ matrix.name }}
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - name: default
+          - name: exceptions
+            defines: -DWASI_SDK_EXCEPTIONS=ON
     steps:
       - uses: actions/checkout@v4
         with:
@@ -172,7 +178,8 @@ jobs:
             -DWASI_SDK_INCLUDE_TESTS=ON \
             -DWASI_SDK_CPU_CFLAGS="" \
             -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF \
-            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF
+            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF \
+            ${{ matrix.defines }}
       - run: ninja -C build
       - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
 
