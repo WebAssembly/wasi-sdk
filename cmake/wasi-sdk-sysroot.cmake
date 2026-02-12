@@ -106,7 +106,7 @@ define_compiler_rt(wasm32-wasip1-threads)
 
 # In addition to the default installation of `compiler-rt` itself also copy
 # around some headers and make copies of the `wasi` directory as `wasip1` and
-# `wasip2`
+# `wasip2` and `wasip3`
 execute_process(
   COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
   OUTPUT_VARIABLE clang_resource_dir
@@ -144,9 +144,9 @@ function(define_wasi_libc_sub target target_suffix lto)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   set(extra_cflags_list "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags}")
 
-  if(${target} MATCHES p2)
-    # Always enable `-fPIC` for the `wasm32-wasip2` target. This makes `libc.a`
-    # more flexible and usable in dynamic linking situations.
+  if(${target} MATCHES "p[23]")
+    # Always enable `-fPIC` for the `wasm32-wasip2` and `wasm32-wasip3` targets.
+    # This makes `libc.a` more flexible and usable in dynamic linking situations.
     list(APPEND extra_cflags_list -fPIC)
   endif()
 
