@@ -97,6 +97,9 @@ function(add_testcase runwasi test)
           if(WASI_SDK_EXCEPTIONS)
             set(runner "${runner} -Wexceptions")
           endif()
+          if(target MATCHES "wasip3")
+            set(runner "${runner} -Wcomponent-model-async -Sp3")
+          endif()
         endif()
         add_test(
           NAME test-${target_name}
