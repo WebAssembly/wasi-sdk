@@ -226,7 +226,13 @@ disabled in a configure step before building with WASI SDK.
   linking.
 * The WASIp1 targets do not support networking, but WASIp2/WASIp3 support
   networking.
+* 64-bit linear memories (a "wasm64" target) are not supported at this time.
+  Supporting this will require resolving [WebAssembly/component-model#22] first
+  at which point it will be possible to add a `wasm64-wasip2` target. There are
+  no plans to add support for `wasm64-wasi{,-threads,p1,p1-threads}` at this
+  time.
 
 [threads]: https://github.com/WebAssembly/threads
 [wasi-threads]: https://github.com/WebAssembly/wasi-threads
 [dylink]: https://github.com/WebAssembly/tool-conventions/blob/master/DynamicLinking.md
+[WebAssembly/component-model#22]: https://github.com/WebAssembly/component-model/issues/22
