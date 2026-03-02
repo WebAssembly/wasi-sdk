@@ -5,6 +5,21 @@ set(LLVM_CMAKE_FLAGS "" CACHE STRING "Extra cmake flags to pass to LLVM's build"
 set(RUST_TARGET "" CACHE STRING "Target to build Rust code for, if not the host")
 set(WASI_SDK_ARTIFACT "" CACHE STRING "Name of the wasi-sdk artifact being produced")
 
+option(WASI_SDK_LLDB "Include a build of LLDB" ON)
+
+set(LIBEDIT_DEFAULT ON)
+# I don't want to deal with running a `./configure` script on Windows, disable
+# it by default.
+if(WIN32)
+  set(LIBEDIT_DEFAULT OFF)
+endif()
+# I don't know how to resolve build failures when building libedit for x86_64
+# from arm64 on macos, so disable it for now.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64" AND LLVM_CMAKE_FLAGS MATCHES "x86_64")
+  set(LIBEDIT_DEFAULT OFF)
+endif()
+option(WASI_SDK_LIBEDIT "Whether or not to build libedit for LLDB" ${LIBEDIT_DEFAULT})
+
 string(REGEX REPLACE "[ ]+" ";" llvm_cmake_flags_list "${LLVM_CMAKE_FLAGS}")
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
@@ -72,6 +87,66 @@ if(NOT WIN32)
   list(APPEND tools LLVM clang-cpp)
 endif()
 
+# Configure/add LLDB if requested.
+#
+# Note that LLDB depends on `libedit` which is more-or-less required to get a
+# reasonable command-line experience, so this is built custom here to ensure
+# that it's available for LLDB.
+if(WASI_SDK_LLDB)
+  list(APPEND projects lldb)
+  list(APPEND tools lldb liblldb)
+  list(APPEND default_cmake_args
+    -DLLDB_INCLUDE_TESTS=OFF
+    -DLLDB_INCLUDE_UNITTESTS=OFF
+    -DLLDB_ENABLE_SWIG=OFF
+    -DLLDB_ENABLE_CURSES=OFF
+    -DLLDB_ENABLE_LZMA=OFF
+    -DLLDB_ENABLE_LUA=OFF
+    -DLLDB_ENABLE_PYTHON=OFF
+    -DLLDB_ENABLE_LIBXML2=OFF
+    -DLLDB_ENABLE_FBSDVMCORE=OFF
+    -DLLDB_ENABLE_LINUXPTY=OFF
+  )
+
+  if (WASI_SDK_LIBEDIT)
+    include(ProcessorCount)
+    ProcessorCount(nproc)
+    find_program(MAKE_EXECUTABLE make REQUIRED)
+    ExternalProject_Add(libedit
+      URL https://thrysoee.dk/editline/libedit-20251016-3.1.tar.gz
+      URL_HASH SHA256=21362b00653bbfc1c71f71a7578da66b5b5203559d43134d2dd7719e313ce041
+
+      # Without this the build system tries to find and use `aclocal-1.18` where
+      # with this it doesn't so turn this on.
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+
+      CONFIGURE_COMMAND
+        <SOURCE_DIR>/configure
+          --prefix=${CMAKE_INSTALL_PREFIX}
+          --enable-pic
+          --disable-examples
+          CC=${CMAKE_C_COMPILER}
+          CFLAGS=${libedit_cflags}
+          LDFLAGS=${libedit_cflags}
+      BUILD_COMMAND
+        ${MAKE_EXECUTABLE} -j${nproc} V=1
+
+      USES_TERMINAL_CONFIGURE ON
+      USES_TERMINAL_BUILD ON
+      USES_TERMINAL_INSTALL ON
+    )
+    list(APPEND default_cmake_args
+      -DLLDB_ENABLE_LIBEDIT=ON
+      -DLibEdit_ROOT=${CMAKE_INSTALL_PREFIX}
+    )
+  else()
+    list(APPEND default_cmake_args -DLLDB_ENABLE_LIBEDIT=OFF)
+    add_custom_target(libedit)
+  endif()
+else()
+  add_custom_target(libedit)
+endif()
+
 list(TRANSFORM tools PREPEND --target= OUTPUT_VARIABLE build_targets)
 list(TRANSFORM tools PREPEND --target=install- OUTPUT_VARIABLE install_targets)
 
@@ -109,6 +184,7 @@ ExternalProject_Add(llvm-build
 )
 
 add_custom_target(build ALL DEPENDS llvm-build)
+ExternalProject_Add_StepDependencies(llvm-build configure libedit)
 
 # Installation target for this outer project for installing the toolchain to the
 # system.
