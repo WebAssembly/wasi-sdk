@@ -82,8 +82,8 @@ ExternalProject_Add(llvm-build
     -DLLVM_ENABLE_ZLIB=OFF
     -DLLVM_ENABLE_ZSTD=OFF
     -DLLVM_STATIC_LINK_CXX_STDLIB=ON
-    -DLLVM_INCLUDE_TESTS=ON
-    -DLLVM_INCLUDE_UTILS=ON
+    -DLLVM_INCLUDE_TESTS=OFF
+    -DLLVM_INCLUDE_UTILS=OFF
     -DLLVM_INCLUDE_BENCHMARKS=OFF
     -DLLVM_INCLUDE_EXAMPLES=OFF
     -DLLVM_TARGETS_TO_BUILD=WebAssembly
@@ -124,34 +124,16 @@ if(RUST_TARGET)
   set(rust_target_flag --target=${RUST_TARGET})
 endif()
 
-# Option to use local wasm-component-ld source instead of cargo install
-set(WASM_COMPONENT_LD_SOURCE "" CACHE PATH "Path to wasm-component-ld source directory")
-
-if(WASM_COMPONENT_LD_SOURCE)
-  # Build from local source
-  add_custom_command(
-    OUTPUT ${wasm_component_ld}
-    COMMAND
-      cargo install --root ${wasm_component_ld_root} ${rust_target_flag}
-        --path ${WASM_COMPONENT_LD_SOURCE}
-    COMMAND
-      cmake -E make_directory ${wasi_tmp_install}/bin
-    COMMAND
-      cmake -E copy ${wasm_component_ld} ${wasi_tmp_install}/bin
-    COMMENT "Building `wasm-component-ld` from ${WASM_COMPONENT_LD_SOURCE}...")
-else()
-  # Install from crates.io
-  add_custom_command(
-    OUTPUT ${wasm_component_ld}
-    COMMAND
-      cargo install --root ${wasm_component_ld_root} ${rust_target_flag}
-        wasm-component-ld@${wasm_component_ld_version}
-    COMMAND
-      cmake -E make_directory ${wasi_tmp_install}/bin
-    COMMAND
-      cmake -E copy ${wasm_component_ld} ${wasi_tmp_install}/bin
-    COMMENT "Building `wasm-component-ld` ...")
-endif()
+add_custom_command(
+  OUTPUT ${wasm_component_ld}
+  COMMAND
+    cargo install --root ${wasm_component_ld_root} ${rust_target_flag}
+      wasm-component-ld@${wasm_component_ld_version}
+  COMMAND
+    cmake -E make_directory ${wasi_tmp_install}/bin
+  COMMAND
+    cmake -E copy ${wasm_component_ld} ${wasi_tmp_install}/bin
+  COMMENT "Building `wasm-component-ld` ...")
 add_custom_target(wasm-component-ld DEPENDS ${wasm_component_ld})
 add_dependencies(build wasm-component-ld)
 

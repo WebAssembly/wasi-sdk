@@ -323,7 +323,7 @@ function(define_libcxx target)
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
-  #define_libcxx(${target})
+  define_libcxx(${target})
 endforeach()
 
 # =============================================================================
