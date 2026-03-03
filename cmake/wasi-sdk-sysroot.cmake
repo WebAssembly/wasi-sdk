@@ -347,7 +347,7 @@ endif()
 add_custom_target(build ALL)
 foreach(target IN LISTS WASI_SDK_TARGETS)
   add_custom_target(build-${target})
-  add_dependencies(build-${target}  wasi-libc-${target} compiler-rt)
+  add_dependencies(build-${target} libcxx-${target} wasi-libc-${target} compiler-rt)
   add_dependencies(build build-${target})
 endforeach()
 

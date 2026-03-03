@@ -13,6 +13,10 @@ import sys
 # The number of characters to use for the abbreviated Git revision.
 GIT_REF_LEN = 12
 
+# Some special major versions that are not just numbers, e.g. "experimental-threading".
+KNOWN_SPECIAL_RELEASES = [
+    'experimental-threading'
+]
 
 def exec(command, cwd):
     result = subprocess.run(command, stdout=subprocess.PIPE,
@@ -23,14 +27,22 @@ def exec(command, cwd):
 def git_commit(dir):
     return exec(['git', 'rev-parse', f'--short={GIT_REF_LEN}', 'HEAD'], dir)
 
-
 def parse_git_version(version):
     # Parse, e.g.: wasi-sdk-21-0-g317548590b40+m
-    parts = version.replace('+', '-').split('-')
-    assert parts.pop(0) == 'wasi'
-    assert parts.pop(0) == 'sdk'
+    assert version.startswith('wasi-sdk-'), f'unexpected version format: {version}'
+    version = version.removeprefix('wasi-sdk-')
 
-    major, minor = parts.pop(0), parts.pop(0)
+    prefix = ''
+    for special in KNOWN_SPECIAL_RELEASES:
+        if version.startswith(f'{special}-'):
+            prefix = f'{special}-'
+            version = version.removeprefix(f'{special}-')
+            break
+
+    parts = version.replace('+', '-').split('-')
+
+    major = prefix + parts.pop(0) if prefix else parts.pop(0)
+    minor = parts.pop(0)
     git = None
     dirty = False
 
@@ -57,6 +69,12 @@ assert parse_git_version(
 assert parse_git_version('wasi-sdk-21-2+m') == ('21', '2', None, True)
 assert parse_git_version(
     'wasi-sdk-23-0-g317548590b40') == ('23', '0', None, False)
+
+assert parse_git_version(
+    'wasi-sdk-experimental-threading-21-1-g317548590b40+m') == ('experimental-threading-21', '1', '317548590b40', True)
+assert parse_git_version('wasi-sdk-experimental-threading-21-2+m') == ('experimental-threading-21', '2', None, True)
+assert parse_git_version(
+    'wasi-sdk-experimental-threading-23-0-g317548590b40') == ('experimental-threading-23', '0', None, False)
 
 
 def git_version():
