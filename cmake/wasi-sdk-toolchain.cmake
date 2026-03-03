@@ -156,6 +156,7 @@ copy_misc_file(wasi-sdk.cmake cmake)
 copy_misc_file(wasi-sdk-pthread.cmake cmake)
 copy_misc_file(wasi-sdk-p1.cmake cmake)
 copy_misc_file(wasi-sdk-p2.cmake cmake)
+copy_misc_file(wasi-sdk-p3.cmake cmake)
 copy_misc_file(cmake/Platform/WASI.cmake cmake/Platform)
 
 function(copy_cfg_file compiler)
