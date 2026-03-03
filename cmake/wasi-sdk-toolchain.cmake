@@ -57,7 +57,8 @@ set(tools
   objdump
   objcopy
   c++filt
-  llvm-config)
+  llvm-config
+  libclang)
 
 # By default link LLVM dynamically to all the various tools. This greatly
 # reduces the binary size of all the tools through a shared library rather than
