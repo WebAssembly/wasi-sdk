@@ -30,13 +30,13 @@ def git_commit(dir):
 def parse_git_version(version):
     # Parse, e.g.: wasi-sdk-21-0-g317548590b40+m
     assert version.startswith('wasi-sdk-'), f'unexpected version format: {version}'
-    version = version.removeprefix('wasi-sdk-')
+    version = version[len('wasi-sdk-'):]
 
     prefix = ''
     for special in KNOWN_SPECIAL_RELEASES:
         if version.startswith(f'{special}-'):
             prefix = f'{special}-'
-            version = version.removeprefix(f'{special}-')
+            version = version[len(f'{special}-'):]
             break
 
     parts = version.replace('+', '-').split('-')
