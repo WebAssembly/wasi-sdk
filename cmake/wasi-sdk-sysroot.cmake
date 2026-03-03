@@ -101,8 +101,19 @@ function(define_compiler_rt target)
   add_dependencies(compiler-rt-build compiler-rt-build-${target})
 endfunction()
 
+# The `compiler-rt` for `wasm32-wasip1` will be reused for `wasm32-wasip2` and
+# `wasm32-wasi`. The version for `wasm32-wasip1-threads` will be reused for
+# `wasm32-wasi-threads`. Different builds are needed for different codegen flags
+# and such across the threaded/not target.
 define_compiler_rt(wasm32-wasip1)
 define_compiler_rt(wasm32-wasip1-threads)
+
+# If a p3 target is requested, also build compiler-rt for that target. WASIp3
+# will eventually have a different ABI than wasm32-wasip2, so this separate
+# build is needed.
+if(WASI_SDK_TARGETS MATCHES p3)
+  define_compiler_rt(wasm32-wasip3)
+endif()
 
 # In addition to the default installation of `compiler-rt` itself also copy
 # around some headers and make copies of the `wasi` directory as `wasip1` and
@@ -133,7 +144,6 @@ add_custom_target(compiler-rt-post-build
 add_dependencies(compiler-rt-post-build compiler-rt-build)
 
 add_custom_target(compiler-rt DEPENDS compiler-rt-build compiler-rt-post-build)
-
 
 # =============================================================================
 # wasi-libc build logic
