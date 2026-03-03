@@ -23,7 +23,7 @@ find_program(MAKE make REQUIRED)
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
-option(WASI_SDK_LTO "Whether or not to build LTO assets" ON)
+option(WASI_SDK_LTO "Whether or not to build LTO assets" OFF)
 set(WASI_SDK_CPU_CFLAGS "-mcpu=lime1" CACHE STRING "CFLAGS to specify wasm features to enable")
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
@@ -98,8 +98,7 @@ function(define_compiler_rt target)
   add_dependencies(compiler-rt-build compiler-rt-build-${target})
 endfunction()
 
-define_compiler_rt(wasm32-wasi)
-define_compiler_rt(wasm32-wasip1-threads)
+define_compiler_rt(wasm32-wasip3)
 
 # In addition to the default installation of `compiler-rt` itself also copy
 # around some headers and make copies of the `wasi` directory as `wasip1` and
@@ -114,16 +113,6 @@ add_custom_target(compiler-rt-post-build
   # directory to ensure that all host-defined headers all work as well.
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${clang_resource_dir}/include ${wasi_resource_dir}/include
-
-  # Copy the `lib/wasm32-unknown-wasi` folder to `lib/wasm32-unknown-wasi{p1,p2}` to ensure that those
-  # OS-strings also work for looking up the compiler-rt.a file.
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasm32-unknown-wasi ${wasi_resource_dir}/lib/wasm32-unknown-wasip1
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasm32-unknown-wasi ${wasi_resource_dir}/lib/wasm32-unknown-wasip2
-  # Copy the `lib/wasm32-unknown-wasip1-threads` folder to `lib/wasm32-unknown-wasi-threads`
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads ${wasi_resource_dir}/lib/wasm32-unknown-wasi-threads
 
   COMMENT "finalizing compiler-rt installation"
 )
@@ -152,7 +141,7 @@ function(define_wasi_libc_sub target target_suffix lto)
   if(${target} MATCHES threads)
     set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads/libclang_rt.builtins.a)
   else()
-    set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip1/libclang_rt.builtins.a)
+    set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip3/libclang_rt.builtins.a)
   endif()
 
   set(extra_cmake_args)
@@ -312,7 +301,7 @@ function(define_libcxx target)
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
-  define_libcxx(${target})
+  #define_libcxx(${target})
 endforeach()
 
 # =============================================================================
@@ -336,7 +325,7 @@ endif()
 add_custom_target(build ALL)
 foreach(target IN LISTS WASI_SDK_TARGETS)
   add_custom_target(build-${target})
-  add_dependencies(build-${target} libcxx-${target} wasi-libc-${target} compiler-rt)
+  add_dependencies(build-${target}  wasi-libc-${target} compiler-rt)
   add_dependencies(build build-${target})
 endforeach()
 
