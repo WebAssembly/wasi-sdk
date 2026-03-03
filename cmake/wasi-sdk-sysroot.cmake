@@ -139,6 +139,12 @@ function(define_wasi_libc_sub target target_suffix lto)
     list(APPEND extra_cflags_list -fPIC)
   endif()
 
+  # The `wasm32-wasi` target is deprecated in clang, so ignore the deprecation
+  # warnings for now.
+  if(${target} STREQUAL wasm32-wasi OR ${target} STREQUAL wasm32-wasi-threads)
+    list(APPEND extra_cflags_list -Wno-deprecated)
+  endif()
+
   list(JOIN extra_cflags_list " " extra_cflags)
 
   if(${target} MATCHES threads)
@@ -163,6 +169,7 @@ function(define_wasi_libc_sub target target_suffix lto)
       -DTARGET_TRIPLE=${target}
       -DCMAKE_INSTALL_PREFIX=${wasi_sysroot}
       -DCMAKE_C_FLAGS=${extra_cflags}
+      -DCMAKE_ASM_FLAGS=${extra_cflags}
       -DBUILTINS_LIB=${libcompiler_rt_a}
       -DUSE_WASM_COMPONENT_LD=OFF
       -DWASI_SDK_VERSION=${wasi_sdk_version}
@@ -234,6 +241,12 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     list(APPEND extra_flags -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false)
   endif()
 
+  # The `wasm32-wasi` target is deprecated in clang, so ignore the deprecation
+  # warnings for now.
+  if(${target} STREQUAL wasm32-wasi OR ${target} STREQUAL wasm32-wasi-threads)
+    list(APPEND extra_flags -Wno-deprecated)
+  endif()
+
   set(extra_cflags_list ${CMAKE_C_FLAGS} ${extra_flags})
   list(JOIN extra_cflags_list " " extra_cflags)
   set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${extra_flags})
@@ -248,21 +261,17 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DCMAKE_INSTALL_INCLUDEDIR=${wasi_sysroot}/include/${target}
       -DCMAKE_STAGING_PREFIX=${wasi_sysroot}
       -DCMAKE_POSITION_INDEPENDENT_CODE=${pic}
-      -DCXX_SUPPORTS_CXX11=ON
       -DLIBCXX_ENABLE_THREADS:BOOL=ON
       -DLIBCXX_HAS_PTHREAD_API:BOOL=ON
       -DLIBCXX_HAS_EXTERNAL_THREAD_API:BOOL=OFF
-      -DLIBCXX_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF
       -DLIBCXX_HAS_WIN32_THREAD_API:BOOL=OFF
       -DLLVM_COMPILER_CHECKED=ON
       -DLIBCXX_ENABLE_SHARED:BOOL=${pic}
-      -DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF
       -DLIBCXX_ENABLE_EXCEPTIONS:BOOL=${WASI_SDK_EXCEPTIONS}
       -DLIBCXX_ENABLE_FILESYSTEM:BOOL=ON
       -DLIBCXX_ENABLE_ABI_LINKER_SCRIPT:BOOL=OFF
       -DLIBCXX_CXX_ABI=libcxxabi
-      -DLIBCXX_CXX_ABI_INCLUDE_PATHS=${llvm_proj_dir}/libcxxabi/include
-      -DLIBCXX_HAS_MUSL_LIBC:BOOL=ON
+      -DLIBCXX_HAS_MUSL_LIBC:BOOL=OFF
       -DLIBCXX_ABI_VERSION=2
       -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=${WASI_SDK_EXCEPTIONS}
       -DLIBCXXABI_ENABLE_SHARED:BOOL=${pic}
@@ -270,9 +279,7 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DLIBCXXABI_ENABLE_THREADS:BOOL=ON
       -DLIBCXXABI_HAS_PTHREAD_API:BOOL=ON
       -DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF
-      -DLIBCXXABI_BUILD_EXTERNAL_THREAD_LIBRARY:BOOL=OFF
       -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF
-      -DLIBCXXABI_ENABLE_PIC:BOOL=${pic}
       -DLIBCXXABI_USE_LLVM_UNWINDER:BOOL=${WASI_SDK_EXCEPTIONS}
       -DLIBUNWIND_ENABLE_SHARED:BOOL=${pic}
       -DLIBUNWIND_ENABLE_THREADS:BOOL=ON
