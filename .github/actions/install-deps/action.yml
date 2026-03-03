@@ -7,7 +7,7 @@ runs:
     - name: Setup `wasmtime` for tests
       uses: bytecodealliance/actions/wasmtime/setup@v1
       with:
-        version: "29.0.1"
+        version: "41.0.3"
     - name: Install ccache, ninja (macOS)
       run: brew install ccache ninja
       if: runner.os == 'macOS'
