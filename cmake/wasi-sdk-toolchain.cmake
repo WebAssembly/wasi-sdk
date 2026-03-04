@@ -122,7 +122,7 @@ if(WASI_SDK_LLDB)
 
       CONFIGURE_COMMAND
         <SOURCE_DIR>/configure
-          --prefix=${CMAKE_INSTALL_PREFIX}
+          --prefix=${wasi_tmp_install}
           --enable-pic
           --disable-examples
           CC=${CMAKE_C_COMPILER}
@@ -137,7 +137,7 @@ if(WASI_SDK_LLDB)
     )
     list(APPEND default_cmake_args
       -DLLDB_ENABLE_LIBEDIT=ON
-      -DLibEdit_ROOT=${CMAKE_INSTALL_PREFIX}
+      -DLibEdit_ROOT=${wasi_tmp_install}
     )
   else()
     list(APPEND default_cmake_args -DLLDB_ENABLE_LIBEDIT=OFF)
