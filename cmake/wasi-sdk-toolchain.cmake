@@ -163,7 +163,7 @@ ExternalProject_Add(llvm-build
     -DLLVM_INCLUDE_BENCHMARKS=OFF
     -DLLVM_INCLUDE_EXAMPLES=OFF
     -DLLVM_TARGETS_TO_BUILD=WebAssembly
-    -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasi
+    -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasip1
     -DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE
     -DLLVM_ENABLE_LIBXML2=OFF
     # Pass `-s` to strip symbols by default and shrink the size of the
