@@ -12,7 +12,8 @@ RUN dnf install -y \
   python3 \
   git \
   unzip \
-  cmake
+  cmake \
+  ncurses-devel
 
 COPY ./install-ccache.sh .
 RUN ./install-ccache.sh
