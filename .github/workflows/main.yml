@@ -157,6 +157,7 @@ jobs:
   build-only-sysroot:
     name: Build only sysroot - ${{ matrix.name }}
     runs-on: ubuntu-24.04
+    needs: build  # Add dependency
     strategy:
       matrix:
         include:
@@ -170,10 +171,16 @@ jobs:
       - uses: ./.github/actions/checkout
       - uses: ./.github/actions/install-deps
       - run: cargo install wasm-component-ld@0.5.21
-      - run: sudo apt-get update -y && sudo apt-get install -y clang-20 lld-20
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-x86_64-linux
+          path: dist-x86_64-linux
+      - run: ./ci/merge-artifacts.sh
+      - run: tar xf dist/wasi-sdk-*.tar.gz
       - run: |
+          WASI_SDK_DIR=$(ls -d ./wasi-sdk-* | head -1)
           cmake -G Ninja -B build -S . \
-            -DCMAKE_C_COMPILER=/usr/lib/llvm-20/bin/clang \
+            -DCMAKE_C_COMPILER=$WASI_SDK_DIR/bin/clang \
             -DCMAKE_SYSTEM_NAME=WASI \
             -DWASI_SDK_INCLUDE_TESTS=ON \
             -DWASI_SDK_CPU_CFLAGS="" \
