@@ -3,7 +3,7 @@
 > **Note**: this documentation does not cover wasi-sdk-31, the latest version
 > of wasi-sdk at this time.
 
-From wasi-sdk-32 and onwards the artifacts produced by this repository support
+From wasi-sdk-33 and onwards the artifacts produced by this repository support
 compiling C++ code both with and without exceptions. The sysroot for wasm
 targets contains two copies of the C++ standard library and headers -- one with
 exceptions enabled and one with exceptions disabled. These are automatically
@@ -62,9 +62,9 @@ wasi-sdk at this time:
   issues in this repository itself as well as [resolving some upstream
   issues](https://github.com/llvm/llvm-project/issues/188077).
 * Currently `-fwasm-exceptions` is a required flag to enable C++ exceptions.
-  It's unclear whethe `-fexceptions` should also be supported as a substitute.
+  It's unclear whether `-fexceptions` should also be supported as a substitute.
 * Currently LLVM defaults to using the legacy exception-handling proposal and
   this will likely change in the future. Precompiled libraries for wasi-sdk are
-  all built with the standard exception-handlign proposal.
+  all built with the standard exception-handling proposal.
 * Currently `-lunwind` is required when linking, but this may become automatic
   in the future.

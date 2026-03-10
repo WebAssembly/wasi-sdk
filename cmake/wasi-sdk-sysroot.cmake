@@ -377,6 +377,12 @@ endfunction()
 function(define_libcxx target)
   add_custom_target(libcxx-${target})
 
+  # For dual-mode exceptions-and-not there are two versions of libcxx which are
+  # compiled and placed into the sysroot. They're named slightly differently to
+  # have unique CMake rules.
+  #
+  # Otherwise there's only one build of libcxx and it's either got exceptions for
+  # it doesn't depending on configuration.
   if (WASI_SDK_EXCEPTIONS STREQUAL "DUAL")
     define_libcxx_and_lto(${target} "" OFF)
     define_libcxx_and_lto(${target} "-exn" ON)

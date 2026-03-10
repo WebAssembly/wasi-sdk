@@ -172,10 +172,10 @@ jobs:
       - run: cargo install wasm-component-ld@0.5.21
       - name: Install LLVM 22
         run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           v=22
           rel=$(lsb_release -cs)
-          sudo apt-add-repository "deb http://apt.llvm.org/$rel/ llvm-toolchain-$rel-$v main"
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/keyrings/llvm.asc
+          echo "deb [signed-by=/etc/apt/keyrings/llvm.asc] http://apt.llvm.org/$rel/ llvm-toolchain-$rel-$v main" | sudo tee /etc/apt/sources.list.d/llvm-$v.list
           sudo apt-get update -y && sudo apt-get install -y clang-$v lld-$v
       - run: |
           cmake -G Ninja -B build -S . \
