@@ -209,8 +209,8 @@ disabled in a configure step before building with WASI SDK.
 
 ## Notable Limitations
 
-* C++ exceptions are disabled by default. For more information see
-  [CppExceptions.md].
+* C++ exceptions are disabled by default and require extra configuration to get
+  working, see [CppExceptions.md].
 * C `setjmp`/`longjmp` require some extra configuration to get working, see
   [SetjmpLongjmp.md].
 * Most targets do not support spawning a thread. Experimental support for
