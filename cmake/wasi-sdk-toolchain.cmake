@@ -113,6 +113,9 @@ if(WASI_SDK_LLDB)
     include(ProcessorCount)
     ProcessorCount(nproc)
     find_program(MAKE_EXECUTABLE make REQUIRED)
+    if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      set(libedit_ldflags -Wl,-install_name,@rpath/libedit.0.dylib)
+    endif()
     ExternalProject_Add(libedit
       URL https://thrysoee.dk/editline/libedit-20251016-3.1.tar.gz
       URL_HASH SHA256=21362b00653bbfc1c71f71a7578da66b5b5203559d43134d2dd7719e313ce041
@@ -127,8 +130,7 @@ if(WASI_SDK_LLDB)
           --enable-pic
           --disable-examples
           CC=${CMAKE_C_COMPILER}
-          CFLAGS=${libedit_cflags}
-          LDFLAGS=${libedit_cflags}
+          LDFLAGS=${libedit_ldflags}
       BUILD_COMMAND
         ${MAKE_EXECUTABLE} -j${nproc} V=1
 
