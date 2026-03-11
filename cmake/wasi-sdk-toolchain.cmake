@@ -171,6 +171,9 @@ ExternalProject_Add(llvm-build
     # Pass `-s` to strip symbols by default and shrink the size of the
     # distribution
     -DCMAKE_EXE_LINKER_FLAGS=-s
+    # Looks to be required on macOS for, at build time, the dynamic linker to
+    # find `libedit.dylib` when that's enabled.
+    -DCMAKE_BUILD_RPATH=${wasi_tmp_install}/lib
     ${llvm_cmake_flags_list}
   # See https://www.scivision.dev/cmake-externalproject-list-arguments/ for
   # why this is in `CMAKE_CACHE_ARGS` instead of above
