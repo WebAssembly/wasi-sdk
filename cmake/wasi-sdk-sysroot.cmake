@@ -36,6 +36,15 @@ if(WASI_SDK_DEBUG_PREFIX_MAP)
     -fdebug-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=wasisdk://v${wasi_sdk_version})
 endif()
 
+set(wasi_sdk_exception_flags)
+if(WASI_SDK_EXCEPTIONS)
+  # Flags required to enable standard WASM exception handling.
+  list(APPEND wasi_sdk_exception_flags
+    -fwasm-exceptions
+    -mllvm
+    -wasm-use-legacy-eh=false)
+endif()
+
 # Default arguments for builds of cmake projects (mostly LLVM-based) to forward
 # along much of our own configuration into these projects.
 set(default_cmake_args
@@ -70,6 +79,13 @@ endif()
 
 add_custom_target(compiler-rt-build)
 function(define_compiler_rt target)
+  set(compiler_rt_flags ${WASI_SDK_CPU_CFLAGS})
+
+  # Build compiler_rt with the exception tag definition
+  # necessary at runtime when exceptions are enabled
+  list(APPEND compiler_rt_flags ${wasi_sdk_exception_flags})
+  list(JOIN compiler_rt_flags " " compiler_rt_flags)
+
   ExternalProject_Add(compiler-rt-build-${target}
     SOURCE_DIR "${llvm_proj_dir}/compiler-rt"
     CMAKE_ARGS
@@ -89,9 +105,9 @@ function(define_compiler_rt target)
         -DCOMPILER_RT_BUILD_ORC=OFF
         -DCOMPILER_RT_BUILD_GWP_ASAN=OFF
         -DCMAKE_C_COMPILER_TARGET=${target}
-        -DCMAKE_C_FLAGS=${WASI_SDK_CPU_CFLAGS}
-        -DCMAKE_CXX_FLAGS=${WASI_SDK_CPU_CFLAGS}
-        -DCMAKE_ASM_FLAGS=${WASI_SDK_CPU_CFLAGS}
+        -DCMAKE_C_FLAGS=${compiler_rt_flags}
+        -DCMAKE_CXX_FLAGS=${compiler_rt_flags}
+        -DCMAKE_ASM_FLAGS=${compiler_rt_flags}
         -DCMAKE_INSTALL_PREFIX=${wasi_resource_dir}
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
@@ -259,7 +275,7 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     # a future endeavor.
     set(pic OFF)
     set(runtimes "libunwind;${runtimes}")
-    list(APPEND extra_flags -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false)
+    list(APPEND extra_flags ${wasi_sdk_exception_flags})
   endif()
 
   # The `wasm32-wasi` target is deprecated in clang, so ignore the deprecation
