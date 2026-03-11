@@ -1,25 +1,17 @@
 # Support for C++ Exceptions
 
-The released artifacts for wasi-sdk at this time do not support C++ exceptions.
-LLVM and Clang, however, have support for C++ exceptions in WebAssembly and this
-is intended to serve as documentation of the current state of affairs of using
-C++ exceptions. It should be noted though that the current status of C++
-exceptions support is not intended to be the final state of support, and this is
-all continuing to be iterated on over time.
+> **Note**: this documentation does not cover wasi-sdk-31, the latest version
+> of wasi-sdk at this time.
 
-## Building wasi-sdk with exceptions
+From wasi-sdk-32 and onwards the artifacts produced by this repository support
+compiling C++ code both with and without exceptions. The sysroot for wasm
+targets contains two copies of the C++ standard library and headers -- one with
+exceptions enabled and one with exceptions disabled. These are automatically
+selected based on compilation flags. This means that wasi-sdk-produced binaries
+can avoid using wasm exceptions entirely by disabling C++ exceptions, or C++
+exceptions can be enabled in which case wasm exceptions will be used.
 
-When building the sysroot with wasi-sdk you can pass `-DWASI_SDK_EXCEPTIONS=ON`
-to enable support for C++ exceptions. For example:
-
-```shell script
-$ cmake -G Ninja -B build/sysroot -S . \
-    -DCMAKE_TOOLCHAIN_FILE=$path/to/wasi-sdk-p1.cmake \
-    -DWASI_SDK_EXCEPTIONS=ON
-```
-
-The C++ standard library will be compiled with support for exceptions for the
-desired targets and the resulting sysroot supports using exceptions.
+Currently the default is for C++ exceptions to be disabled.
 
 ## Compiling code with C++ exceptions
 
@@ -36,25 +28,42 @@ This can be specified for example with:
 
 ```shell script
 $ export CFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
-$ export LDFLAGS="-lunwind"
+$ export LDFLAGS="-fwasm-exceptions -lunwind"
 ```
+
+Note that `-fwasm-exceptions` must be present when linking to select the
+correct C++ standard library to link.
+
+## Building wasi-sdk with exceptions
+
+When building the sysroot with wasi-sdk you can pass `-DWASI_SDK_EXCEPTIONS=ON`
+to enable support for C++ exceptions. For example:
+
+```shell script
+$ cmake -G Ninja -B build/sysroot -S . \
+    -DCMAKE_TOOLCHAIN_FILE=$path/to/wasi-sdk-p1.cmake \
+    -DWASI_SDK_EXCEPTIONS=ON
+```
+
+The C++ standard library will be compiled with support for exceptions for the
+desired targets and the resulting sysroot supports using exceptions. Note that
+enabling C++ exceptions requires LLVM 22 or later.
+
+C++ exceptions are disabled by default for local builds. With a future release
+of LLVM 23 the dual-sysroot nature will be on-by-default.
 
 ## Limitations
 
-Currently C++ exceptions support in wasi-sdk does not support shared libraries.
-Fixing this will require resolving some miscellaneous build issues in this
-repository itself.
+There are a few known limitations/bugs/todos around exceptions support in
+wasi-sdk at this time:
 
-## Future Plans
-
-There are a few tracking issues with historical discussion about C++ exceptions
-support in wasi-sdk such as [#334](https://github.com/WebAssembly/wasi-sdk/issues/334)
-and [#565](https://github.com/WebAssembly/wasi-sdk/issues/565). The major
-remaining items are:
-
-* Figure out support for shared libraries.
-* Determine how to ship a sysroot that supports both with-and-without
-  exceptions.
-* Figure out how to avoid the need for extra compiler flags when using
-  exceptions.
-* Figure out if a new wasm target is warranted.
+* Currently C++ exceptions support in wasi-sdk does not support shared
+  libraries.  Fixing this will require resolving some miscellaneous build
+  issues in this repository itself.
+* Currently `-fwasm-exceptions` is a required flag to enable C++ exceptions.
+  It's unclear whethe `-fexceptions` should also be supported as a substitute.
+* Currently LLVM defaults to using the legacy exception-handling proposal and
+  this will likely change in the future. Precompiled libraries for wasi-sdk are
+  all built with the standard exception-handlign proposal.
+* Currently `-lunwind` is required when linking, but this may become automatic
+  in the future.

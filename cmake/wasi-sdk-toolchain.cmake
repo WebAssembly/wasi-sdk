@@ -182,6 +182,9 @@ ExternalProject_Add(llvm-build
   USES_TERMINAL_CONFIGURE ON
   USES_TERMINAL_BUILD ON
   USES_TERMINAL_INSTALL ON
+  PATCH_COMMAND
+    ${CMAKE_COMMAND} -E chdir .. bash -c
+      "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-185775.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-185775.patch -R --check"
 )
 
 add_custom_target(build ALL DEPENDS llvm-build)
