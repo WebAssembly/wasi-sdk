@@ -53,7 +53,7 @@ jobs:
 
     env: ${{ matrix.env || fromJSON('{}') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
@@ -65,7 +65,7 @@ jobs:
       # Bump the prefix number to evict all previous caches and enforce a clean
       # build, in the unlikely case that some weird build error occur and ccache
       # becomes a potential suspect.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         id: cache-restore
         with:
           path: ${{ runner.tool_cache }}/ccache
@@ -125,7 +125,7 @@ jobs:
       # Upload the `dist` folder from the build as the artifacts for this
       # runner.
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ format( 'dist-{0}', matrix.artifact) }}
           path: build/dist
@@ -149,7 +149,7 @@ jobs:
       # time instead of having to recreate everything each time a failure
       # happens.
       - if: always() && steps.cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ runner.tool_cache }}/ccache
           key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
@@ -164,7 +164,7 @@ jobs:
           - name: exceptions
             defines: -DWASI_SDK_EXCEPTIONS=ON
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
@@ -191,16 +191,16 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
 
       # Download all artifacts from all platforms in `build`, merge them into
       # final wasi-sdk-* artifacts, and then upload them.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
       - run: ./ci/merge-artifacts.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: release-artifacts
           path: dist
@@ -251,12 +251,12 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
       - uses: ./.github/actions/install-deps
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist-x86_64-linux
           path: dist-x86_64-linux
