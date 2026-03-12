@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Helper script executed on CI once all builds have completed. This takes
 # `wasi-toolchain-*` artifacts and `wasi-sysroot-*` artifacts and merges
