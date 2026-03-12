@@ -12,13 +12,26 @@ rm -rf dist
 mkdir dist
 version=$(./version.py)
 
+# Array of experimental release prefixes to strip
+experimental_prefixes=("experimental-threading-")
+
+# Strip matching prefix if found
+matched_prefix=""
+for prefix in "${experimental_prefixes[@]}"; do
+  if [[ $version == $prefix* ]]; then
+    matched_prefix=${prefix%-}  # Remove trailing dash from prefix
+    version=${version#$prefix}
+    break
+  fi
+done
+
 make_deb() {
   build=$1
   dir=$2
 
-  if ! command -v dpkg-deb >/dev/null; then
-    return
-  fi
+  #if ! command -v dpkg-deb >/dev/null; then
+  #  return
+  #fi
 
   case $build in
     dist-x86_64-linux) deb_arch=amd64 ;;
@@ -31,12 +44,13 @@ make_deb() {
   mkdir dist/pkg
   mkdir dist/pkg/opt
   mkdir dist/pkg/DEBIAN
-  sed s/VERSION/$version/ wasi-sdk.control | \
+  sed "s/Package: wasi-sdk$/Package: wasi-sdk${matched_prefix:+-$matched_prefix}/" wasi-sdk.control | \
+    sed s/VERSION/$version/ | \
     sed s/ARCH/$deb_arch/ > dist/pkg/DEBIAN/control
   cp -R $dir dist/pkg/opt/wasi-sdk
   deb_name=$(echo $(basename $dir) | sed 's/.tar.gz//')
   (cd dist && dpkg-deb -b pkg $deb_name.deb)
-  rm -rf dist/pkg
+  #rm -rf dist/pkg
 }
 
 for build in dist-*; do
@@ -69,9 +83,9 @@ for build in dist-*; do
 
   tar czf dist/$sdk_dir.tar.gz -C dist $sdk_dir
 
-  if echo $build | grep -q linux; then
+  #if echo $build | grep -q linux; then
     make_deb $build dist/$sdk_dir
-  fi
+  #fi
   rm -rf dist/$sdk_dir
 done
 
