@@ -154,42 +154,6 @@ jobs:
           path: ${{ runner.tool_cache }}/ccache
           key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
 
-  build-only-sysroot:
-    name: Build only sysroot - ${{ matrix.name }}
-    runs-on: ubuntu-24.04
-    needs: build  # Add dependency
-    strategy:
-      matrix:
-        include:
-          - name: default
-          - name: exceptions
-            defines: -DWASI_SDK_EXCEPTIONS=ON
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/checkout
-      - uses: ./.github/actions/install-deps
-      - run: cargo install wasm-component-ld@0.5.21
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist-x86_64-linux
-          path: dist-x86_64-linux
-      - run: ./ci/merge-artifacts.sh
-      - run: tar xf dist/wasi-sdk-*.tar.gz
-      - run: |
-          WASI_SDK_DIR=$(ls -d ./wasi-sdk-* | head -1)
-          cmake -G Ninja -B build -S . \
-            -DCMAKE_C_COMPILER=$WASI_SDK_DIR/bin/clang \
-            -DCMAKE_SYSTEM_NAME=WASI \
-            -DWASI_SDK_INCLUDE_TESTS=ON \
-            -DWASI_SDK_CPU_CFLAGS="" \
-            -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF \
-            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF \
-            ${{ matrix.defines }}
-      - run: ninja -C build
-      - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
-
   # Once all of the above matrix entries have completed this job will run and
   # assemble the final `wasi-sdk-*` artifacts by fusing the toolchain/sysroot
   # artifacts.
