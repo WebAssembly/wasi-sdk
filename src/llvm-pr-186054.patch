@@ -1,0 +1,48 @@
+From f71fdfcbd6fcc7b521c74b5856ebeacdd6cf55d9 Mon Sep 17 00:00:00 2001
+From: Catherine <whitequark@whitequark.org>
+Date: Thu, 12 Mar 2026 08:19:49 +0000
+Subject: [PATCH] [libc++abi] Revert gating of `__cxa_thread_atexit` on
+ Linux||Fuchsia
+
+This was done in the commit 3c100d5d548d with the description
+"Enable -Wmissing-prototypes" which seems incongruent to me.
+
+Since then it's made its way into a release and broke the use of
+`thread_local` variables with destructors on Wasm/WASI:
+
+```cc
+// repro.cc
+struct c { ~c() {} };
+thread_local c v;
+int main() { (void)v; }
+```
+
+```console
+$ ./wasi-sdk-31.0-x86_64-linux/bin/clang++ repro.cc
+wasm-ld: error: /tmp/repro-dd1ad7.o: undefined symbol: __cxa_thread_atexit
+clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+```
+---
+ libcxxabi/src/cxa_thread_atexit.cpp | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/libcxxabi/src/cxa_thread_atexit.cpp b/libcxxabi/src/cxa_thread_atexit.cpp
+index 402a52c741012..1bdcb4ef192b4 100644
+--- a/libcxxabi/src/cxa_thread_atexit.cpp
++++ b/libcxxabi/src/cxa_thread_atexit.cpp
+@@ -106,7 +106,6 @@ namespace {
+ 
+ #endif // HAVE___CXA_THREAD_ATEXIT_IMPL
+ 
+-#if defined(__linux__) || defined(__Fuchsia__)
+ extern "C" {
+ 
+   _LIBCXXABI_FUNC_VIS int __cxa_thread_atexit(Dtor dtor, void* obj, void* dso_symbol) throw() {
+@@ -141,6 +140,5 @@ extern "C" {
+     }
+ #endif // HAVE___CXA_THREAD_ATEXIT_IMPL
+   }
+-} // extern "C"
+-#endif // defined(__linux__) || defined(__Fuchsia__)
++  } // extern "C"
+ } // namespace __cxxabiv1

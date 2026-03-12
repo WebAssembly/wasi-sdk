@@ -330,6 +330,9 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     PATCH_COMMAND
       ${CMAKE_COMMAND} -E chdir .. bash -c
         "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-168449.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-168449.patch -R --check"
+    COMMAND
+      ${CMAKE_COMMAND} -E chdir .. bash -c
+        "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-186054.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-186054.patch -R --check"
   )
 endfunction()
 
