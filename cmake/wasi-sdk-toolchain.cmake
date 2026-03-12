@@ -113,6 +113,9 @@ if(WASI_SDK_LLDB)
     include(ProcessorCount)
     ProcessorCount(nproc)
     find_program(MAKE_EXECUTABLE make REQUIRED)
+    if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      set(libedit_ldflags -Wl,-install_name,@rpath/libedit.0.dylib)
+    endif()
     ExternalProject_Add(libedit
       URL https://thrysoee.dk/editline/libedit-20251016-3.1.tar.gz
       URL_HASH SHA256=21362b00653bbfc1c71f71a7578da66b5b5203559d43134d2dd7719e313ce041
@@ -127,8 +130,7 @@ if(WASI_SDK_LLDB)
           --enable-pic
           --disable-examples
           CC=${CMAKE_C_COMPILER}
-          CFLAGS=${libedit_cflags}
-          LDFLAGS=${libedit_cflags}
+          LDFLAGS=${libedit_ldflags}
       BUILD_COMMAND
         ${MAKE_EXECUTABLE} -j${nproc} V=1
 
@@ -169,6 +171,9 @@ ExternalProject_Add(llvm-build
     # Pass `-s` to strip symbols by default and shrink the size of the
     # distribution
     -DCMAKE_EXE_LINKER_FLAGS=-s
+    # Looks to be required on macOS for, at build time, the dynamic linker to
+    # find `libedit.dylib` when that's enabled.
+    -DCMAKE_BUILD_RPATH=${wasi_tmp_install}/lib
     ${llvm_cmake_flags_list}
   # See https://www.scivision.dev/cmake-externalproject-list-arguments/ for
   # why this is in `CMAKE_CACHE_ARGS` instead of above
