@@ -109,6 +109,11 @@ if(WASI_SDK_LLDB)
     -DLLDB_ENABLE_LINUXPTY=OFF
   )
 
+  set(sed_inplace_flag -i)
+  if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    set(sed_inplace_flag -i "")
+  endif()
+
   if (WASI_SDK_LIBEDIT)
     include(ProcessorCount)
     ProcessorCount(nproc)
@@ -129,10 +134,22 @@ if(WASI_SDK_LLDB)
           --prefix=${wasi_tmp_install}
           --enable-pic
           --disable-examples
+          --disable-static
+          --disable-silent-rules
           CC=${CMAKE_C_COMPILER}
           LDFLAGS=${libedit_ldflags}
+      # By default it looks like `libedit` tries to link to `libncurses.so` and
+      # such on Linux. This is problematic as systems may not have that
+      # installed. Turns out though at least for AlmaLinux [1] they just edit
+      # makefile and pkg-config info and it works out. Who knew! I thought
+      # one of the millions of lines in `./configure` would take care of this
+      # but apparently we're still resorting to editing things raw...
+      #
+      # [1]: https://git.almalinux.org/rpms/libedit/src/commit/3f0893c4cd8e0cbb2f556d2fad48326c9c037a6c/SPECS/libedit.spec#L44-L48
+      COMMAND sed ${sed_inplace_flag} "s/lncurses/ltinfo/" src/Makefile
+      COMMAND sed ${sed_inplace_flag} "s/ -lncurses//" libedit.pc
       BUILD_COMMAND
-        ${MAKE_EXECUTABLE} -j${nproc} V=1
+        ${MAKE_EXECUTABLE} -j${nproc}
 
       USES_TERMINAL_CONFIGURE ON
       USES_TERMINAL_BUILD ON
