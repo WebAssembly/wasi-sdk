@@ -147,6 +147,13 @@ if(WASI_SDK_LLDB)
     add_custom_target(libedit)
   endif()
 
+  set(libxml_cmake_args)
+
+  # Windows doesn't have iconv by default, so disable it for now.
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    list(APPEND libxml_cmake_args -DLIBXML2_WITH_ICONV=OFF)
+  endif()
+
   if (WASI_SDK_LIBXML2)
     ExternalProject_Add(libxml2
       URL https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.2.tar.xz
@@ -158,6 +165,7 @@ if(WASI_SDK_LLDB)
         -DLIBXML2_WITH_DEBUG=OFF
         -DLIBXML2_WITH_DOCS=OFF
         -DLIBXML2_WITH_TESTS=OFF
+        ${libxml_cmake_args}
 
       USES_TERMINAL_CONFIGURE ON
       USES_TERMINAL_BUILD ON
