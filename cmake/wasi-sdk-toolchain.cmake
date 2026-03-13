@@ -19,6 +19,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64" AND LLVM_CMAKE_FLAGS MATCHES "x86_64")
   set(LIBEDIT_DEFAULT OFF)
 endif()
 option(WASI_SDK_LIBEDIT "Whether or not to build libedit for LLDB" ${LIBEDIT_DEFAULT})
+option(WASI_SDK_LIBXML2 "Whether or not to build libxml2 for LLDB" ON)
 
 string(REGEX REPLACE "[ ]+" ";" llvm_cmake_flags_list "${LLVM_CMAKE_FLAGS}")
 
@@ -104,7 +105,6 @@ if(WASI_SDK_LLDB)
     -DLLDB_ENABLE_LZMA=OFF
     -DLLDB_ENABLE_LUA=OFF
     -DLLDB_ENABLE_PYTHON=OFF
-    -DLLDB_ENABLE_LIBXML2=OFF
     -DLLDB_ENABLE_FBSDVMCORE=OFF
     -DLLDB_ENABLE_LINUXPTY=OFF
   )
@@ -146,8 +146,43 @@ if(WASI_SDK_LLDB)
     list(APPEND default_cmake_args -DLLDB_ENABLE_LIBEDIT=OFF)
     add_custom_target(libedit)
   endif()
+
+  set(libxml_cmake_args)
+
+  # Windows doesn't have iconv by default, so disable it for now.
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    list(APPEND libxml_cmake_args -DLIBXML2_WITH_ICONV=OFF)
+  endif()
+
+  if (WASI_SDK_LIBXML2)
+    ExternalProject_Add(libxml2
+      URL https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.2.tar.xz
+      URL_HASH SHA256=c8b9bc81f8b590c33af8cc6c336dbff2f53409973588a351c95f1c621b13d09d
+
+      CMAKE_ARGS
+        ${default_cmake_args}
+        -DLIBXML2_WITH_PROGRAMS=OFF
+        -DLIBXML2_WITH_DEBUG=OFF
+        -DLIBXML2_WITH_DOCS=OFF
+        -DLIBXML2_WITH_TESTS=OFF
+        ${libxml_cmake_args}
+        ${llvm_cmake_flags_list}
+
+      USES_TERMINAL_CONFIGURE ON
+      USES_TERMINAL_BUILD ON
+      USES_TERMINAL_INSTALL ON
+    )
+    list(APPEND default_cmake_args
+      -DLLDB_ENABLE_LIBXML2=ON
+      -DLibXml2_ROOT=${wasi_tmp_install}
+    )
+  else()
+    list(APPEND default_cmake_args -DLLDB_ENABLE_LIBXML2=OFF)
+    add_custom_target(libxml2)
+  endif()
 else()
   add_custom_target(libedit)
+  add_custom_target(libxml2)
 endif()
 
 list(TRANSFORM tools PREPEND --target= OUTPUT_VARIABLE build_targets)
@@ -190,7 +225,7 @@ ExternalProject_Add(llvm-build
 )
 
 add_custom_target(build ALL DEPENDS llvm-build)
-ExternalProject_Add_StepDependencies(llvm-build configure libedit)
+ExternalProject_Add_StepDependencies(llvm-build configure libedit libxml2)
 
 # Installation target for this outer project for installing the toolchain to the
 # system.
