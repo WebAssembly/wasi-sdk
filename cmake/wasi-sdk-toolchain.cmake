@@ -166,6 +166,7 @@ if(WASI_SDK_LLDB)
         -DLIBXML2_WITH_DOCS=OFF
         -DLIBXML2_WITH_TESTS=OFF
         ${libxml_cmake_args}
+        ${LLVM_CMAKE_FLAGS}
 
       USES_TERMINAL_CONFIGURE ON
       USES_TERMINAL_BUILD ON
