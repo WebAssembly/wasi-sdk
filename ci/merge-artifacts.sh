@@ -29,9 +29,9 @@ make_deb() {
   build=$1
   dir=$2
 
-  #if ! command -v dpkg-deb >/dev/null; then
-  #  return
-  #fi
+  if ! command -v dpkg-deb >/dev/null; then
+    return
+  fi
 
   case $build in
     dist-x86_64-linux) deb_arch=amd64 ;;
@@ -50,7 +50,7 @@ make_deb() {
   cp -R $dir dist/pkg/opt/wasi-sdk
   deb_name=$(echo $(basename $dir) | sed 's/.tar.gz//')
   (cd dist && dpkg-deb -b pkg $deb_name.deb)
-  #rm -rf dist/pkg
+  rm -rf dist/pkg
 }
 
 for build in dist-*; do
@@ -83,9 +83,9 @@ for build in dist-*; do
 
   tar czf dist/$sdk_dir.tar.gz -C dist $sdk_dir
 
-  #if echo $build | grep -q linux; then
+  if echo $build | grep -q linux; then
     make_deb $build dist/$sdk_dir
-  #fi
+  fi
   rm -rf dist/$sdk_dir
 done
 
