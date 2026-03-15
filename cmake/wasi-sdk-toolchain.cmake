@@ -154,6 +154,12 @@ if(WASI_SDK_LLDB)
     list(APPEND libxml_cmake_args -DLIBXML2_WITH_ICONV=OFF)
   endif()
 
+  # Our AlmaLinux:8 container ends up using `lib64` instead of `lib` by default
+  # which doesn't match LLVM, so specifically use the same dir as LLVM.
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    list(APPEND libxml_cmake_args -DCMAKE_INSTALL_LIBDIR=lib)
+  endif()
+
   if (WASI_SDK_LIBXML2)
     ExternalProject_Add(libxml2
       URL https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.2.tar.xz
