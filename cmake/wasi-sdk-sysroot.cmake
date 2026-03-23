@@ -133,13 +133,9 @@ function(define_wasi_libc_sub target target_suffix lto)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   set(extra_cflags_list "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags}")
 
-  if(${target} MATCHES p3)
-    list(APPEND extra_cmake_args -DBUILD_SHARED=OFF)
-  endif()
-
-  if(${target} MATCHES p2)
-    # Always enable `-fPIC` for the `wasm32-wasip2` targets. This makes `libc.a`
-    # more flexible and usable in dynamic linking situations.
+  if(${target} MATCHES p2 OR ${target} MATCHES p3)
+    # Always enable `-fPIC` for the `wasm32-wasip2` and `wasm32-wasip3` targets. 
+    # This makes `libc.a` more flexible and usable in dynamic linking situations.
     list(APPEND extra_cflags_list -fPIC)
   endif()
 
@@ -177,6 +173,7 @@ function(define_wasi_libc_sub target target_suffix lto)
       -DBUILTINS_LIB=${libcompiler_rt_a}
       -DUSE_WASM_COMPONENT_LD=OFF
       -DWASI_SDK_VERSION=${wasi_sdk_version}
+      -DBUILD_TESTS=ON
     DEPENDS compiler-rt
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
