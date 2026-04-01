@@ -1,0 +1,16 @@
+name: 'Prepare wasi-sdk git directory'
+description: 'Prepare wasi-sdk git directory'
+
+runs:
+  using: composite
+  steps:
+    - run: git fetch --tags --force
+      name: Force-fetch tags to work around actions/checkout#290
+      shell: bash
+    # We can't use `--depth 1` here sadly because the GNU config
+    # submodule is not pinned to a particular tag/branch. Please
+    # bump depth (or even better, the submodule), in case of "error:
+    # Server does not allow request for unadvertised object" in the
+    # future.
+    - run: git submodule update --init --depth 64 --jobs 3
+      shell: bash

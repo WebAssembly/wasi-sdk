@@ -1,0 +1,281 @@
+name: CI
+
+on:
+  push:
+    tags:
+      - 'wasi-sdk-*'
+    branches:
+      - main
+
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact: x86_64-linux
+            os: ubuntu-24.04
+
+          - artifact: arm64-linux
+            os: ubuntu-22.04-arm
+
+          - artifact: riscv64-linux
+            os: ubuntu-24.04-riscv
+            rust_target: riscv64gc-unknown-linux-gnu
+            cross_cmake_args: -DWASI_SDK_LLDB=OFF
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
+
+          - artifact: arm64-macos
+            os: macos-14
+            rust_target: aarch64-apple-darwin
+            env:
+              WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
+                -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
+                -DCMAKE_OSX_ARCHITECTURES=arm64
+
+          - artifact: x86_64-macos
+            os: macos-14
+            rust_target: x86_64-apple-darwin
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
+              WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
+                -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
+                -DCMAKE_OSX_ARCHITECTURES=x86_64
+
+          - artifact: x86_64-windows
+            os: windows-2022
+
+          - artifact: arm64-windows
+            os: windows-11-arm
+
+    env: ${{ matrix.env || fromJSON('{}') }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/checkout
+      - uses: ./.github/actions/install-deps
+
+      # Persist ccache-based caches across builds. This directory is configured
+      # via the CCACHE_DIR env var below for ccache to use.
+      #
+      # Bump the prefix number to evict all previous caches and enforce a clean
+      # build, in the unlikely case that some weird build error occur and ccache
+      # becomes a potential suspect.
+      - uses: actions/cache@v5
+        id: cache-restore
+        with:
+          path: ${{ runner.tool_cache }}/ccache
+          key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
+          restore-keys: |
+            0-cache-${{ matrix.artifact }}-
+      - run: |
+          mkdir -p '${{ runner.tool_cache }}/ccache'
+          echo 'CCACHE_DIR=${{ runner.tool_cache }}/ccache' >> $GITHUB_ENV
+        shell: bash
+
+      # Configure CMake flags for `ci/build.sh` as necessary for each
+      # matrix entry.
+      - run: |
+          cmake_args=-DWASI_SDK_ARTIFACT=${{ matrix.artifact }}
+          if [ "${{ matrix.rust_target }}" != "" ]; then
+            rustup target add ${{ matrix.rust_target }}
+            cmake_args="$cmake_args -DRUST_TARGET=${{ matrix.rust_target }}"
+          fi
+          if [ "${{ matrix.cross_cmake_args }}" != "" ]; then
+            cmake_args="$cmake_args ${{ matrix.cross_cmake_args }}"
+          fi
+          echo WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS="$cmake_args" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Clear ccache statistics
+        run: ccache --zero-stats
+
+      - name: Build and test (macOS)
+        run: ./ci/build.sh
+        if: runner.os == 'macOS'
+
+      - name: Build and test (Linux)
+        run: ./ci/docker-build.sh ${{ matrix.artifact }}
+        if: runner.os == 'Linux'
+
+      # Setup the VS Developoer Prompt environment variables to explicitly use
+      # MSVC to compile LLVM as that avoids extra runtime dependencies
+      # msys/mingw might bring.
+      #
+      # As of 2024-07-22 this sha is the "v1.13.0" tag.
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        if: startsWith(matrix.os, 'windows')
+      - name: Build and test (Windows)
+        run: |
+          # Delete a troublesome binary as recommended here
+          # https://github.com/ilammy/msvc-dev-cmd?tab=readme-ov-file#name-conflicts-with-shell-bash
+          rm /usr/bin/link
+          # Use a shorter build directory than the default on Windows to avoid
+          # hitting path length and command line length limits. See
+          # WebAssembly/wasi-libc#514. Despite using a different build directory
+          # though still move the `dist` folder to `build/dist` so the upload
+          # step below doesn't need a windows-specific hook.
+          ./ci/build.sh C:/wasi-sdk
+          mkdir build
+          cp -r C:/wasi-sdk/dist build
+        shell: bash
+        if: startsWith(matrix.os, 'windows')
+
+      # Upload the `dist` folder from the build as the artifacts for this
+      # runner.
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ format( 'dist-{0}', matrix.artifact) }}
+          path: build/dist
+
+      # Caches are persisted across runs by restoring the latest cache which
+      # means that quite a lot of cruft can accumulate. Prune older entries that
+      # haven't been used by this run to avoid the cache continuously getting
+      # larger. In theory this should use `--evict-older-than $dur` where `$dur`
+      # is the time since the start of the run, but I'm not sure how to easily
+      # calculate that so pick something loose like one day instead.
+      - name: Prune ccache objects
+        run: ccache --evict-older-than 1d
+
+      # Help debug ccache issues by showing what happened.
+      - if: always()
+        name: Show ccache statistics
+        run: ccache --show-stats
+
+      # Always save a cache, even if the build failed. This ensures that if
+      # live-debugging via CI the build gets to pick up where it left off last
+      # time instead of having to recreate everything each time a failure
+      # happens.
+      - if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.tool_cache }}/ccache
+          key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
+
+  build-only-sysroot:
+    name: Build only sysroot - ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - name: default
+          - name: exceptions
+            defines: -DWASI_SDK_EXCEPTIONS=ON
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/checkout
+      - uses: ./.github/actions/install-deps
+      - run: cargo install wasm-component-ld@0.5.21
+      - run: sudo apt-get update -y && sudo apt-get install -y clang-20 lld-20
+      - run: |
+          cmake -G Ninja -B build -S . \
+            -DCMAKE_C_COMPILER=/usr/lib/llvm-20/bin/clang \
+            -DCMAKE_SYSTEM_NAME=WASI \
+            -DWASI_SDK_INCLUDE_TESTS=ON \
+            -DWASI_SDK_CPU_CFLAGS="" \
+            -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF \
+            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF \
+            ${{ matrix.defines }}
+      - run: ninja -C build
+      - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
+
+  # Once all of the above matrix entries have completed this job will run and
+  # assemble the final `wasi-sdk-*` artifacts by fusing the toolchain/sysroot
+  # artifacts.
+  finalize:
+    name: Finalize wasi-sdk artifacts
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/checkout
+
+      # Download all artifacts from all platforms in `build`, merge them into
+      # final wasi-sdk-* artifacts, and then upload them.
+      - uses: actions/download-artifact@v8
+      - run: ./ci/merge-artifacts.sh
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-artifacts
+          path: dist
+
+      # Use the `wasi-sdk-*` artifacts just created to create a docker image
+      # with a toolchain pre-installed.
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-qemu-action@v2
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=tag
+            type=ref,event=pr
+            type=sha
+      - name: Build and push wasi-sdk docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch' }}
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Publish a draft release
+        if: startsWith(github.ref, 'refs/tags')
+        run: gh release create --draft --prerelease --generate-notes ${{ github.ref_name }} ./dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Test the final artifacts as-is without passing `--sysroot` or
+  # `-resource-dir` or any extra flags. This exercises running the compiler
+  # as-is from the distribution tarballs and ensuring that it can build and pass
+  # all tests.
+  test-standalone:
+    name: Test standalone toolchain
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/checkout
+      - uses: ./.github/actions/install-deps
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-x86_64-linux
+          path: dist-x86_64-linux
+      - run: ./ci/merge-artifacts.sh
+      - run: tar xf dist/wasi-sdk-*.tar.gz
+      - run: |
+          cmake -G Ninja -B build -S . \
+            -DWASI_SDK_INCLUDE_TESTS=ON \
+            -DWASI_SDK_TEST_HOST_TOOLCHAIN=ON \
+            -DCMAKE_TOOLCHAIN_FILE=$(ls ./wasi-sdk-*/share/cmake/wasi-sdk.cmake)
+      - run: ninja -C build build-tests
+      - run: ctest --output-on-failure --parallel 10 --test-dir build/tests

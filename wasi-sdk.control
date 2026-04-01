@@ -1,0 +1,6 @@
+Package: wasi-sdk
+Version: VERSION
+Architecture: ARCH
+Priority: optional
+Description: Clang toolchain with wasm32-wasi default target, and the wasi sysroot
+Maintainer: WASI SDK Maintainers <webassembly@users.noreply.github.com>

@@ -1,0 +1,12 @@
+hello from_constructor101
+hello from_constructor
+hello from_constructor65535
+hello StaticObject::StaticObject
+hello main
+goodbye main
+hello another_from_atexit
+hello from_atexit
+hello from_destructor65535
+hello from_destructor
+hello StaticObject::~StaticObject
+hello from_destructor101

@@ -1,0 +1,20 @@
+# Ubuntu 24.04 is used here (rather than AlmaLinux 8) because AlmaLinux 8
+# does not publish riscv64 images. This runs natively on a riscv64 runner.
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y \
+  curl \
+  ca-certificates \
+  build-essential \
+  clang \
+  lld \
+  python3 \
+  git \
+  unzip \
+  cmake \
+  ninja-build \
+  ccache
+
+# Tell programs to cache in a location that both isn't a `--volume` mounted root
+# and isn't `/root` in the container as that won't be writable during the build.
+ENV XDG_CACHE_HOME /tmp/cache
