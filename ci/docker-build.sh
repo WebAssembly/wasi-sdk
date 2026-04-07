@@ -15,8 +15,13 @@ fi
 
 set -x
 
-# Build the Docker imager
-docker build --tag wasi-sdk-builder ci/docker
+# Build the Docker image. Use an artifact-specific Dockerfile if one exists
+# (e.g. ci/docker/Dockerfile.riscv64-linux), otherwise use the default.
+dockerfile=ci/docker/Dockerfile
+if [ -f "ci/docker/Dockerfile.$1" ]; then
+  dockerfile="ci/docker/Dockerfile.$1"
+fi
+docker build --tag wasi-sdk-builder --file "$dockerfile" ci/docker
 
 # Perform the build in `/src`. The current directory is mounted read-write at
 # this location as well. To ensure that container-created files are reasonable
@@ -34,9 +39,11 @@ args="$args --volume $ccache_dir:/ccache:Z --env CCACHE_DIR=/ccache"
 
 # Inherit some tools from the host into this container. This ensures that the
 # decision made on CI of what versions to use is the canonical source of truth
-# for theset ools
+# for these tools.
 args="$args --volume `rustc --print sysroot`:/rustc:ro"
-args="$args --volume $(dirname $(which wasmtime)):/wasmtime:ro"
+if [ "${WASI_SDK_CI_SKIP_SYSROOT:-}" != "1" ]; then
+  args="$args --volume $(dirname $(command -v wasmtime)):/wasmtime:ro"
+fi
 
 # Pass through some env vars that `build.sh` reads
 args="$args --env WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS"
