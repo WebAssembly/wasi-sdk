@@ -21,8 +21,9 @@ make_deb() {
   fi
 
   case $build in
-    dist-x86_64-linux) deb_arch=amd64 ;;
-    dist-arm64-linux)  deb_arch=arm64 ;;
+    dist-x86_64-linux)  deb_arch=amd64   ;;
+    dist-arm64-linux)   deb_arch=arm64   ;;
+    dist-riscv64-linux) deb_arch=riscv64 ;;
     *)
       echo "unknown build $build"
       exit 1
