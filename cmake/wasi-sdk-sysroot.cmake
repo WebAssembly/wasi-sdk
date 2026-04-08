@@ -381,7 +381,7 @@ function(define_libcxx target)
   # compiled and placed into the sysroot. They're named slightly differently to
   # have unique CMake rules.
   #
-  # Otherwise there's only one build of libcxx and it's either got exceptions for
+  # Otherwise there's only one build of libcxx and it's either got exceptions or
   # it doesn't depending on configuration.
   if (WASI_SDK_EXCEPTIONS STREQUAL "DUAL")
     define_libcxx_and_lto(${target} "" OFF)
