@@ -16,13 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ccache \
   && rm -rf /var/lib/apt/lists/*
 
-# Set the cross-compiler as the default so that cmake picks it up via CC/CXX
-# and sets CMAKE_CROSSCOMPILING=TRUE, which causes LLVM to build a native
-# tablegen before cross-compiling the rest of the toolchain.
-ENV CC=riscv64-linux-gnu-gcc
-ENV CXX=riscv64-linux-gnu-g++
-
 # Cargo needs an explicit linker when cross-compiling for riscv64.
+# The C/C++ cross-compiler is passed via CMAKE_C/CXX_COMPILER cmake flags
+# rather than CC/CXX env vars so that LLVM's native tblgen sub-build can
+# still find the host compiler (cmake cache vars are not inherited by
+# subprocess cmake invocations, but env vars are).
 ENV CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc
 
 # Tell programs to cache in a location that both isn't a `--volume` mounted root
