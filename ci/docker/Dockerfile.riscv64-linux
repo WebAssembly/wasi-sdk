@@ -23,7 +23,7 @@ ENV CC=riscv64-linux-gnu-gcc
 ENV CXX=riscv64-linux-gnu-g++
 
 # Cargo needs an explicit linker when cross-compiling for riscv64.
-ENV CARGO_TARGET_RISCV64_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc
+ENV CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc
 
 # Tell programs to cache in a location that both isn't a `--volume` mounted root
 # and isn't `/root` in the container as that won't be writable during the build.
