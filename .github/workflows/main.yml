@@ -28,6 +28,21 @@ jobs:
           - artifact: arm64-linux
             os: ubuntu-22.04-arm
 
+          - artifact: riscv64-linux
+            os: ubuntu-24.04
+            rust_target: riscv64gc-unknown-linux-gnu
+            cross_cmake_args: >-
+              -DCMAKE_SYSTEM_NAME=Linux
+              -DCMAKE_SYSTEM_PROCESSOR=riscv64
+              -DCMAKE_C_COMPILER=riscv64-linux-gnu-gcc
+              -DCMAKE_CXX_COMPILER=riscv64-linux-gnu-g++
+              -DWASI_SDK_LLDB=OFF
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
+              WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
+                -DCMAKE_SYSTEM_NAME=Linux
+                -DCMAKE_SYSTEM_PROCESSOR=riscv64
+
           - artifact: arm64-macos
             os: macos-14
             rust_target: aarch64-apple-darwin
@@ -84,6 +99,9 @@ jobs:
           if [ "${{ matrix.rust_target }}" != "" ]; then
             rustup target add ${{ matrix.rust_target }}
             cmake_args="$cmake_args -DRUST_TARGET=${{ matrix.rust_target }}"
+          fi
+          if [ "${{ matrix.cross_cmake_args }}" != "" ]; then
+            cmake_args="$cmake_args ${{ matrix.cross_cmake_args }}"
           fi
           echo WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS="$cmake_args" >> $GITHUB_ENV
         shell: bash

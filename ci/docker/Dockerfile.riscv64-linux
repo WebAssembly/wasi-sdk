@@ -1,0 +1,28 @@
+# Ubuntu 24.04 is used here (rather than AlmaLinux 8) because it has
+# riscv64 cross-compilation packages in its repositories.
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  crossbuild-essential-riscv64 \
+  clang \
+  lld \
+  python3 \
+  git \
+  unzip \
+  cmake \
+  ninja-build \
+  ccache \
+  && rm -rf /var/lib/apt/lists/*
+
+# Cargo needs an explicit linker when cross-compiling for riscv64.
+# The C/C++ cross-compiler is passed via CMAKE_C/CXX_COMPILER cmake flags
+# rather than CC/CXX env vars so that LLVM's native tblgen sub-build can
+# still find the host compiler (cmake cache vars are not inherited by
+# subprocess cmake invocations, but env vars are).
+ENV CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc
+
+# Tell programs to cache in a location that both isn't a `--volume` mounted root
+# and isn't `/root` in the container as that won't be writable during the build.
+ENV XDG_CACHE_HOME=/tmp/cache
