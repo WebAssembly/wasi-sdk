@@ -67,9 +67,9 @@ function(add_testcase runwasi test)
 
       # Apply language-specific options and dependencies.
       if(test MATCHES "cc$")
-        if(WASI_SDK_EXCEPTIONS)
+        if(NOT (WASI_SDK_EXCEPTIONS STREQUAL "OFF"))
           target_compile_options(${target_name} PRIVATE -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false)
-          target_link_options(${target_name} PRIVATE -lunwind)
+          target_link_options(${target_name} PRIVATE -fwasm-exceptions -lunwind)
         else()
           target_compile_options(${target_name} PRIVATE -fno-exceptions)
         endif()

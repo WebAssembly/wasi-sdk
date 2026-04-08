@@ -1,22 +1,17 @@
-diff --git a/libunwind/src/assembly.h b/libunwind/src/assembly.h
-index f8e83e138eff..c5097d25b0c6 100644
---- a/libunwind/src/assembly.h
-+++ b/libunwind/src/assembly.h
-@@ -249,6 +249,9 @@ aliasname:                                                                     \
- #define WEAK_ALIAS(name, aliasname)
- #define NO_EXEC_STACK_DIRECTIVE
- 
-+#elif defined(__wasm__)
-+#define NO_EXEC_STACK_DIRECTIVE
-+
- // clang-format on
- #else
- 
+From 852c8a2ebc0fdb1e781591e3e6e08d3a539bcfc3 Mon Sep 17 00:00:00 2001
+From: Yerzhan Zhamashev <yerzhan@novel.systems>
+Date: Wed, 21 Jan 2026 16:50:41 +0200
+Subject: [PATCH] libunwind: exclude __declspec from wasm build
+
+---
+ libunwind/src/config.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
 diff --git a/libunwind/src/config.h b/libunwind/src/config.h
-index deb5a4d4d73d..23c9f012cbcf 100644
+index f017403fa2234..6014a37e27212 100644
 --- a/libunwind/src/config.h
 +++ b/libunwind/src/config.h
-@@ -66,7 +66,8 @@
+@@ -75,7 +75,8 @@
    #define _LIBUNWIND_EXPORT
    #define _LIBUNWIND_HIDDEN
  #else

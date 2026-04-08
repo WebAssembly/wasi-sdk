@@ -188,10 +188,16 @@ jobs:
       - uses: ./.github/actions/checkout
       - uses: ./.github/actions/install-deps
       - run: cargo install wasm-component-ld@0.5.21
-      - run: sudo apt-get update -y && sudo apt-get install -y clang-20 lld-20
+      - name: Install LLVM 22
+        run: |
+          v=22
+          rel=$(lsb_release -cs)
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/keyrings/llvm.asc
+          echo "deb [signed-by=/etc/apt/keyrings/llvm.asc] http://apt.llvm.org/$rel/ llvm-toolchain-$rel-$v main" | sudo tee /etc/apt/sources.list.d/llvm-$v.list
+          sudo apt-get update -y && sudo apt-get install -y clang-$v lld-$v
       - run: |
           cmake -G Ninja -B build -S . \
-            -DCMAKE_C_COMPILER=/usr/lib/llvm-20/bin/clang \
+            -DCMAKE_C_COMPILER=/usr/lib/llvm-22/bin/clang \
             -DCMAKE_SYSTEM_NAME=WASI \
             -DWASI_SDK_INCLUDE_TESTS=ON \
             -DWASI_SDK_CPU_CFLAGS="" \
