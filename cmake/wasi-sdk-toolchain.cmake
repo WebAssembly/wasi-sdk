@@ -56,6 +56,7 @@ set(tools
   clang-format
   clang-tidy
   clang-apply-replacements
+  clang-scan-deps
   lld
   llvm-addr2line
   llvm-mc
