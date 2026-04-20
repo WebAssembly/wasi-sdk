@@ -28,12 +28,26 @@ set(opt_flags -O0 -O2 "-O2 -flto")
 
 add_custom_target(build-tests)
 
-# Executes a single `test` specified.
+# Registers `test` with CMake, compiling it with a number of flag combinations
+# and for all enabled targets. This will register up to many tests with CTest.
 #
-# This will compile `test` for all the various targets and with various
-# compiler options. If `runwasi` is non-empty then the test will be executed
-# in that runner as well.
-function(add_testcase runwasi test)
+# This function takes CMake-style arguments, specified as:
+#
+# * `EMULATED_CLOCKS` - enables `-lwasi-emulated-process-clocks` when compiling.
+# * `EMULATED_MMAN` - enables `-lwasi-emulated-mman` when compiling.
+# * `EMULATED_SIGNAL` - enables `-lwasi-emulated-signal` when compiling.
+# * `PRINTSCAN_LONG_DOUBLE` - enables `-lc-printscan-long-double` when compiling.
+# * `FSDIR` - requires `${test}.dir` to exist and mounts it when running the test
+# * `PASS_REGULAR_EXPRESSION` - same as the CTest property
+# * `ENV` - env vars (the `--env` flag in Wasmtime) to pass to the test.
+# * `COMPILE_ONLY` - does not actually execute this test, just compiles it.
+function(add_testcase test)
+  set(options EMULATED_CLOCKS EMULATED_MMAN EMULATED_SIGNAL
+    PRINTSCAN_LONG_DOUBLE FSDIR COMPILE_ONLY)
+  set(oneValueArgs PASS_REGULAR_EXPRESSION)
+  set(multiValueArgs ENV)
+  cmake_parse_arguments(PARSE_ARGV 1 arg "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
   foreach(target IN LISTS WASI_SDK_TARGETS)
     foreach(compile_flags IN LISTS opt_flags)
       # Mangle the options into something appropriate for a CMake rule name
@@ -52,16 +66,19 @@ function(add_testcase runwasi test)
       endif()
 
       # Apply test-specific compile options and link flags.
-      if(test MATCHES "clocks.c$")
+      if(${arg_EMULATED_CLOCKS})
         target_compile_options(${target_name} PRIVATE -D_WASI_EMULATED_PROCESS_CLOCKS)
         target_link_options(${target_name} PRIVATE -lwasi-emulated-process-clocks)
-      elseif(test MATCHES "mmap.c$")
+      endif()
+      if(${arg_EMULATED_MMAN})
         target_compile_options(${target_name} PRIVATE -D_WASI_EMULATED_MMAN)
         target_link_options(${target_name} PRIVATE -lwasi-emulated-mman)
-      elseif(test MATCHES "(sigabrt|signals).c$")
+      endif()
+      if(${arg_EMULATED_SIGNAL})
         target_compile_options(${target_name} PRIVATE -D_WASI_EMULATED_SIGNAL)
         target_link_options(${target_name} PRIVATE -lwasi-emulated-signal)
-      elseif(test MATCHES "printf-long-double-enabled.c$")
+      endif()
+      if(${arg_PRINTSCAN_LONG_DOUBLE})
         target_link_options(${target_name} PRIVATE -lc-printscan-long-double)
       endif()
 
@@ -93,27 +110,42 @@ function(add_testcase runwasi test)
         target_link_options(${target_name} PRIVATE -Wno-deprecated)
       endif()
 
-      if(runwasi)
-        set(runner ${runwasi})
-        if(${runner} MATCHES wasmtime)
-          if(target MATCHES threads)
-            set(runner "${runner} -Wshared-memory")
-          endif()
-          if(WASI_SDK_EXCEPTIONS)
-            set(runner "${runner} -Wexceptions")
-          endif()
-          if(target MATCHES "wasip3")
-            set(runner "${runner} -Wcomponent-model-async -Sp3")
-          endif()
+      if(arg_COMPILE_ONLY)
+        continue()
+      endif()
+
+      set(runner ${WASI_SDK_RUNWASI})
+      set(args)
+      if(${runner} MATCHES wasmtime)
+        if(target MATCHES threads)
+          list(APPEND runner -Wshared-memory)
         endif()
-        add_test(
-          NAME test-${target_name}
-          COMMAND
-            bash ../testcase.sh
-            ${runner}
-            ${test}
-            $<TARGET_FILE:${target_name}>
-          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        if(WASI_SDK_EXCEPTIONS)
+          list(APPEND runner -Wexceptions)
+        endif()
+        if(target MATCHES "wasip3")
+          list(APPEND runner -Wcomponent-model-async -Sp3)
+        endif()
+      endif()
+
+      foreach(env IN LISTS arg_ENV)
+        list(APPEND runner --env ${env})
+      endforeach()
+
+      if (${arg_FSDIR})
+        list(APPEND runner --dir ${CMAKE_CURRENT_SOURCE_DIR}/${test}.dir::${test}.dir)
+        list(APPEND args ${test}.dir)
+      endif()
+
+      add_test(
+        NAME test-${target_name}
+        COMMAND
+          ${runner}
+          $<TARGET_FILE:${target_name}>
+          ${args}
+      )
+      if (arg_PASS_REGULAR_EXPRESSION)
+        set_tests_properties(test-${target_name} PROPERTIES PASS_REGULAR_EXPRESSION ${arg_PASS_REGULAR_EXPRESSION})
       endif()
     endforeach()
   endforeach()
