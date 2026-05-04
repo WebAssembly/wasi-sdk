@@ -17,7 +17,7 @@ endif()
 
 # When building from source, WASI_SDK_PREFIX represents the generated directory
 if(NOT WASI_SDK_PREFIX)
-    set(WASI_SDK_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../../)
+	set(WASI_SDK_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../../)
 endif()
 
 set(CMAKE_C_COMPILER ${WASI_SDK_PREFIX}/bin/clang${WASI_HOST_EXE_SUFFIX})
