@@ -1,8 +1,5 @@
 # Support for C++ Exceptions
 
-> **Note**: this documentation does not cover wasi-sdk-31, the latest version
-> of wasi-sdk at this time.
-
 From wasi-sdk-33 and onwards the artifacts produced by this repository support
 compiling C++ code both with and without exceptions. The sysroot for wasm
 targets contains two copies of the C++ standard library and headers -- one with
@@ -68,3 +65,7 @@ wasi-sdk at this time:
   all built with the standard exception-handling proposal.
 * Currently `-lunwind` is required when linking, but this may become automatic
   in the future.
+* Currently exceptions and LTO have a known issue and may not work. See
+  [WebAssembly/wasi-sdk#629][#629] for more information.
+
+[#629]: https://github.com/WebAssembly/wasi-sdk/issues/629
