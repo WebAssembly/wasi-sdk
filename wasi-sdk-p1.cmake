@@ -31,7 +31,6 @@ set(CMAKE_ASM_COMPILER_TARGET ${triple})
 
 # Don't look in the sysroot for executables to run during the build
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-
 # Only look in the sysroot (not in the host paths) for the rest
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
