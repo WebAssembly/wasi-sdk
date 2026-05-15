@@ -181,6 +181,8 @@ jobs:
           - name: default
           - name: exceptions
             defines: -DWASI_SDK_EXCEPTIONS=ON
+          - name: static
+            defines: -DWASI_SDK_BUILD_SHARED=OFF
     steps:
       - uses: actions/checkout@v6
         with:

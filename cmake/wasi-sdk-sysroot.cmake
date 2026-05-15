@@ -29,6 +29,7 @@ option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts"
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
 option(WASI_SDK_LTO "Whether or not to build LTO assets" ON)
+option(WASI_SDK_BUILD_SHARED "Whether or not to build shared libraries when supported" ON)
 set(WASI_SDK_EXCEPTIONS "${EXCEPTIONS_DEFAULT}" CACHE STRING "Whether or not C++ exceptions are enabled")
 set(WASI_SDK_CPU_CFLAGS "-mcpu=lime1" CACHE STRING "CFLAGS to specify wasm features to enable")
 
@@ -192,9 +193,14 @@ function(define_wasi_libc_sub target target_suffix lto)
   set(extra_cmake_args)
 
   # Configure LTO in wasi libc if it's enabled. Be sure to disable shared
-  # libraries as well since that's not currently supported.
+  # libraries as well since that's not currently supported with LTO.
   if (lto)
-    list(APPEND extra_cmake_args -DLTO=full -DBUILD_SHARED=OFF)
+    list(APPEND extra_cmake_args -DLTO=full)
+  endif()
+  # WASI_SDK_BUILD_SHARED=OFF allows producing a static-only sysroot; the LTO
+  # branch above already implies shared-off, so the two conditions are combined.
+  if (lto OR NOT WASI_SDK_BUILD_SHARED)
+    list(APPEND extra_cmake_args -DBUILD_SHARED=OFF)
   endif()
 
   ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
@@ -292,6 +298,15 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     list(APPEND extra_flags -Wno-deprecated)
   endif()
 
+  # `shared` is computed here, after the exceptions branch above may have forced
+  # pic OFF, so that LIBCXX_ENABLE_SHARED/LIBCXXABI_ENABLE_SHARED/LIBUNWIND_ENABLE_SHARED
+  # stay consistent with the final value of CMAKE_POSITION_INDEPENDENT_CODE.
+  if(WASI_SDK_BUILD_SHARED AND pic)
+    set(shared ON)
+  else()
+    set(shared OFF)
+  endif()
+
   set(extra_cflags_list ${CMAKE_C_FLAGS} ${extra_flags})
   list(JOIN extra_cflags_list " " extra_cflags)
   set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${extra_flags})
@@ -311,7 +326,7 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DLIBCXX_HAS_EXTERNAL_THREAD_API:BOOL=OFF
       -DLIBCXX_HAS_WIN32_THREAD_API:BOOL=OFF
       -DLLVM_COMPILER_CHECKED=ON
-      -DLIBCXX_ENABLE_SHARED:BOOL=${pic}
+      -DLIBCXX_ENABLE_SHARED:BOOL=${shared}
       -DLIBCXX_ENABLE_EXCEPTIONS:BOOL=${exceptions}
       -DLIBCXX_ENABLE_FILESYSTEM:BOOL=ON
       -DLIBCXX_ENABLE_ABI_LINKER_SCRIPT:BOOL=OFF
@@ -319,14 +334,14 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
       -DLIBCXX_HAS_MUSL_LIBC:BOOL=OFF
       -DLIBCXX_ABI_VERSION=2
       -DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=${exceptions}
-      -DLIBCXXABI_ENABLE_SHARED:BOOL=${pic}
+      -DLIBCXXABI_ENABLE_SHARED:BOOL=${shared}
       -DLIBCXXABI_SILENT_TERMINATE:BOOL=ON
       -DLIBCXXABI_ENABLE_THREADS:BOOL=ON
       -DLIBCXXABI_HAS_PTHREAD_API:BOOL=ON
       -DLIBCXXABI_HAS_EXTERNAL_THREAD_API:BOOL=OFF
       -DLIBCXXABI_HAS_WIN32_THREAD_API:BOOL=OFF
       -DLIBCXXABI_USE_LLVM_UNWINDER:BOOL=${exceptions}
-      -DLIBUNWIND_ENABLE_SHARED:BOOL=${pic}
+      -DLIBUNWIND_ENABLE_SHARED:BOOL=${shared}
       -DLIBUNWIND_ENABLE_THREADS:BOOL=ON
       -DLIBUNWIND_USE_COMPILER_RT:BOOL=ON
       -DLIBUNWIND_INCLUDE_TESTS:BOOL=OFF
