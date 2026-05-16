@@ -90,6 +90,9 @@ in compiling WebAssembly code. Supported CMake flags are:
   to enable/disable. The default is `-mcpu=lime1`.
 * `-DWASI_SDK_LTO=ON` - whether to enable/disable builds of LTO-capable
   libraries as part of the build.
+* `-DWASI_SDK_BUILD_SHARED=ON` - whether to build shared libraries (`libc.so`,
+  `libc++.so`, etc.) for targets that support them. Set to `OFF` to produce a
+  static-only sysroot.
 * `-DWASI_SDK_EXCEPTIONS=ON` - whether to enable/disable support for C++
   exceptions, see [CppExceptions.md](./CppExceptions.md) for more information.
 * `-DWASI_SDK_TEST_HOST_TOOLCHAIN=ON` - test the host toolchain's wasi-libc and
