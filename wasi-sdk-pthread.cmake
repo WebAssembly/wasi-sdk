@@ -11,6 +11,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 # (--export-memory is implicit unless --import-memory is given)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--import-memory")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--export-memory")
+set(CMAKE_EXECUTABLE_SUFFIX .wasm)
 
 if(WIN32)
 	set(WASI_HOST_EXE_SUFFIX ".exe")
