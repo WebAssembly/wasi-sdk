@@ -186,6 +186,8 @@ function(define_wasi_libc_sub target target_suffix lto)
 
   if(${target} MATCHES threads)
     set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads/libclang_rt.builtins.a)
+  elseif(${target} MATCHES wasip3)
+    set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip3/libclang_rt.builtins.a)
   else()
     set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip1/libclang_rt.builtins.a)
   endif()
@@ -375,7 +377,7 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
         "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-186054.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-186054.patch -R --check"
     COMMAND
       ${CMAKE_COMMAND} -E chdir .. bash -c
-        "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-185770.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-185770.patch -R --check"
+        "git apply ${CMAKE_SOURCE_DIR}/src/llvm-undo-part-of-194317.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-undo-part-of-194317.patch -R --check"
   )
   add_dependencies(libcxx-${target} libcxx-${target}${target_suffix}-build)
 endfunction()

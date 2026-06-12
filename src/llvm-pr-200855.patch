@@ -1,0 +1,626 @@
+diff --git a/clang/lib/Basic/Targets/WebAssembly.cpp b/clang/lib/Basic/Targets/WebAssembly.cpp
+index 46f9bd10f01ec..a483e3d6f9b10 100644
+--- a/clang/lib/Basic/Targets/WebAssembly.cpp
++++ b/clang/lib/Basic/Targets/WebAssembly.cpp
+@@ -424,7 +424,7 @@ void WebAssemblyTargetInfo::adjust(DiagnosticsEngine &Diags, LangOptions &Opts,
+   // Turn off POSIXThreads and ThreadModel so that we don't predefine _REENTRANT
+   // or __STDCPP_THREADS__ if we will eventually end up stripping atomics
+   // because they are unsupported.
+-  if (!HasAtomics || !HasBulkMemory) {
++  if ((!HasCooperativeThreading && !HasAtomics) || !HasBulkMemory) {
+     Opts.POSIXThreads = false;
+     Opts.setThreadModel(LangOptions::ThreadModelKind::Single);
+     Opts.ThreadsafeStatics = false;
+diff --git a/clang/lib/Basic/Targets/WebAssembly.h b/clang/lib/Basic/Targets/WebAssembly.h
+index 6085197498163..ef523d602ac0e 100644
+--- a/clang/lib/Basic/Targets/WebAssembly.h
++++ b/clang/lib/Basic/Targets/WebAssembly.h
+@@ -63,6 +63,7 @@ class LLVM_LIBRARY_VISIBILITY WebAssemblyTargetInfo : public TargetInfo {
+   bool HasBulkMemory = false;
+   bool HasBulkMemoryOpt = false;
+   bool HasCallIndirectOverlong = false;
++  bool HasCooperativeThreading = false;
+   bool HasCompactImports = false;
+   bool HasExceptionHandling = false;
+   bool HasExtendedConst = false;
+@@ -111,8 +112,10 @@ class LLVM_LIBRARY_VISIBILITY WebAssemblyTargetInfo : public TargetInfo {
+       PtrDiffType = SignedLong;
+       IntPtrType = SignedLong;
+     }
+-    if (T.getOS() == llvm::Triple::WASIp3)
++    if (T.getOS() == llvm::Triple::WASIp3) {
+       HasLibcallThreadContext = true;
++      HasCooperativeThreading = true;
++    }
+   }
+ 
+   StringRef getABI() const override;
+diff --git a/clang/lib/Driver/ToolChains/WebAssembly.cpp b/clang/lib/Driver/ToolChains/WebAssembly.cpp
+index 5bc43b37d06bf..b64c02375a61e 100644
+--- a/clang/lib/Driver/ToolChains/WebAssembly.cpp
++++ b/clang/lib/Driver/ToolChains/WebAssembly.cpp
+@@ -85,14 +85,23 @@ static bool WantsPthread(const llvm::Triple &Triple, const ArgList &Args) {
+   if (Triple.isOSWASI() && Triple.getEnvironmentName() == "threads")
+     WantsPthread = true;
+ 
++  // WASIp3 also implies pthreads support
++  if (Triple.getOS() == llvm::Triple::WASIp3)
++    WantsPthread = true;
++
+   return WantsPthread;
+ }
+ 
+-static bool WantsLibcallThreadContext(const llvm::Triple &Triple,
+-                                      const ArgList &Args) {
++static bool WantsCooperativeMultithreading(const llvm::Triple &Triple,
++                                           const ArgList &Args) {
+   return Triple.getOS() == llvm::Triple::WASIp3;
+ }
+ 
++static bool WantsSharedMemory(const llvm::Triple &Triple, const ArgList &Args) {
++  return WantsPthread(Triple, Args) &&
++         !WantsCooperativeMultithreading(Triple, Args);
++}
++
+ void wasm::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+                                 const InputInfo &Output,
+                                 const InputInfoList &Inputs,
+@@ -174,10 +183,10 @@ void wasm::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+ 
+   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
+ 
+-  if (WantsLibcallThreadContext(ToolChain.getTriple(), Args))
+-    CmdArgs.push_back("--libcall-thread-context");
++  if (WantsCooperativeMultithreading(ToolChain.getTriple(), Args))
++    CmdArgs.push_back("--cooperative-threading");
+ 
+-  if (WantsPthread(ToolChain.getTriple(), Args))
++  if (WantsSharedMemory(ToolChain.getTriple(), Args))
+     CmdArgs.push_back("--shared-memory");
+ 
+   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
+@@ -332,9 +341,12 @@ void WebAssembly::addClangTargetOptions(const ArgList &DriverArgs,
+                           options::OPT_fno_use_init_array, true))
+     CC1Args.push_back("-fno-use-init-array");
+ 
+-  // '-pthread' implies atomics, bulk-memory, mutable-globals, and sign-ext
++  // '-pthread' implies bulk-memory, mutable-globals, and sign-ext.
++  // It also implies atomics, so long as we're not targeting a cooperative
++  // threading environment.
+   if (WantsPthread(getTriple(), DriverArgs)) {
+-    if (DriverArgs.hasFlag(options::OPT_mno_atomics, options::OPT_matomics,
++    if (!WantsCooperativeMultithreading(getTriple(), DriverArgs) &&
++        DriverArgs.hasFlag(options::OPT_mno_atomics, options::OPT_matomics,
+                            false))
+       getDriver().Diag(diag::err_drv_argument_not_allowed_with)
+           << "-pthread"
+@@ -354,8 +366,10 @@ void WebAssembly::addClangTargetOptions(const ArgList &DriverArgs,
+       getDriver().Diag(diag::err_drv_argument_not_allowed_with)
+           << "-pthread"
+           << "-mno-sign-ext";
+-    CC1Args.push_back("-target-feature");
+-    CC1Args.push_back("+atomics");
++    if (!WantsCooperativeMultithreading(getTriple(), DriverArgs)) {
++      CC1Args.push_back("-target-feature");
++      CC1Args.push_back("+atomics");
++    }
+     CC1Args.push_back("-target-feature");
+     CC1Args.push_back("+bulk-memory");
+     CC1Args.push_back("-target-feature");
+diff --git a/clang/test/Driver/wasm-toolchain.c b/clang/test/Driver/wasm-toolchain.c
+index 29a94aeec77a9..c02a102fab081 100644
+--- a/clang/test/Driver/wasm-toolchain.c
++++ b/clang/test/Driver/wasm-toolchain.c
+@@ -303,3 +303,9 @@
+ // RUN:   | FileCheck -check-prefix=LINK_WALI_BASIC %s
+ // LINK_WALI_BASIC: "-cc1" {{.*}} "-o" "[[temp:[^"]*]]"
+ // LINK_WALI_BASIC: wasm-ld{{.*}}" "-L/foo/lib/wasm32-linux-muslwali" "crt1.o" "[[temp]]" "-lc" "{{.*[/\\]}}libclang_rt.builtins.a" "-o" "a.out"
++
++// Test that `wasm32-wasip3` passes `--cooperative-threading` to the linker.
++
++// RUN: %clang -### --target=wasm32-wasip3 -fuse-ld=lld %s --sysroot /foo 2>&1 \
++// RUN:   | FileCheck -check-prefix=LINK_WASIP3_COOP %s
++// LINK_WASIP3_COOP: wasm-ld{{.*}}" {{.*}} "--cooperative-threading"
+diff --git a/lld/test/wasm/cooperative-threading.s b/lld/test/wasm/cooperative-threading.s
+new file mode 100644
+index 0000000000000..39df73858b6da
+--- /dev/null
++++ b/lld/test/wasm/cooperative-threading.s
+@@ -0,0 +1,85 @@
++# Test that --cooperative-threading uses the libcall ABI naming for
++# thread-context globals (__init_stack_pointer, __init_tls_base, etc.) and
++# works without --shared-memory and atomics.
++
++# RUN: llvm-mc -filetype=obj -triple=wasm32-unknown-unknown -o %t.o %s
++# RUN: wasm-ld --cooperative-threading -no-gc-sections -o %t.wasm %t.o
++# RUN: obj2yaml %t.wasm | FileCheck %s
++# RUN: llvm-objdump -d --no-print-imm-hex --no-show-raw-insn %t.wasm | FileCheck %s --check-prefix=DIS
++
++# Test that --cooperative-threading and --shared-memory are mutually exclusive.
++# RUN: not wasm-ld --cooperative-threading --shared-memory %t.o -o %t2.wasm 2>&1 | FileCheck %s --check-prefix=INCOMPAT
++# INCOMPAT: --cooperative-threading is incompatible with --shared-memory
++
++.globl         __wasm_get_tls_base
++__wasm_get_tls_base:
++    .functype   __wasm_get_tls_base () -> (i32)
++    i32.const 0
++    end_function
++
++.globl _start
++_start:
++  .functype _start () -> (i32)
++  call __wasm_get_tls_base
++  i32.const tls1@TLSREL
++  i32.add
++  i32.load 0
++  call __wasm_get_tls_base
++  i32.const tls2@TLSREL
++  i32.add
++  i32.load 0
++  i32.add
++  end_function
++
++.section  .tdata.tls1,"",@
++.globl  tls1
++tls1:
++  .int32  1
++  .size tls1, 4
++
++.section  .tdata.tls2,"",@
++.globl  tls2
++tls2:
++  .int32  2
++  .size tls2, 4
++
++.section  .custom_section.target_features,"",@
++  .int8 2
++  .int8 43
++  .int8 11
++  .ascii  "bulk-memory"
++  .int8 43
++  .int8 7
++  .ascii  "atomics"
++
++# Memory must NOT be marked as shared.
++# CHECK:      - Type:            MEMORY
++# CHECK-NEXT:   Memories:
++# CHECK-NEXT:     - Minimum:         0x2
++# CHECK-NOT:       Shared
++
++# Globals should use the libcall ABI naming, not the global ABI.
++# CHECK:      GlobalNames:
++# CHECK-NEXT:      - Index:           0
++# CHECK-NEXT:        Name:            __init_stack_pointer
++# CHECK-NEXT:      - Index:           1
++# CHECK-NEXT:        Name:            __init_tls_base
++# CHECK-NEXT:      - Index:           2
++# CHECK-NEXT:        Name:            __tls_size
++# CHECK-NEXT:      - Index:           3
++# CHECK-NEXT:        Name:            __tls_align
++
++# DIS-LABEL: <__wasm_init_memory>:
++
++# DIS-LABEL: <_start>:
++# DIS-EMPTY:
++# DIS-NEXT:       call    {{[0-9]+}}
++# DIS-NEXT:       i32.const       0
++# DIS-NEXT:       i32.add
++# DIS-NEXT:       i32.load        0
++# DIS-NEXT:       call    {{[0-9]+}}
++# DIS-NEXT:       i32.const       4
++# DIS-NEXT:       i32.add
++# DIS-NEXT:       i32.load        0
++# DIS-NEXT:       i32.add
++# DIS-NEXT:       end
+diff --git a/lld/test/wasm/stack-pointer-abi.s b/lld/test/wasm/stack-pointer-abi.s
+index 869f972710991..fbae0475bcba2 100644
+--- a/lld/test/wasm/stack-pointer-abi.s
++++ b/lld/test/wasm/stack-pointer-abi.s
+@@ -1,5 +1,5 @@
+ # RUN: llvm-mc -filetype=obj -triple=wasm32-unknown-unknown -o %t.o %s
+-# RUN: wasm-ld --libcall-thread-context --no-gc-sections -o %t.libcall.wasm %t.o
++# RUN: wasm-ld --cooperative-threading --no-gc-sections -o %t.libcall.wasm %t.o
+ # RUN: obj2yaml %t.libcall.wasm | FileCheck %s --check-prefix=LIBCALL
+ # RUN: wasm-ld --no-gc-sections -o %t.global.wasm %t.o
+ # RUN: obj2yaml %t.global.wasm | FileCheck %s --check-prefix=GLOBAL
+diff --git a/lld/test/wasm/thread-context-abi-mismatch.s b/lld/test/wasm/thread-context-abi-mismatch.s
+index 069534cbe5762..3debc1de662a1 100644
+--- a/lld/test/wasm/thread-context-abi-mismatch.s
++++ b/lld/test/wasm/thread-context-abi-mismatch.s
+@@ -3,10 +3,9 @@
+ # as an indication that the global thread context ABI is being used.
+ 
+ # RUN: llvm-mc -filetype=obj -triple=wasm32-unknown-unknown -o %t.o %s
+-# RUN: not wasm-ld --libcall-thread-context %t.o -o %t.wasm 2>&1 | FileCheck %s
+-
+-# CHECK: object file uses globals for thread context, but --libcall-thread-context was specified
++# RUN: not wasm-ld --cooperative-threading %t.o -o %t.wasm 2>&1 | FileCheck %s
+ 
++# CHECK: object file uses globals for thread context, but --cooperative-threading was specified
+ .globl _start
+ _start:
+   .functype _start () -> ()
+diff --git a/lld/test/wasm/tls-libcall.s b/lld/test/wasm/tls-libcall.s
+index df8b8f8be0207..d8fb1c5e8a9ca 100644
+--- a/lld/test/wasm/tls-libcall.s
++++ b/lld/test/wasm/tls-libcall.s
+@@ -1,5 +1,5 @@
+ # RUN: llvm-mc -filetype=obj -triple=wasm32-unknown-unknown -o %t.o %s
+-# RUN: wasm-ld --libcall-thread-context --shared-memory -no-gc-sections -o %t.wasm %t.o
++# RUN: wasm-ld --cooperative-threading -no-gc-sections -o %t.wasm %t.o
+ # RUN: obj2yaml %t.wasm | FileCheck %s
+ # RUN: llvm-objdump -d --no-print-imm-hex --no-show-raw-insn %t.wasm | FileCheck %s --check-prefix=DIS
+ 
+diff --git a/lld/wasm/Config.h b/lld/wasm/Config.h
+index fb1c3f9f2e739..f2f1b895f5b69 100644
+--- a/lld/wasm/Config.h
++++ b/lld/wasm/Config.h
+@@ -65,6 +65,7 @@ struct Config {
+   bool growableTable;
+   bool gcSections;
+   llvm::StringSet<> keepSections;
++  bool cooperativeThreading;
+   bool libcallThreadContext;
+   std::optional<std::pair<llvm::StringRef, llvm::StringRef>> memoryImport;
+   std::optional<llvm::StringRef> memoryExport;
+@@ -134,6 +135,8 @@ struct Config {
+   std::optional<std::vector<std::string>> features;
+   std::optional<std::vector<std::string>> extraFeatures;
+   llvm::SmallVector<uint8_t, 0> buildIdVector;
++
++  bool isMultithreaded() const { return sharedMemory || cooperativeThreading; }
+ };
+ 
+ // The Ctx object hold all other (non-configuration) global state.
+diff --git a/lld/wasm/Driver.cpp b/lld/wasm/Driver.cpp
+index fe1e2eec95037..e0a7e4fa74889 100644
+--- a/lld/wasm/Driver.cpp
++++ b/lld/wasm/Driver.cpp
+@@ -561,7 +561,8 @@ static void readConfigs(opt::InputArgList &args) {
+   ctx.arg.soName = args.getLastArgValue(OPT_soname);
+   ctx.arg.importTable = args.hasArg(OPT_import_table);
+   ctx.arg.importUndefined = args.hasArg(OPT_import_undefined);
+-  ctx.arg.libcallThreadContext = args.hasArg(OPT_libcall_thread_context);
++  ctx.arg.cooperativeThreading = args.hasArg(OPT_cooperative_threading);
++  ;
+   ctx.arg.ltoo = args::getInteger(args, OPT_lto_O, 2);
+   if (ctx.arg.ltoo > 3)
+     error("invalid optimization level for LTO: " + Twine(ctx.arg.ltoo));
+@@ -755,6 +756,11 @@ static void setConfigs() {
+   if (!ctx.arg.memoryExport.has_value() && !ctx.arg.memoryImport.has_value()) {
+     ctx.arg.memoryExport = memoryName;
+   }
++  if (ctx.arg.cooperativeThreading) {
++    if (ctx.arg.sharedMemory)
++      error("--cooperative-threading is incompatible with --shared-memory");
++    ctx.arg.libcallThreadContext = true;
++  }
+ }
+ 
+ // Some command line options or some combinations of them are not allowed.
+@@ -964,7 +970,7 @@ static void createSyntheticSymbols() {
+         createGlobalVariable(stack_pointer_name, !ctx.arg.libcallThreadContext);
+   }
+ 
+-  if (ctx.arg.sharedMemory) {
++  if (ctx.arg.isMultithreaded()) {
+     // TLS symbols are all hidden/dso-local
+     auto tls_base_name =
+         ctx.arg.libcallThreadContext ? "__init_tls_base" : "__tls_base";
+@@ -1019,16 +1025,12 @@ static void createOptionalSymbols() {
+   if (ctx.sym.firstPageEnd)
+     ctx.sym.firstPageEnd->setVA(ctx.arg.pageSize);
+ 
+-  // For non-shared memory programs we still need to define __tls_base since we
+-  // allow object files built with TLS to be linked into single threaded
+-  // programs, and such object files can contain references to this symbol.
+-  //
+-  // However, in this case __tls_base is immutable and points directly to the
+-  // start of the `.tdata` static segment.
+-  //
+-  // __tls_size and __tls_align are not needed in this case since they are only
+-  // needed for __wasm_init_tls (which we do not create in this case).
+-  if (!ctx.arg.sharedMemory)
++  // TLS object files may be linked into single-threaded programs, so
++  // __tls_base must always be defined. In this case it is immutable and points
++  // directly to the start of the `.tdata` segment. __tls_size and __tls_align
++  // are omitted since they are only used by __wasm_init_tls, which is not
++  // created in this case.
++  if (!ctx.sym.tlsBase)
+     ctx.sym.tlsBase = createOptionalGlobal("__tls_base", false);
+ }
+ 
+diff --git a/lld/wasm/Options.td b/lld/wasm/Options.td
+index 144eee33061e1..bd46794e067b3 100644
+--- a/lld/wasm/Options.td
++++ b/lld/wasm/Options.td
+@@ -238,8 +238,8 @@ def page_size: JJ<"page-size=">,
+ def initial_memory: JJ<"initial-memory=">,
+   HelpText<"Initial size of the linear memory">;
+ 
+-def libcall_thread_context: FF<"libcall-thread-context">,
+-  HelpText<"Use library calls for thread context access instead of globals.">;
++def cooperative_threading: FF<"cooperative-threading">,
++  HelpText<"Enable cooperative multithreading.">;
+   
+ def max_memory: JJ<"max-memory=">,
+   HelpText<"Maximum size of the linear memory">;
+diff --git a/lld/wasm/Relocations.cpp b/lld/wasm/Relocations.cpp
+index a1840abe88b3a..cb597fdeffcf3 100644
+--- a/lld/wasm/Relocations.cpp
++++ b/lld/wasm/Relocations.cpp
+@@ -125,7 +125,7 @@ void scanRelocations(InputChunk *chunk) {
+       // In single-threaded builds TLS is lowered away and TLS data can be
+       // merged with normal data and allowing TLS relocation in non-TLS
+       // segments.
+-      if (ctx.arg.sharedMemory) {
++      if (ctx.arg.isMultithreaded()) {
+         if (!sym->isTLS()) {
+           error(toString(file) + ": relocation " +
+                 relocTypeToString(reloc.Type) +
+diff --git a/lld/wasm/SyntheticSections.cpp b/lld/wasm/SyntheticSections.cpp
+index d1a01c7ec3f9d..050f61c7f5c56 100644
+--- a/lld/wasm/SyntheticSections.cpp
++++ b/lld/wasm/SyntheticSections.cpp
+@@ -57,7 +57,7 @@ void writeGetTLSBase(const Ctx &ctx, raw_ostream &os) {
+     writeU8(os, WASM_OPCODE_CALL, "call");
+     writeUleb128(os, ctx.sym.getTLSBase->getFunctionIndex(), "function index");
+   } else {
+-    writeU8(os, WASM_OPCODE_GLOBAL_GET, "GLOBAL_SET");
++    writeU8(os, WASM_OPCODE_GLOBAL_GET, "GLOBAL_GET");
+     writeUleb128(os, ctx.sym.tlsBase->getGlobalIndex(), "__tls_base");
+   }
+ }
+@@ -532,7 +532,7 @@ void GlobalSection::writeBody() {
+         mutable_ = true;
+       // With multi-threading any TLS globals must be mutable since they get
+       // set during `__wasm_apply_global_tls_relocs`
+-      if (ctx.arg.sharedMemory && sym->isTLS())
++      if (ctx.arg.isMultithreaded() && sym->isTLS())
+         mutable_ = true;
+     }
+     WasmGlobalType type{itype, mutable_};
+@@ -569,10 +569,11 @@ void GlobalSection::writeBody() {
+     } else {
+       WasmInitExpr initExpr;
+       if (auto *d = dyn_cast<DefinedData>(sym))
+-        // In the sharedMemory case TLS globals are set during
+-        // `__wasm_apply_global_tls_relocs`, but in the non-shared case
++        // In the multithreaded case, TLS globals are set during
++        // `__wasm_apply_global_tls_relocs`, but in the single-threaded case
+         // we know the absolute value at link time.
+-        initExpr = intConst(d->getVA(/*absolute=*/!ctx.arg.sharedMemory), is64);
++        initExpr =
++            intConst(d->getVA(/*absolute=*/!ctx.arg.isMultithreaded()), is64);
+       else if (auto *f = dyn_cast<FunctionSymbol>(sym))
+         initExpr = intConst(f->isStub ? 0 : f->getTableIndex(), is64);
+       else {
+@@ -680,7 +681,7 @@ bool DataCountSection::isNeeded() const {
+   // instructions are not yet supported in input files.  However, in the case
+   // of shared memory, lld itself will generate these instructions as part of
+   // `__wasm_init_memory`. See Writer::createInitMemoryFunction.
+-  return numSegments && ctx.arg.sharedMemory;
++  return numSegments && ctx.arg.isMultithreaded();
+ }
+ 
+ void LinkingSection::writeBody() {
+diff --git a/lld/wasm/Writer.cpp b/lld/wasm/Writer.cpp
+index b617ea2912b91..6de3918a3f74c 100644
+--- a/lld/wasm/Writer.cpp
++++ b/lld/wasm/Writer.cpp
+@@ -423,7 +423,7 @@ void Writer::layoutMemory() {
+   // Even in the absense of any actual TLS data, this symbol can still be
+   // referenced (for example by __builtin_thread_pointer, which should not
+   // return NULL).
+-  if (!ctx.arg.sharedMemory && ctx.sym.tlsBase) {
++  if (!ctx.arg.isMultithreaded() && ctx.sym.tlsBase) {
+     setGlobalPtr(ctx.sym.tlsBase, fixedTLSBase);
+   }
+ 
+@@ -650,7 +650,7 @@ void Writer::populateTargetFeatures() {
+                  sym->importModule && sym->importModule == "env";
+         }))
+       error(fileName + ": object file uses globals for thread context, "
+-                       "but --libcall-thread-context was specified");
++                       "but --cooperative-threading was specified");
+   }
+ 
+   if (inferFeatures)
+@@ -673,10 +673,12 @@ void Writer::populateTargetFeatures() {
+   }
+ 
+   if (tlsUsed) {
+-    for (auto feature : {"atomics", "bulk-memory"})
+-      if (!allowed.contains(feature))
+-        error(StringRef("'") + feature +
+-              "' feature must be used in order to use thread-local storage");
++    if (!allowed.contains("bulk-memory"))
++      error("'bulk-memory' feature must be used in order to use thread-local "
++            "storage");
++    if (!allowed.contains("atomics") && !ctx.arg.cooperativeThreading)
++      error("'atomics' feature must be used in order to use thread-local "
++            "storage");
+   }
+ 
+   // Validate that used features are allowed in output
+@@ -1054,7 +1056,17 @@ static StringRef getOutputDataSegmentName(const InputChunk &seg) {
+ OutputSegment *Writer::createOutputSegment(StringRef name) {
+   LLVM_DEBUG(dbgs() << "new segment: " << name << "\n");
+   OutputSegment *s = make<OutputSegment>(name);
+-  if (ctx.arg.sharedMemory)
++  // In the shared memory case, all data segments must be passive since they
++  // will be initialized once by the main thread and then shared with other
++  // threads. In the cooperative threading case, TLS segments must be passive
++  // so they can be re-initialized per-thread via memory.init, and .bss
++  // segments are passive to avoid serializing their zero bytes into the binary;
++  // they are still present as passive segment entries and zero-filled via
++  // memory.fill in __wasm_init_memory.
++  bool needsPassiveInit =
++      ctx.arg.sharedMemory || (ctx.arg.cooperativeThreading &&
++                               (s->isTLS() || s->name.starts_with(".bss")));
++  if (needsPassiveInit)
+     s->initFlags = WASM_DATA_SEGMENT_IS_PASSIVE;
+   if (!ctx.arg.relocatable && name.starts_with(".bss"))
+     s->isBss = true;
+@@ -1113,7 +1125,7 @@ void Writer::combineOutputSegments() {
+   // This restriction does not apply when the extended const extension is
+   // available: https://github.com/WebAssembly/extended-const
+   assert(!ctx.arg.extendedConst);
+-  assert(ctx.isPic && !ctx.arg.sharedMemory);
++  assert(ctx.isPic && !ctx.arg.isMultithreaded());
+   if (segments.size() <= 1)
+     return;
+   OutputSegment *combined = make<OutputSegment>(".data");
+@@ -1195,7 +1207,7 @@ void Writer::createSyntheticInitFunctions() {
+     }
+   }
+ 
+-  if (ctx.arg.sharedMemory) {
++  if (ctx.arg.isMultithreaded()) {
+     if (out.globalSec->needsTLSRelocations()) {
+       ctx.sym.applyGlobalTLSRelocs = symtab->addSyntheticFunction(
+           "__wasm_apply_global_tls_relocs", WASM_SYMBOL_VISIBILITY_HIDDEN,
+@@ -1375,7 +1387,7 @@ void Writer::createInitMemoryFunction() {
+         // When we initialize the TLS segment we also set the TLS base.
+         // This allows the runtime to use this static copy of the TLS data
+         // for the first/main thread.
+-        if (ctx.arg.sharedMemory && s->isTLS()) {
++        if (ctx.arg.isMultithreaded() && s->isTLS()) {
+           if (ctx.isPic) {
+             // Cache the result of the addionion in local 0
+             writeU8(os, WASM_OPCODE_LOCAL_TEE, "local.tee");
+@@ -1446,7 +1458,7 @@ void Writer::createInitMemoryFunction() {
+       if (needsPassiveInitialization(s) && !s->isBss) {
+         // The TLS region should not be dropped since its is needed
+         // during the initialization of each thread (__wasm_init_tls).
+-        if (ctx.arg.sharedMemory && s->isTLS())
++        if (ctx.arg.isMultithreaded() && s->isTLS())
+           continue;
+         // data.drop instruction
+         writeU8(os, WASM_OPCODE_MISC_PREFIX, "bulk-memory prefix");
+@@ -1499,7 +1511,7 @@ void Writer::createApplyDataRelocationsFunction() {
+     writeUleb128(os, 0, "num locals");
+     bool generated = false;
+     for (const OutputSegment *seg : segments)
+-      if (!ctx.arg.sharedMemory || !seg->isTLS())
++      if (!ctx.arg.isMultithreaded() || !seg->isTLS())
+         for (const InputChunk *inSeg : seg->inputSegments)
+           generated |= inSeg->generateRelocationCode(os);
+ 
+@@ -1655,7 +1667,6 @@ void Writer::createInitTLSFunction() {
+     if (tlsSeg) {
+       writeU8(os, WASM_OPCODE_LOCAL_GET, "local.get");
+       writeUleb128(os, 0, "local index");
+-
+       writeSetTLSBase(ctx, os);
+ 
+       // FIXME(wvo): this local needs to be I64 in wasm64, or we need an extend
+@@ -1788,9 +1799,9 @@ void Writer::run() {
+   // `__memory_base` import.  Unless we support the extended const expression we
+   // can't do addition inside the constant expression, so we much combine the
+   // segments into a single one that can live at `__memory_base`.
+-  if (ctx.isPic && !ctx.arg.extendedConst && !ctx.arg.sharedMemory) {
+-    // In shared memory mode all data segments are passive and initialized
+-    // via __wasm_init_memory.
++  if (ctx.isPic && !ctx.arg.extendedConst && !ctx.arg.isMultithreaded()) {
++    // In multithreaded modes (shared or cooperative), data segments may be
++    // passive and must not be combined into a single active segment.
+     log("-- combineOutputSegments");
+     combineOutputSegments();
+   }
+diff --git a/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.cpp b/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.cpp
+index 6326b7d76db82..9dea29fb0205d 100644
+--- a/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.cpp
++++ b/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.cpp
+@@ -40,9 +40,12 @@ WebAssemblySubtarget::initializeSubtargetDependencies(StringRef CPU,
+ 
+   ParseSubtargetFeatures(CPU, /*TuneCPU*/ CPU, FS);
+ 
+-  // WASIP3 implies using the libcall thread context.
+-  if (TargetTriple.getOS() == Triple::WASIp3)
++  // WASIP3 uses cooperative multithreading, which implies using libcall
++  // thread context.
++  if (TargetTriple.getOS() == Triple::WASIp3) {
++    HasCooperativeMultithreading = true;
+     HasLibcallThreadContext = true;
++  }
+ 
+   FeatureBitset Bits = getFeatureBits();
+ 
+diff --git a/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.h b/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.h
+index 5c6f4cb5b36ff..f637ce59ebfce 100644
+--- a/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.h
++++ b/llvm/lib/Target/WebAssembly/WebAssemblySubtarget.h
+@@ -52,6 +52,7 @@ class WebAssemblySubtarget final : public WebAssemblyGenSubtargetInfo {
+   bool HasExtendedConst = false;
+   bool HasFP16 = false;
+   bool HasGC = false;
++  bool HasCooperativeMultithreading = false;
+   bool HasLibcallThreadContext = false;
+   bool HasMultiMemory = false;
+   bool HasMultivalue = false;
+@@ -117,6 +118,9 @@ class WebAssemblySubtarget final : public WebAssemblyGenSubtargetInfo {
+   bool hasExtendedConst() const { return HasExtendedConst; }
+   bool hasFP16() const { return HasFP16; }
+   bool hasGC() const { return HasGC; }
++  bool hasCooperativeMultithreading() const {
++    return HasCooperativeMultithreading;
++  }
+   bool hasLibcallThreadContext() const { return HasLibcallThreadContext; }
+   bool hasMultiMemory() const { return HasMultiMemory; }
+   bool hasMultivalue() const { return HasMultivalue; }
+diff --git a/llvm/lib/Target/WebAssembly/WebAssemblyTargetMachine.cpp b/llvm/lib/Target/WebAssembly/WebAssemblyTargetMachine.cpp
+index 886ea0a8ab574..ae1e31af65f5a 100644
+--- a/llvm/lib/Target/WebAssembly/WebAssemblyTargetMachine.cpp
++++ b/llvm/lib/Target/WebAssembly/WebAssemblyTargetMachine.cpp
+@@ -278,10 +278,17 @@ class CoalesceFeaturesAndStripAtomics final : public ModulePass {
+     bool StrippedAtomics = false;
+     bool StrippedTLS = false;
+ 
++    // In cooperative threading mode, thread locals are meaningful even without
++    // atomics.
++    bool CooperativeThreading =
++        WasmTM->getSubtargetImpl()->hasCooperativeMultithreading();
++
+     if (!Features[WebAssembly::FeatureAtomics]) {
+       StrippedAtomics = stripAtomics(M);
+-      StrippedTLS = stripThreadLocals(M);
+-    } else if (!Features[WebAssembly::FeatureBulkMemory]) {
++      if (!CooperativeThreading)
++        StrippedTLS = stripThreadLocals(M);
++    }
++    if (!Features[WebAssembly::FeatureBulkMemory]) {
+       StrippedTLS |= stripThreadLocals(M);
+     }
+ 
+diff --git a/llvm/test/CodeGen/WebAssembly/cooperative-strip-tls.ll b/llvm/test/CodeGen/WebAssembly/cooperative-strip-tls.ll
+new file mode 100644
+index 0000000000000..0cefa1b6b1f21
+--- /dev/null
++++ b/llvm/test/CodeGen/WebAssembly/cooperative-strip-tls.ll
+@@ -0,0 +1,25 @@
++; Test that in cooperative threading mode (wasm32-wasip3), thread-local variables
++; are NOT stripped even when atomics are absent.  In non-cooperative mode
++; (wasm32-unknown-unknown) TLS is treated as normal data when atomics are absent.
++
++; RUN: llc < %s -mtriple=wasm32-wasip3 -mcpu=mvp -mattr=-atomics,+bulk-memory \
++; RUN:   | FileCheck %s --check-prefixes=COOP
++; RUN: llc < %s -mtriple=wasm32-unknown-unknown -mcpu=mvp -mattr=-atomics,+bulk-memory \
++; RUN:   | FileCheck %s --check-prefixes=PLAIN
++
++target triple = "wasm32-unknown-unknown"
++
++@foo = internal thread_local global i32 0
++@bar = internal thread_local global i32 1
++
++; Cooperative threading: TLS is preserved — the section stays .tbss.
++; COOP:     .tbss.foo
++; COOP:     .tdata.bar
++; COOP-NOT: .bss.foo
++; COOP-NOT: .data.bar
++
++; Non-cooperative: TLS stripped
++; PLAIN:     .bss.foo
++; PLAIN:     .data.bar
++; PLAIN-NOT: .tbss.foo
++; PLAIN-NOT: .tdata.bar
