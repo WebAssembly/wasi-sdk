@@ -298,7 +298,6 @@ endfunction()
 
 copy_misc_file(src/config/config.sub misc)
 copy_misc_file(src/config/config.guess misc)
-copy_misc_file(wasi-sdk.cmake cmake)
 copy_misc_file(wasi-sdk-pthread.cmake cmake)
 copy_misc_file(wasi-sdk-p1.cmake cmake)
 copy_misc_file(wasi-sdk-p2.cmake cmake)
