@@ -28,6 +28,21 @@ jobs:
           - artifact: arm64-linux
             os: ubuntu-22.04-arm
 
+          - artifact: riscv64-linux
+            os: ubuntu-24.04
+            rust_target: riscv64gc-unknown-linux-gnu
+            cross_cmake_args: >-
+              -DCMAKE_SYSTEM_NAME=Linux
+              -DCMAKE_SYSTEM_PROCESSOR=riscv64
+              -DCMAKE_C_COMPILER=riscv64-linux-gnu-gcc
+              -DCMAKE_CXX_COMPILER=riscv64-linux-gnu-g++
+              -DWASI_SDK_LLDB=OFF
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
+              WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
+                -DCMAKE_SYSTEM_NAME=Linux
+                -DCMAKE_SYSTEM_PROCESSOR=riscv64
+
           - artifact: arm64-macos
             os: macos-14
             rust_target: aarch64-apple-darwin
@@ -53,7 +68,7 @@ jobs:
 
     env: ${{ matrix.env || fromJSON('{}') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
@@ -65,7 +80,7 @@ jobs:
       # Bump the prefix number to evict all previous caches and enforce a clean
       # build, in the unlikely case that some weird build error occur and ccache
       # becomes a potential suspect.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         id: cache-restore
         with:
           path: ${{ runner.tool_cache }}/ccache
@@ -84,6 +99,9 @@ jobs:
           if [ "${{ matrix.rust_target }}" != "" ]; then
             rustup target add ${{ matrix.rust_target }}
             cmake_args="$cmake_args -DRUST_TARGET=${{ matrix.rust_target }}"
+          fi
+          if [ "${{ matrix.cross_cmake_args }}" != "" ]; then
+            cmake_args="$cmake_args ${{ matrix.cross_cmake_args }}"
           fi
           echo WASI_SDK_CI_TOOLCHAIN_CMAKE_ARGS="$cmake_args" >> $GITHUB_ENV
         shell: bash
@@ -125,7 +143,7 @@ jobs:
       # Upload the `dist` folder from the build as the artifacts for this
       # runner.
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ format( 'dist-{0}', matrix.artifact) }}
           path: build/dist
@@ -149,10 +167,47 @@ jobs:
       # time instead of having to recreate everything each time a failure
       # happens.
       - if: always() && steps.cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ runner.tool_cache }}/ccache
           key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
+
+  build-only-sysroot:
+    name: Build only sysroot - ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - name: default
+          - name: exceptions
+            defines: -DWASI_SDK_EXCEPTIONS=ON
+          - name: static
+            defines: -DWASI_SDK_BUILD_SHARED=OFF
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/checkout
+      - uses: ./.github/actions/install-deps
+      - run: cargo install wasm-component-ld@0.5.21
+      - name: Install LLVM 22
+        run: |
+          v=22
+          rel=$(lsb_release -cs)
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/keyrings/llvm.asc
+          echo "deb [signed-by=/etc/apt/keyrings/llvm.asc] http://apt.llvm.org/$rel/ llvm-toolchain-$rel-$v main" | sudo tee /etc/apt/sources.list.d/llvm-$v.list
+          sudo apt-get update -y && sudo apt-get install -y clang-$v lld-$v
+      - run: |
+          cmake -G Ninja -B build -S . \
+            -DCMAKE_C_COMPILER=/usr/lib/llvm-22/bin/clang \
+            -DCMAKE_SYSTEM_NAME=WASI \
+            -DWASI_SDK_INCLUDE_TESTS=ON \
+            -DWASI_SDK_CPU_CFLAGS="" \
+            -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF \
+            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF \
+            ${{ matrix.defines }}
+      - run: ninja -C build
+      - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
 
   # Once all of the above matrix entries have completed this job will run and
   # assemble the final `wasi-sdk-*` artifacts by fusing the toolchain/sysroot
@@ -162,16 +217,16 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
 
       # Download all artifacts from all platforms in `build`, merge them into
       # final wasi-sdk-* artifacts, and then upload them.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
       - run: ./ci/merge-artifacts.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: release-artifacts
           path: dist
@@ -222,12 +277,12 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/checkout
       - uses: ./.github/actions/install-deps
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist-x86_64-linux
           path: dist-x86_64-linux

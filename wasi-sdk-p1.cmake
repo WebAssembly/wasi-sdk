@@ -7,6 +7,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 set(CMAKE_SYSTEM_NAME WASI)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR wasm32)
+set(CMAKE_EXECUTABLE_SUFFIX .wasm)
 set(triple wasm32-wasip1)
 
 if(WIN32)
@@ -31,7 +32,6 @@ set(CMAKE_ASM_COMPILER_TARGET ${triple})
 
 # Don't look in the sysroot for executables to run during the build
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-
 # Only look in the sysroot (not in the host paths) for the rest
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)

@@ -1,0 +1,105 @@
+From d702761d9135ebbb83590d4dd1323be433701ebd Mon Sep 17 00:00:00 2001
+From: Alex Crichton <alex@alexcrichton.com>
+Date: Tue, 10 Mar 2026 15:49:55 -0700
+Subject: [PATCH] [WebAssembly] Move __cpp_exception to libunwind
+
+The `__cpp_exception` symbol is now defined in libunwind instead of
+compiler-rt. This is moved for a few reasons, but the primary reason is
+that compiler-rt is linked duplicate-ly into all shared objects meaning
+that it's not suitable for define-once symbols such as
+`__cpp_exception`. By moving the definition to the user of the symbol,
+libunwind itself, that guarantees that the symbol should be defined
+exactly once and only when appropriate. A secondary reason for this
+movement is that it avoids the need to compile compiler-rt twice: once
+with exception and once without, and instead the same build can be used
+for both exceptions-and-not.
+---
+ compiler-rt/lib/builtins/CMakeLists.txt       |  1 -
+ .../lib/builtins/wasm/__cpp_exception.S       | 26 -------------------
+ libunwind/src/Unwind-wasm.c                   | 15 +++++++++++
+ .../compiler-rt/lib/builtins/sources.gni      |  1 -
+ 4 files changed, 15 insertions(+), 28 deletions(-)
+ delete mode 100644 compiler-rt/lib/builtins/wasm/__cpp_exception.S
+
+diff --git a/compiler-rt/lib/builtins/CMakeLists.txt b/compiler-rt/lib/builtins/CMakeLists.txt
+index 6c27f6d4d529e..f0570a9092f40 100644
+--- a/compiler-rt/lib/builtins/CMakeLists.txt
++++ b/compiler-rt/lib/builtins/CMakeLists.txt
+@@ -891,7 +891,6 @@ set(s390x_SOURCES
+ 
+ set(wasm_SOURCES
+   wasm/__c_longjmp.S
+-  wasm/__cpp_exception.S
+   ${GENERIC_TF_SOURCES}
+   ${GENERIC_SOURCES}
+ )
+diff --git a/compiler-rt/lib/builtins/wasm/__cpp_exception.S b/compiler-rt/lib/builtins/wasm/__cpp_exception.S
+deleted file mode 100644
+index 0496e1dbf6158..0000000000000
+--- a/compiler-rt/lib/builtins/wasm/__cpp_exception.S
++++ /dev/null
+@@ -1,26 +0,0 @@
+-//===-- __cpp_exception.S - Implement __cpp_exception ---------------------===//
+-//
+-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+-// See https://llvm.org/LICENSE.txt for license information.
+-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-//
+-//===----------------------------------------------------------------------===//
+-//
+-// This file implements __cpp_exception which LLVM uses to implement exception
+-// handling when Wasm EH is enabled.
+-//
+-//===----------------------------------------------------------------------===//
+-
+-#ifdef __wasm_exception_handling__
+-
+-#ifdef __wasm64__
+-#define PTR i64
+-#else
+-#define PTR i32
+-#endif
+-
+-.globl __cpp_exception
+-.tagtype __cpp_exception PTR
+-__cpp_exception:
+-
+-#endif // !__wasm_exception_handling__
+diff --git a/libunwind/src/Unwind-wasm.c b/libunwind/src/Unwind-wasm.c
+index 2f4498c3f3989..c0ca9b775d244 100644
+--- a/libunwind/src/Unwind-wasm.c
++++ b/libunwind/src/Unwind-wasm.c
+@@ -69,6 +69,21 @@ _Unwind_RaiseException(_Unwind_Exception *exception_object) {
+   __builtin_wasm_throw(0, exception_object);
+ }
+ 
++// Define the `__cpp_exception` symbol which `__builtin_wasm_throw` above will
++// reference. This is defined here in `libunwind` as the single canonical
++// definition for this API and it's required for users to ensure that there's
++// only one copy of `libunwind` within a wasm module to ensure this is only
++// defined once and exactly once.
++__asm__(".globl __cpp_exception\n"
++#if defined(__wasm32__)
++        ".tagtype __cpp_exception i32\n"
++#elif defined(__wasm64__)
++        ".tagtype __cpp_exception i64\n"
++#else
++#error "Unsupported Wasm architecture"
++#endif
++        "__cpp_exception:\n");
++
+ /// Called by __cxa_end_catch.
+ _LIBUNWIND_EXPORT void
+ _Unwind_DeleteException(_Unwind_Exception *exception_object) {
+diff --git a/llvm/utils/gn/secondary/compiler-rt/lib/builtins/sources.gni b/llvm/utils/gn/secondary/compiler-rt/lib/builtins/sources.gni
+index 2ac71aa8e8367..c9eeede16e3eb 100644
+--- a/llvm/utils/gn/secondary/compiler-rt/lib/builtins/sources.gni
++++ b/llvm/utils/gn/secondary/compiler-rt/lib/builtins/sources.gni
+@@ -539,7 +539,6 @@ if (current_cpu == "ve") {
+ if (current_cpu == "wasm") {
+   builtins_sources += [
+     "wasm/__c_longjmp.S",
+-    "wasm/__cpp_exception.S",
+   ]
+ }
+ 

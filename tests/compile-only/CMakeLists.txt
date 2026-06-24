@@ -1,9 +1,3 @@
-file(GLOB c_compile_tests RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.c")
-file(GLOB cxx_compile_tests RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
-
-set(compile_tests ${c_compile_tests} ${cxx_compile_tests})
-
-foreach(test IN LISTS compile_tests)
-  add_testcase("" ${test})
-endforeach()
-
+add_testcase(addresses.c COMPILE_ONLY)
+add_testcase(printf-long-double.c COMPILE_ONLY)
+add_testcase(test.cc COMPILE_ONLY)

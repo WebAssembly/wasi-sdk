@@ -7,6 +7,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 set(CMAKE_SYSTEM_NAME WASI)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR wasm32)
+set(CMAKE_EXECUTABLE_SUFFIX .wasm)
 set(triple wasm32-wasip3)
 
 if(WIN32)
@@ -17,7 +18,7 @@ endif()
 
 # When building from source, WASI_SDK_PREFIX represents the generated directory
 if(NOT WASI_SDK_PREFIX)
-    set(WASI_SDK_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../../)
+	set(WASI_SDK_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../../)
 endif()
 
 set(CMAKE_C_COMPILER ${WASI_SDK_PREFIX}/bin/clang${WASI_HOST_EXE_SUFFIX})
