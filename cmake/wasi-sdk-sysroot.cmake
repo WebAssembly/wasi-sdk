@@ -122,16 +122,12 @@ function(define_compiler_rt target)
   add_dependencies(compiler-rt-build compiler-rt-build-${target})
 endfunction()
 
-<<<<<<< HEAD
-define_compiler_rt(wasm32-wasip3)
-=======
 # The `compiler-rt` for `wasm32-wasip1` will be reused for `wasm32-wasip2` and
 # `wasm32-wasi`. The version for `wasm32-wasip1-threads` will be reused for
 # `wasm32-wasi-threads`. Different builds are needed for different codegen flags
 # and such across the threaded/not target.
 define_compiler_rt(wasm32-wasip1)
 define_compiler_rt(wasm32-wasip1-threads)
->>>>>>> main
 
 # If a p3 target is requested, also build compiler-rt for that target. WASIp3
 # will eventually have a different ABI than wasm32-wasip2, so this separate
