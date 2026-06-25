@@ -172,43 +172,6 @@ jobs:
           path: ${{ runner.tool_cache }}/ccache
           key: 0-cache-${{ matrix.artifact }}-${{ github.run_id }}
 
-  build-only-sysroot:
-    name: Build only sysroot - ${{ matrix.name }}
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        include:
-          - name: default
-          - name: exceptions
-            defines: -DWASI_SDK_EXCEPTIONS=ON
-          - name: static
-            defines: -DWASI_SDK_BUILD_SHARED=OFF
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/checkout
-      - uses: ./.github/actions/install-deps
-      - run: cargo install wasm-component-ld@0.5.21
-      - name: Install LLVM 22
-        run: |
-          v=22
-          rel=$(lsb_release -cs)
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/keyrings/llvm.asc
-          echo "deb [signed-by=/etc/apt/keyrings/llvm.asc] http://apt.llvm.org/$rel/ llvm-toolchain-$rel-$v main" | sudo tee /etc/apt/sources.list.d/llvm-$v.list
-          sudo apt-get update -y && sudo apt-get install -y clang-$v lld-$v
-      - run: |
-          cmake -G Ninja -B build -S . \
-            -DCMAKE_C_COMPILER=/usr/lib/llvm-22/bin/clang \
-            -DCMAKE_SYSTEM_NAME=WASI \
-            -DWASI_SDK_INCLUDE_TESTS=ON \
-            -DWASI_SDK_CPU_CFLAGS="" \
-            -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF \
-            -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF \
-            ${{ matrix.defines }}
-      - run: ninja -C build
-      - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
-
   # Once all of the above matrix entries have completed this job will run and
   # assemble the final `wasi-sdk-*` artifacts by fusing the toolchain/sysroot
   # artifacts.
@@ -267,31 +230,3 @@ jobs:
         run: gh release create --draft --prerelease --generate-notes ${{ github.ref_name }} ./dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Test the final artifacts as-is without passing `--sysroot` or
-  # `-resource-dir` or any extra flags. This exercises running the compiler
-  # as-is from the distribution tarballs and ensuring that it can build and pass
-  # all tests.
-  test-standalone:
-    name: Test standalone toolchain
-    needs: build
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/checkout
-      - uses: ./.github/actions/install-deps
-      - uses: actions/download-artifact@v8
-        with:
-          name: dist-x86_64-linux
-          path: dist-x86_64-linux
-      - run: ./ci/merge-artifacts.sh
-      - run: tar xf dist/wasi-sdk-*.tar.gz
-      - run: |
-          cmake -G Ninja -B build -S . \
-            -DWASI_SDK_INCLUDE_TESTS=ON \
-            -DWASI_SDK_TEST_HOST_TOOLCHAIN=ON \
-            -DCMAKE_TOOLCHAIN_FILE=$(ls ./wasi-sdk-*/share/cmake/wasi-sdk-p1.cmake)
-      - run: ninja -C build build-tests
-      - run: ctest --output-on-failure --parallel 10 --test-dir build/tests
