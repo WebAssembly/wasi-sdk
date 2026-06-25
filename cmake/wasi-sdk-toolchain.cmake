@@ -269,7 +269,6 @@ set(wasm_component_ld_version 0.5.24)
 if(RUST_TARGET)
   set(rust_target_flag --target=${RUST_TARGET})
 endif()
-
 add_custom_command(
   OUTPUT ${wasm_component_ld}
   COMMAND
