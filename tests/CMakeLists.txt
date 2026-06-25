@@ -100,7 +100,7 @@ function(add_testcase test)
       endif()
 
       # Apply target-specific options.
-      if(target MATCHES threads OR target MATCHES p3)
+      if(target MATCHES threads)
         target_compile_options(${target_name} PRIVATE -pthread)
         target_link_options(${target_name} PRIVATE -pthread)
       endif()
