@@ -29,13 +29,8 @@ option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts"
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
 option(WASI_SDK_LTO "Whether or not to build LTO assets" ON)
-<<<<<<< HEAD
-option(WASI_SDK_EXCEPTIONS "Whether or not C++ exceptions are enabled" OFF)
-option(WASI_SDK_COOP_THREADING "Whether or not to build with cooperative threading support" OFF)
-=======
 option(WASI_SDK_BUILD_SHARED "Whether or not to build shared libraries when supported" ON)
 set(WASI_SDK_EXCEPTIONS "${EXCEPTIONS_DEFAULT}" CACHE STRING "Whether or not C++ exceptions are enabled")
->>>>>>> main
 set(WASI_SDK_CPU_CFLAGS "-mcpu=lime1" CACHE STRING "CFLAGS to specify wasm features to enable")
 
 if ((WASI_SDK_EXCEPTIONS STREQUAL "DUAL") OR (WASI_SDK_EXCEPTIONS STREQUAL "ON"))
@@ -150,6 +145,16 @@ add_custom_target(compiler-rt-post-build
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${clang_resource_dir}/include ${wasi_resource_dir}/include
 
+  # Copy the `lib/wasm32-unknown-wasip1` folder to `lib/wasm32-unknown-wasi{,p2}` to ensure that those
+  # OS-strings also work for looking up the compiler-rt.a file.
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-wasi
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-wasip2
+  # Copy the `lib/wasm32-unknown-wasip1-threads` folder to `lib/wasm32-unknown-wasi-threads`
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads ${wasi_resource_dir}/lib/wasm32-unknown-wasi-threads
+
   COMMENT "finalizing compiler-rt installation"
 )
 add_dependencies(compiler-rt-post-build compiler-rt-build)
@@ -165,13 +170,8 @@ function(define_wasi_libc_sub target target_suffix lto)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   set(extra_cflags_list "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags}")
 
-<<<<<<< HEAD
-  if(${target} MATCHES p2 OR ${target} MATCHES p3)
-    # Always enable `-fPIC` for the `wasm32-wasip2` and `wasm32-wasip3` targets. 
-=======
   if(${target} MATCHES "p[23]")
     # Always enable `-fPIC` for the `wasm32-wasip2` and `wasm32-wasip3` targets.
->>>>>>> main
     # This makes `libc.a` more flexible and usable in dynamic linking situations.
     list(APPEND extra_cflags_list -fPIC)
   endif()
@@ -187,7 +187,7 @@ function(define_wasi_libc_sub target target_suffix lto)
   if(${target} MATCHES threads)
     set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads/libclang_rt.builtins.a)
   else()
-    set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip3/libclang_rt.builtins.a)
+    set(libcompiler_rt_a ${wasi_resource_dir}/lib/wasm32-unknown-wasip1/libclang_rt.builtins.a)
   endif()
 
   set(extra_cmake_args)
@@ -215,8 +215,6 @@ function(define_wasi_libc_sub target target_suffix lto)
       -DBUILTINS_LIB=${libcompiler_rt_a}
       -DUSE_WASM_COMPONENT_LD=OFF
       -DWASI_SDK_VERSION=${wasi_sdk_version}
-      -DBUILD_TESTS=ON
-      -DENABLE_COOP_THREADS=${WASI_SDK_COOP_THREADING}
     DEPENDS compiler-rt
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
@@ -248,13 +246,8 @@ execute_process(
   OUTPUT_VARIABLE llvm_version
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-<<<<<<< HEAD
-function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_suffix)
-  if(${target} MATCHES threads OR ${target} MATCHES p3)
-=======
 function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_suffix exceptions)
   if(${target} MATCHES threads)
->>>>>>> main
     set(pic OFF)
     set(target_flags -pthread)
   else()
