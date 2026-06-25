@@ -24,9 +24,13 @@ jobs:
         include:
           - artifact: x86_64-linux
             os: ubuntu-24.04
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
 
           - artifact: arm64-linux
             os: ubuntu-22.04-arm
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
 
           - artifact: riscv64-linux
             os: ubuntu-24.04
@@ -47,6 +51,7 @@ jobs:
             os: macos-14
             rust_target: aarch64-apple-darwin
             env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
               WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
                 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.12
                 -DCMAKE_OSX_ARCHITECTURES=arm64
@@ -62,9 +67,13 @@ jobs:
 
           - artifact: x86_64-windows
             os: windows-2022
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
 
           - artifact: arm64-windows
             os: windows-11-arm
+            env:
+              WASI_SDK_CI_SKIP_SYSROOT: 1
 
     env: ${{ matrix.env || fromJSON('{}') }}
     steps:
