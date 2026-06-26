@@ -56,43 +56,12 @@ make_deb() {
 
 for build in dist-*; do
   toolchain=`ls $build/wasi-toolchain-*`
-  if [ -f $build/wasi-sysroot-* ]; then
-    sysroot=`ls $build/wasi-sysroot-*`
-  else
-    sysroot=`ls dist-x86_64-linux/wasi-sysroot-*`
-  fi
-  if [ -f $build/libclang_rt* ]; then
-    compiler_rt=`ls $build/libclang_rt*`
-  else
-    compiler_rt=`ls dist-x86_64-linux/libclang_rt*`
-  fi
-
   sdk_dir=`basename $toolchain | sed 's/.tar.gz//' | sed s/toolchain/sdk/`
   mkdir dist/$sdk_dir
-
-  # Start with the toolchain and then overlay the sysroot into
-  # `share/wasi-sysroot`, the default sysroot.
   tar xf $toolchain -C dist/$sdk_dir --strip-components 1
-  mkdir -p dist/$sdk_dir/share/wasi-sysroot
-  tar xf $sysroot -C dist/$sdk_dir/share/wasi-sysroot --strip-components 1
-  mv dist/$sdk_dir/share/wasi-sysroot/VERSION dist/$sdk_dir
-
-  # Setup the compiler-rt library for all targets.
-  rtlibdir=$(dirname $(find dist/$sdk_dir/lib -name include))/lib
-  mkdir -p $rtlibdir
-  tar xf $compiler_rt -C $rtlibdir --strip-components 1
-
   tar czf dist/$sdk_dir.tar.gz -C dist $sdk_dir
-
   if echo $build | grep -q linux; then
     make_deb $build dist/$sdk_dir
   fi
   rm -rf dist/$sdk_dir
 done
-
-# In addition to `wasi-sdk-*` also preserve artifacts for just the sysroot
-# and just compiler-rt.
-if [ -d dist-x86_64-linux ]; then
-  cp dist-x86_64-linux/wasi-sysroot-* dist
-  cp dist-x86_64-linux/libclang_rt* dist
-fi
