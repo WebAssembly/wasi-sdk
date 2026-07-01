@@ -229,6 +229,13 @@ ExternalProject_Add(llvm-build
     -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-wasip1
     -DLLVM_INSTALL_BINUTILS_SYMLINKS=TRUE
     -DLLVM_ENABLE_LIBXML2=OFF
+    # LLDB's `FindLibXml2` module determines the libxml2 version solely via
+    # pkg-config (`PC_LIBXML_VERSION`) and rejects it if the version can't be
+    # found. The libxml2 we build above installs into `${wasi_tmp_install}`,
+    # which isn't on the default pkg-config search path, so point pkg-config at
+    # it via `CMAKE_PREFIX_PATH` to let LLVM's check succeed.
+    -DCMAKE_PREFIX_PATH=${wasi_tmp_install}
+    -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH=ON
     # Pass `-s` to strip symbols by default and shrink the size of the
     # distribution
     -DCMAKE_EXE_LINKER_FLAGS=-s
@@ -248,9 +255,6 @@ ExternalProject_Add(llvm-build
   USES_TERMINAL_CONFIGURE ON
   USES_TERMINAL_BUILD ON
   USES_TERMINAL_INSTALL ON
-  PATCH_COMMAND
-    ${CMAKE_COMMAND} -E chdir .. bash -c
-      "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-185775.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-185775.patch -R --check"
 )
 
 add_custom_target(build ALL DEPENDS llvm-build)

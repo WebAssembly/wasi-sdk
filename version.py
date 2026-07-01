@@ -25,51 +25,65 @@ def git_commit(dir):
 
 
 def parse_git_version(version):
-    # Parse, e.g.: wasi-sdk-21-0-g317548590b40+m
+    # Parse, e.g.: wasi-sdk-$version-0-g317548590b40+m
     parts = version.replace('+', '-').split('-')
     assert parts.pop(0) == 'wasi'
     assert parts.pop(0) == 'sdk'
 
-    major, minor = parts.pop(0), parts.pop(0)
-    git = None
     dirty = False
+    git = parts.pop()
+    assert git is not None
+    # If git printed `+m` at the end then we're dirty and the next-to-last part
+    # is now the git commit
+    if git == 'm':
+        dirty = True
+        git = parts.pop()
 
-    if parts:
-        # Check: git|dirty.
-        next = parts.pop(0)
-        if next == 'm':
-            dirty = True
-        elif minor != '0':
-            git = next[1:]
+    # If the git commit doesn't start with `g` then that's not actually a git
+    # commit. Technically this should look for `GIT_REF_LEN` hexadecimal digits,
+    # but that's left for later.
+    if not git.startswith('g'):
+        parts.append(git)
+        git = None
 
-        # Check: dirty.
-        if parts:
-            assert parts.pop(0) == 'm', f'expected dirty flag: +m'
-            dirty = True
+    # The next part in the back is the number of commits since the tag, and the
+    # first part in the front is the major version of wasi-sdk itself.
+    commits_since_tag = parts.pop()
+    major_version = parts.pop(0)
 
-    assert not parts, f'unexpected suffixes: {parts}'
-    return major, minor, git, dirty
+    # If there are 0 commits since the last tag then forcibly drop the git part
+    # as that produces a nice clean version for tagged commits.
+    if commits_since_tag == '0':
+        git = None
+
+    # Pretend the commits since the tag is a minor version number, and then
+    # add in any other words after the tag to the prerelease part, if any.
+    ret = f'{major_version}.{commits_since_tag}'
+    if len(parts) > 0:
+        ret += '-' + '-'.join(parts)
+
+    # Throw on git/dirty info
+    if git:
+        ret += git
+    if dirty:
+        ret += '+m'
+    return ret
 
 
 # Some inline tests to check Git version parsing:
-assert parse_git_version(
-    'wasi-sdk-21-1-g317548590b40+m') == ('21', '1', '317548590b40', True)
-assert parse_git_version('wasi-sdk-21-2+m') == ('21', '2', None, True)
-assert parse_git_version(
-    'wasi-sdk-23-0-g317548590b40') == ('23', '0', None, False)
-
+assert parse_git_version('wasi-sdk-21-1-g317548590b40+m') == '21.1g317548590b40+m'
+assert parse_git_version('wasi-sdk-21-2+m') == '21.2+m'
+assert parse_git_version('wasi-sdk-23-0-g317548590b40') == '23.0'
+assert parse_git_version('wasi-sdk-23-tag-0-g317548590b40') == '23.0-tag'
+assert parse_git_version('wasi-sdk-23-some-tag-0-g317548590b40') == '23.0-some-tag'
+assert parse_git_version('wasi-sdk-23-some.tag-0-g317548590b40') == '23.0-some.tag'
+assert parse_git_version('wasi-sdk-23-tag.rc1-1-g100') == '23.1-tag.rc1g100'
 
 def git_version():
     version = exec(['git', 'describe', '--long', '--candidates=999',
                     '--match=wasi-sdk-*', '--dirty=+m', f'--abbrev={GIT_REF_LEN}'],
                     os.path.dirname(sys.argv[0]))
-    major, minor, git, dirty = parse_git_version(version)
-    version = f'{major}.{minor}'
-    if git:
-        version += f'g{git}'
-    if dirty:
-        version += '+m'
-    return version
+    return parse_git_version(version)
 
 
 def parse_cmake_set(line):
