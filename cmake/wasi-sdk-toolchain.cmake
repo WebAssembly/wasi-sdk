@@ -255,6 +255,12 @@ ExternalProject_Add(llvm-build
   USES_TERMINAL_CONFIGURE ON
   USES_TERMINAL_BUILD ON
   USES_TERMINAL_INSTALL ON
+  PATCH_COMMAND
+    ${CMAKE_COMMAND} -E chdir .. bash -c
+      "git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-206831.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-pr-206831.patch -R --check"
+  COMMAND
+    ${CMAKE_COMMAND} -E chdir .. bash -c
+      "git apply ${CMAKE_SOURCE_DIR}/src/llvm-prs-208263-208332-208597.patch || git apply ${CMAKE_SOURCE_DIR}/src/llvm-prs-208263-208332-208597.patch -R --check"
 )
 
 add_custom_target(build ALL DEPENDS llvm-build)
@@ -269,7 +275,7 @@ install(DIRECTORY ${wasi_tmp_install}/bin ${wasi_tmp_install}/lib ${wasi_tmp_ins
 # Build logic for `wasm-component-ld` installed from Rust code.
 set(wasm_component_ld_root ${CMAKE_CURRENT_BINARY_DIR}/wasm-component-ld)
 set(wasm_component_ld ${wasm_component_ld_root}/bin/wasm-component-ld${CMAKE_EXECUTABLE_SUFFIX})
-set(wasm_component_ld_version 0.5.26)
+set(wasm_component_ld_version 0.5.27)
 if(RUST_TARGET)
   set(rust_target_flag --target=${RUST_TARGET})
 endif()
