@@ -21,8 +21,10 @@ message(STATUS "Found executable for `ar`: ${CMAKE_AR}")
 find_program(MAKE make REQUIRED)
 
 set(EXCEPTIONS_DEFAULT "OFF")
+set(COOP_THREADS_POSSIBLE OFF)
 if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 23.0.0)
   set(EXCEPTIONS_DEFAULT "DUAL")
+  set(COOP_THREADS_POSSIBLE ON)
 endif()
 
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
@@ -242,7 +244,7 @@ function(define_wasi_libc target)
 
   # Temporary wasip3 experimental coop threads sysroot before it's enabled by
   # default.
-  if (${target} STREQUAL wasm32-wasip3)
+  if (${target} STREQUAL wasm32-wasip3 AND ${COOP_THREADS_POSSIBLE})
     define_wasi_libc_sub(${coop_threads_sysroot} ${target} "-coop" OFF)
   endif()
 endfunction()
@@ -438,7 +440,7 @@ function(define_libcxx target)
 
   # Temporary wasip3 experimental coop threads sysroot before it's enabled by
   # default.
-  if (${target} STREQUAL wasm32-wasip3)
+  if (${target} STREQUAL wasm32-wasip3 AND ${COOP_THREADS_POSSIBLE})
     define_libcxx_and_lto(${coop_threads_sysroot} ${target} "-coop" OFF)
 
     add_custom_target(libcxx-${target}-extra-dir-coop-threads-sysroot
