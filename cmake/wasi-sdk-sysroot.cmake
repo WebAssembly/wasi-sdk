@@ -45,6 +45,7 @@ endif()
 
 set(wasi_tmp_install ${CMAKE_CURRENT_BINARY_DIR}/install)
 set(wasi_sysroot ${wasi_tmp_install}/share/wasi-sysroot)
+set(coop_threads_sysroot ${wasi_sysroot}/experimental-coop-threads)
 set(wasi_resource_dir ${wasi_tmp_install}/wasi-resource-dir)
 
 if(WASI_SDK_DEBUG_PREFIX_MAP)
@@ -64,7 +65,6 @@ set(default_cmake_args
   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
   -DCMAKE_C_COMPILER_WORKS=ON
   -DCMAKE_CXX_COMPILER_WORKS=ON
-  -DCMAKE_SYSROOT=${wasi_sysroot}
   -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/cmake
   # CMake detects this based on `CMAKE_C_COMPILER` alone and when that compiler
   # is just a bare "clang" installation then it can mistakenly deduce that this
@@ -109,6 +109,7 @@ function(define_compiler_rt target)
         -DCMAKE_CXX_FLAGS=${WASI_SDK_CPU_CFLAGS}
         -DCMAKE_ASM_FLAGS=${WASI_SDK_CPU_CFLAGS}
         -DCMAKE_INSTALL_PREFIX=${wasi_resource_dir}
+        -DCMAKE_SYSROOT=${wasi_sysroot}
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
     USES_TERMINAL_BUILD ON
@@ -165,7 +166,7 @@ add_custom_target(compiler-rt DEPENDS compiler-rt-build compiler-rt-post-build)
 # wasi-libc build logic
 # =============================================================================
 
-function(define_wasi_libc_sub target target_suffix lto)
+function(define_wasi_libc_sub sysroot target target_suffix lto)
   string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
   get_property(directory_cflags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_OPTIONS)
   set(extra_cflags_list "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags}")
@@ -205,34 +206,45 @@ function(define_wasi_libc_sub target target_suffix lto)
     list(APPEND extra_cmake_args -DBUILD_SHARED=OFF)
   endif()
 
+  if (${sysroot} STREQUAL ${coop_threads_sysroot})
+    list(APPEND extra_cmake_args -DENABLE_COOP_THREADS=ON)
+  endif()
+
   ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
     SOURCE_DIR ${wasi_libc}
     CMAKE_ARGS
       ${default_cmake_args}
       ${extra_cmake_args}
       -DTARGET_TRIPLE=${target}
-      -DCMAKE_INSTALL_PREFIX=${wasi_sysroot}
+      -DCMAKE_INSTALL_PREFIX=${sysroot}
       -DCMAKE_C_FLAGS=${extra_cflags}
       -DCMAKE_ASM_FLAGS=${extra_cflags}
       -DBUILTINS_LIB=${libcompiler_rt_a}
       -DUSE_WASM_COMPONENT_LD=OFF
       -DWASI_SDK_VERSION=${wasi_sdk_version}
+      -DCMAKE_SYSROOT=${sysroot}
     DEPENDS compiler-rt
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
     USES_TERMINAL_BUILD ON
     USES_TERMINAL_INSTALL ON
   )
+
+  add_dependencies(wasi-libc-${target} wasi-libc-${target}${target_suffix}-build)
 endfunction()
 
 function(define_wasi_libc target)
-  define_wasi_libc_sub (${target} "" OFF)
+  add_custom_target(wasi-libc-${target})
+  define_wasi_libc_sub(${wasi_sysroot} ${target} "" OFF)
   if(WASI_SDK_LTO)
-    define_wasi_libc_sub (${target} "-lto" ON)
+    define_wasi_libc_sub(${wasi_sysroot} ${target} "-lto" ON)
   endif()
 
-  add_custom_target(wasi-libc-${target}
-    DEPENDS wasi-libc-${target}-build $<$<BOOL:${WASI_SDK_LTO}>:wasi-libc-${target}-lto-build>)
+  # Temporary wasip3 experimental coop threads sysroot before it's enabled by
+  # default.
+  if (${target} STREQUAL wasm32-wasip3)
+    define_wasi_libc_sub(${coop_threads_sysroot} ${target} "-coop" OFF)
+  endif()
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)
@@ -248,7 +260,7 @@ execute_process(
   OUTPUT_VARIABLE llvm_version
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_suffix exceptions)
+function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra_libdir_suffix exceptions)
   if(${target} MATCHES threads)
     set(pic OFF)
     set(target_flags -pthread)
@@ -271,7 +283,7 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     --target=${target}
     ${dir_compile_opts}
     ${dir_link_opts}
-    --sysroot ${wasi_sysroot}
+    --sysroot ${sysroot}
     -resource-dir ${wasi_resource_dir})
 
   set(exnsuffix "")
@@ -309,6 +321,12 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     set(shared OFF)
   endif()
 
+  # FIXME(WebAssembly/wasi-libc#813) - shared libraries don't work with coop
+  # threads right now.
+  if (${sysroot} STREQUAL ${coop_threads_sysroot})
+    set(shared OFF)
+  endif()
+
   set(extra_cflags_list ${CMAKE_C_FLAGS} ${extra_flags})
   list(JOIN extra_cflags_list " " extra_cflags)
   set(extra_cxxflags_list ${CMAKE_CXX_FLAGS} ${extra_flags})
@@ -318,10 +336,11 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
     SOURCE_DIR ${llvm_proj_dir}/runtimes
     CMAKE_ARGS
       ${default_cmake_args}
+      -DCMAKE_SYSROOT=${sysroot}
       # Ensure headers are installed in a target-specific path instead of a
       # target-generic path.
-      -DCMAKE_INSTALL_INCLUDEDIR=${wasi_sysroot}/include/${target}${exnsuffix}
-      -DCMAKE_STAGING_PREFIX=${wasi_sysroot}
+      -DCMAKE_INSTALL_INCLUDEDIR=${sysroot}/include/${target}${exnsuffix}
+      -DCMAKE_STAGING_PREFIX=${sysroot}
       -DCMAKE_POSITION_INDEPENDENT_CODE=${pic}
       -DLIBCXX_ENABLE_THREADS:BOOL=ON
       -DLIBCXX_HAS_PTHREAD_API:BOOL=ON
@@ -382,12 +401,12 @@ function(define_libcxx_sub target target_suffix extra_target_flags extra_libdir_
   add_dependencies(libcxx-${target} libcxx-${target}${target_suffix}-build)
 endfunction()
 
-function(define_libcxx_and_lto target target_suffix exceptions)
-  define_libcxx_sub(${target} "${target_suffix}" "" "" ${exceptions})
+function(define_libcxx_and_lto sysroot target target_suffix exceptions)
+  define_libcxx_sub(${sysroot} ${target} "${target_suffix}" "" "" ${exceptions})
   if (WASI_SDK_LTO)
     # Note: clang knows this /llvm-lto/${llvm_version} convention.
     # https://github.com/llvm/llvm-project/blob/llvmorg-18.1.8/clang/lib/Driver/ToolChains/WebAssembly.cpp#L204-L210
-    define_libcxx_sub(${target} ${target_suffix}-lto "-flto=full" "/llvm-lto/${llvm_version}" ${exceptions})
+    define_libcxx_sub(${sysroot} ${target} ${target_suffix}-lto "-flto=full" "/llvm-lto/${llvm_version}" ${exceptions})
   endif()
 endfunction()
 
@@ -401,13 +420,14 @@ function(define_libcxx target)
   # Otherwise there's only one build of libcxx and it's either got exceptions or
   # it doesn't depending on configuration.
   if (WASI_SDK_EXCEPTIONS STREQUAL "DUAL")
-    define_libcxx_and_lto(${target} "" OFF)
-    define_libcxx_and_lto(${target} "-exn" ON)
+    define_libcxx_and_lto(${wasi_sysroot} ${target} "" OFF)
+    define_libcxx_and_lto(${wasi_sysroot} ${target} "-exn" ON)
   elseif(WASI_SDK_EXCEPTIONS STREQUAL "ON")
-    define_libcxx_and_lto(${target} "" ON)
+    define_libcxx_and_lto(${wasi_sysroot} ${target} "" ON)
   else()
-    define_libcxx_and_lto(${target} "" OFF)
+    define_libcxx_and_lto(${wasi_sysroot} ${target} "" OFF)
   endif()
+
 
   # As of this writing, `clang++` will ignore the target-specific include dirs
   # unless this one also exists:
@@ -415,6 +435,17 @@ function(define_libcxx target)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${wasi_sysroot}/include/c++/v1
     COMMENT "creating libcxx-specific header file folder")
   add_dependencies(libcxx-${target} libcxx-${target}-extra-dir)
+
+  # Temporary wasip3 experimental coop threads sysroot before it's enabled by
+  # default.
+  if (${target} STREQUAL wasm32-wasip3)
+    define_libcxx_and_lto(${coop_threads_sysroot} ${target} "-coop" OFF)
+
+    add_custom_target(libcxx-${target}-extra-dir-coop-threads-sysroot
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${coop_threads_sysroot}/include/c++/v1
+      COMMENT "creating libcxx-specific header file folder")
+    add_dependencies(libcxx-${target} libcxx-${target}-extra-dir-coop-threads-sysroot)
+  endif()
 endfunction()
 
 foreach(target IN LISTS WASI_SDK_TARGETS)

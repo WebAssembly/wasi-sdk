@@ -73,7 +73,7 @@ index f3ff646cc3b1..2dd18d604df4 100644
  # COMPRESS:   42 03                             i64.const 3
  
 diff --git a/lld/test/wasm/cooperative-threading.s b/lld/test/wasm/cooperative-threading.s
-index 8b0f7eb1c256..0db72053692b 100644
+index 8b0f7eb1c256..7b891febbb03 100644
 --- a/lld/test/wasm/cooperative-threading.s
 +++ b/lld/test/wasm/cooperative-threading.s
 @@ -2,7 +2,7 @@
@@ -156,7 +156,7 @@ index 8b0f7eb1c256..0db72053692b 100644
 +# CHECK-NEXT:         Value:           65536
 +# CHECK-NEXT:     - Index:           1
 +# CHECK-NEXT:       Type:            I32
-+# CHECK-NEXT:       Mutable:         false
++# CHECK-NEXT:       Mutable:         true
 +# CHECK-NEXT:       InitExpr:
 +# CHECK-NEXT:         Opcode:          I32_CONST
 +# CHECK-NEXT:         Value:           65544
@@ -534,7 +534,7 @@ index 9679074d6a0d..b5d130417774 100644
  # ASM-NEXT:                 i32.store 0
  # ASM-NEXT:                 i32.const 12
 diff --git a/lld/wasm/Driver.cpp b/lld/wasm/Driver.cpp
-index 9a2e3a82a927..35892c283897 100644
+index 9a2e3a82a927..2389c8f88a01 100644
 --- a/lld/wasm/Driver.cpp
 +++ b/lld/wasm/Driver.cpp
 @@ -759,6 +759,14 @@ static void setConfigs() {
@@ -552,7 +552,7 @@ index 9a2e3a82a927..35892c283897 100644
    }
  }
  
-@@ -970,12 +978,20 @@ static void createSyntheticSymbols() {
+@@ -970,12 +978,22 @@ static void createSyntheticSymbols() {
    }
  
    if (ctx.arg.isMultithreaded()) {
@@ -560,20 +560,22 @@ index 9a2e3a82a927..35892c283897 100644
 +    // TLS symbols are all hidden/dso-local, and note that the `tlsBase` global
 +    // serves a different purpose depending on `libcallThreadContext`. If
 +    // `libcallThreadContext` is `false` it's the base address of TLS and it's
-+    // initialized fresh by each thread. This requires a mutable global.
-+    //
-+    // If `libcallThreadContext` is `true`, however, then it records the
-+    // initial thread's TLS address at `start`-time. In non-PIC mode this is a
-+    // constant determined during linking, but in PIC mode it's calculated
-+    // during instantiation.
++    // initialized fresh by each thread. If `libcallThreadContext` is `true`,
++    // however, then it records the initial thread's TLS address at
++    // `start`-time. In non-PIC mode this is a constant determined during
++    // linking, but in PIC mode it's calculated during instantiation. For
++    // simplicity this global is always mutable despite technically not being
++    // necessary in `libcallThreadContext` non-PIC mode. Given that the global
++    // type must match across linkage units it's easier to have it always be one
++    // type instead of depending on flags, for example it means that `libc.a`
++    // (not PIC) is compatible with `libc.so` (PIC) for linking.
      auto tls_base_name =
          ctx.arg.libcallThreadContext ? "__init_tls_base" : "__tls_base";
 -    ctx.sym.tlsBase =
 -        createGlobalVariable(tls_base_name, !ctx.arg.libcallThreadContext,
 -                             WASM_SYMBOL_VISIBILITY_HIDDEN);
-+    ctx.sym.tlsBase = createGlobalVariable(
-+        tls_base_name, !ctx.arg.libcallThreadContext || ctx.isPic,
-+        WASM_SYMBOL_VISIBILITY_HIDDEN);
++    ctx.sym.tlsBase = createGlobalVariable(tls_base_name, true,
++                                           WASM_SYMBOL_VISIBILITY_HIDDEN);
      ctx.sym.tlsSize = createGlobalVariable("__tls_size", false,
                                             WASM_SYMBOL_VISIBILITY_HIDDEN);
      ctx.sym.tlsAlign = createGlobalVariable("__tls_align", false,
