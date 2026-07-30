@@ -1,0 +1,140 @@
+diff --git a/libcxxabi/src/cxa_personality.cpp b/libcxxabi/src/cxa_personality.cpp
+index c5050e46c0e8..da2d8b2599d9 100644
+--- a/libcxxabi/src/cxa_personality.cpp
++++ b/libcxxabi/src/cxa_personality.cpp
+@@ -1011,9 +1011,7 @@ static inline void get_landing_pad(__cxa_catch_temp_type &dest,
+ #endif
+ }
+ 
+-#ifdef __WASM_EXCEPTIONS__
+-_Unwind_Reason_Code __gxx_personality_wasm0
+-#elif defined(__SEH__) && !defined(__USING_SJLJ_EXCEPTIONS__)
++#if (defined(__SEH__) && !defined(__USING_SJLJ_EXCEPTIONS__)) || defined(__WASM_EXCEPTIONS__)
+ static _Unwind_Reason_Code __gxx_personality_imp
+ #else
+ _LIBCXXABI_FUNC_VIS _Unwind_Reason_Code
+@@ -1114,6 +1112,22 @@ __gxx_personality_seh0(PEXCEPTION_RECORD ms_exc, void *this_frame,
+ }
+ #endif
+ 
++#ifdef __WASM_EXCEPTIONS__
++extern "C" _LIBCXXABI_FUNC_VIS _Unwind_Reason_Code __gxx_wasm_personality_v0(void* exception_ptr) {
++  struct _Unwind_Exception* exception_object = (struct _Unwind_Exception*)exception_ptr;
++
++  struct _Unwind_LandingPadContext* context = _Unwind_GetWasmLPadContext();
++
++  // Reset the selector.
++  context->selector = 0;
++
++  // Call personality function. Wasm does not have two-phase unwinding, so we
++  // only do the search phase.
++  return __gxx_personality_imp(
++      1, _UA_SEARCH_PHASE, exception_object->exception_class, exception_object, (struct _Unwind_Context*)context);
++}
++#endif
++
+ #else
+ 
+ extern "C" _Unwind_Reason_Code __gnu_unwind_frame(_Unwind_Exception*, _Unwind_Context*);
+diff --git a/libunwind/include/unwind.h b/libunwind/include/unwind.h
+index b1775d3a3dec..93a9d92f327d 100644
+--- a/libunwind/include/unwind.h
++++ b/libunwind/include/unwind.h
+@@ -61,6 +61,10 @@ typedef struct _Unwind_Context _Unwind_Context;   // opaque
+ #include <unwind_itanium.h>
+ #endif
+ 
++#if defined(__WASM_EXCEPTIONS__)
++#include <unwind_wasm.h>
++#endif
++
+ typedef _Unwind_Reason_Code (*_Unwind_Stop_Fn)
+     (int version,
+      _Unwind_Action actions,
+diff --git a/libunwind/include/unwind_wasm.h b/libunwind/include/unwind_wasm.h
+new file mode 100644
+index 000000000000..66d1792919ab
+--- /dev/null
++++ b/libunwind/include/unwind_wasm.h
+@@ -0,0 +1,28 @@
++//===----------------------------------------------------------------------===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++#ifndef __WASM_UNWIND_H__
++#define __WASM_UNWIND_H__
++
++struct _Unwind_LandingPadContext {
++  // Input information to personality function
++  uintptr_t lpad_index; // landing pad index
++  uintptr_t lsda;       // LSDA address
++
++  // Output information computed by personality function
++  uintptr_t selector; // selector value
++};
++
++// Communication channel between compiler-generated user code and personality
++// function
++#ifdef __cplusplus
++extern "C"
++#endif
++    struct _Unwind_LandingPadContext *_Unwind_GetWasmLPadContext(void);
++
++#endif // __WASM_UNWIND_H__
+diff --git a/libunwind/src/Unwind-wasm.c b/libunwind/src/Unwind-wasm.c
+index 2e949d005b8f..f17eeb27e97b 100644
+--- a/libunwind/src/Unwind-wasm.c
++++ b/libunwind/src/Unwind-wasm.c
+@@ -19,45 +19,11 @@
+ #include "unwind.h"
+ #include <threads.h>
+ 
+-_Unwind_Reason_Code __gxx_personality_wasm0(int version, _Unwind_Action actions,
+-                                            uint64_t exceptionClass,
+-                                            _Unwind_Exception *unwind_exception,
+-                                            _Unwind_Context *context);
+-
+-struct _Unwind_LandingPadContext {
+-  // Input information to personality function
+-  uintptr_t lpad_index; // landing pad index
+-  uintptr_t lsda;       // LSDA address
+-
+-  // Output information computed by personality function
+-  uintptr_t selector; // selector value
+-};
+-
+-// Communication channel between compiler-generated user code and personality
+-// function
+ thread_local struct _Unwind_LandingPadContext __wasm_lpad_context;
+ 
+-/// Calls to this function are in landing pads in compiler-generated user code.
+-/// In other EH schemes, stack unwinding is done by libunwind library, which
+-/// calls the personality function for each frame it lands. On the other hand,
+-/// WebAssembly stack unwinding process is performed by a VM, and the
+-/// personality function cannot be called from there. So the compiler inserts a
+-/// call to this function in landing pads in the user code, which in turn calls
+-/// the personality function.
+-_Unwind_Reason_Code _Unwind_CallPersonality(void *exception_ptr) {
+-  struct _Unwind_Exception *exception_object =
+-      (struct _Unwind_Exception *)exception_ptr;
+-  _LIBUNWIND_TRACE_API("_Unwind_CallPersonality(exception_object=%p)",
+-                       (void *)exception_object);
+-
+-  // Reset the selector.
+-  __wasm_lpad_context.selector = 0;
+-
+-  // Call personality function. Wasm does not have two-phase unwinding, so we
+-  // only do the search phase.
+-  return __gxx_personality_wasm0(
+-      1, _UA_SEARCH_PHASE, exception_object->exception_class, exception_object,
+-      (struct _Unwind_Context *)&__wasm_lpad_context);
++_LIBUNWIND_EXPORT struct _Unwind_LandingPadContext *
++_Unwind_GetWasmLPadContext(void) {
++  return &__wasm_lpad_context;
+ }
+ 
+ /// Called by __cxa_throw.

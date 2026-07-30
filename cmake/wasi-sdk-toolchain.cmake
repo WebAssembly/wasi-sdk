@@ -214,6 +214,11 @@ endif()
 list(TRANSFORM tools PREPEND --target= OUTPUT_VARIABLE build_targets)
 list(TRANSFORM tools PREPEND --target=install- OUTPUT_VARIABLE install_targets)
 
+set(patches
+  ${CMAKE_SOURCE_DIR}/src/llvm-toolchain-pr-209282-and-pr-222747.patch
+)
+list(JOIN patches " " patches)
+
 ExternalProject_Add(llvm-build
   SOURCE_DIR "${llvm_proj_dir}/llvm"
   CMAKE_ARGS
@@ -255,6 +260,9 @@ ExternalProject_Add(llvm-build
   USES_TERMINAL_CONFIGURE ON
   USES_TERMINAL_BUILD ON
   USES_TERMINAL_INSTALL ON
+  PATCH_COMMAND
+    ${CMAKE_COMMAND} -E chdir .. bash -c
+      "git apply ${patches} || git apply ${patches} -R --check"
 )
 
 add_custom_target(build ALL DEPENDS llvm-build)

@@ -1,0 +1,249 @@
+diff --git a/clang/lib/CodeGen/CGException.cpp b/clang/lib/CodeGen/CGException.cpp
+index 99dfaa80be42..b0fb3b4d85d1 100644
+--- a/clang/lib/CodeGen/CGException.cpp
++++ b/clang/lib/CodeGen/CGException.cpp
+@@ -265,8 +265,14 @@ const EHPersonality &EHPersonality::get(CodeGenFunction &CGF) {
+ 
+ static llvm::FunctionCallee getPersonalityFn(CodeGenModule &CGM,
+                                              const EHPersonality &Personality) {
+-  return CGM.CreateRuntimeFunction(llvm::FunctionType::get(CGM.Int32Ty, true),
+-                                   Personality.PersonalityFn,
++  llvm::FunctionType *FTy;
++
++  if (Personality.isWasmPersonality()) {
++    FTy = llvm::FunctionType::get(CGM.Int32Ty, {CGM.VoidPtrTy}, false);
++  } else {
++    FTy = llvm::FunctionType::get(CGM.Int32Ty, true);
++  }
++  return CGM.CreateRuntimeFunction(FTy, Personality.PersonalityFn,
+                                    llvm::AttributeList(), /*Local=*/true);
+ }
+ 
+diff --git a/llvm/include/llvm/IR/RuntimeLibcalls.td b/llvm/include/llvm/IR/RuntimeLibcalls.td
+index d5f38b9674cd..6e393a6d5c24 100644
+--- a/llvm/include/llvm/IR/RuntimeLibcalls.td
++++ b/llvm/include/llvm/IR/RuntimeLibcalls.td
+@@ -411,7 +411,7 @@ foreach MemSize = [1, 2, 4, 8, 16] in {
+ def UNWIND_RESUME : RuntimeLibcall;
+ def UNWIND_REGISTER : RuntimeLibcall;
+ def UNWIND_UNREGISTER : RuntimeLibcall;
+-def UNWIND_CALL_PERSONALITY : RuntimeLibcall;
++def UNWIND_GET_WASM_LPAD_CONTEXT : RuntimeLibcall;
+ def CXA_END_CLEANUP : RuntimeLibcall;
+ 
+ // Note: there are two sets of atomics libcalls; see
+@@ -1681,8 +1681,8 @@ defset list<RuntimeLibcallImpl> SjLjExceptionHandlingLibcalls = {
+   def _Unwind_SjLj_Unregister : RuntimeLibcallImpl<UNWIND_UNREGISTER>;
+ }
+ 
+-// Only used on wasm?
+-def _Unwind_CallPersonality : RuntimeLibcallImpl<UNWIND_CALL_PERSONALITY>;
++// Only used on wasm
++def _Unwind_GetWasmLPadContext : RuntimeLibcallImpl<UNWIND_GET_WASM_LPAD_CONTEXT>;
+ 
+ // Used on OpenBSD
+ def __stack_smash_handler : RuntimeLibcallImpl<STACK_SMASH_HANDLER>;
+@@ -3398,8 +3398,8 @@ def WasmSystemLibrary
+     : SystemRuntimeLibrary<isWasm,
+       (add DefaultRuntimeLibcallImpls, Int128RTLibcalls,
+            CompilerRTOnlyInt64Libcalls, CompilerRTOnlyInt128Libcalls,
++           _Unwind_GetWasmLPadContext,
+            exp10f, exp10,
+-           _Unwind_CallPersonality,
+            emscripten_return_address,
+            LibcallImpls<(add __small_printf,
+                              __small_sprintf,
+diff --git a/llvm/lib/CodeGen/WasmEHPrepare.cpp b/llvm/lib/CodeGen/WasmEHPrepare.cpp
+index b83bcf67716f..5e9af050be7b 100644
+--- a/llvm/lib/CodeGen/WasmEHPrepare.cpp
++++ b/llvm/lib/CodeGen/WasmEHPrepare.cpp
+@@ -28,7 +28,7 @@
+ //   wasm.landingpad.index(index);
+ //   __wasm_lpad_context.lpad_index = index;
+ //   __wasm_lpad_context.lsda = wasm.lsda();
+-//   _Unwind_CallPersonality(exn);
++//   personality_fn(exn);
+ //   selector = __wasm_lpad_context.selector;
+ //   ...
+ //
+@@ -39,9 +39,9 @@
+ // transfered to WebAssembly 'catch' instruction.
+ //
+ // Unwinding the stack is not done by libunwind but the VM, so the personality
+-// function in libcxxabi cannot be called from libunwind during the unwinding
+-// process. So after a catch instruction, we insert a call to a wrapper function
+-// in libunwind that in turn calls the real personality function.
++// function (e.g. in libcxxabi) cannot be called from libunwind during the
++// unwinding process. So after a catch instruction, we insert a direct call to
++// the personality instead.
+ //
+ // In Itanium EH, if the personality function decides there is no matching catch
+ // clause in a call frame and no cleanup action to perform, the unwinder doesn't
+@@ -49,7 +49,7 @@
+ // every call frame with a catch intruction, after which the personality
+ // function is called from the compiler-generated user code here.
+ //
+-// In libunwind, we have this struct that serves as a communincation channel
++// In libunwind, we have this struct that serves as a communication channel
+ // between the compiler-generated user code and the personality function in
+ // libcxxabi.
+ //
+@@ -60,20 +60,8 @@
+ // };
+ // struct _Unwind_LandingPadContext __wasm_lpad_context = ...;
+ //
+-// And this wrapper in libunwind calls the personality function.
+-//
+-// _Unwind_Reason_Code _Unwind_CallPersonality(void *exception_ptr) {
+-//   struct _Unwind_Exception *exception_obj =
+-//       (struct _Unwind_Exception *)exception_ptr;
+-//   _Unwind_Reason_Code ret = __gxx_personality_v0(
+-//       1, _UA_CLEANUP_PHASE, exception_obj->exception_class, exception_obj,
+-//       (struct _Unwind_Context *)__wasm_lpad_context);
+-//   return ret;
+-// }
+-//
+ // We pass a landing pad index, and the address of LSDA for the current function
+-// to the wrapper function _Unwind_CallPersonality in libunwind, and we retrieve
+-// the selector after it returns.
++// to the personality function, and we retrieve the selector after it returns.
+ //
+ //===----------------------------------------------------------------------===//
+ 
+@@ -98,12 +86,6 @@ class WasmEHPrepareImpl {
+   friend class WasmEHPrepare;
+ 
+   Type *LPadContextTy = nullptr; // type of 'struct _Unwind_LandingPadContext'
+-  GlobalVariable *LPadContextGV = nullptr; // __wasm_lpad_context
+-
+-  // Field addresses of struct _Unwind_LandingPadContext
+-  Value *LPadIndexField = nullptr; // lpad_index field
+-  Value *LSDAField = nullptr;      // lsda field
+-  Value *SelectorField = nullptr;  // selector
+ 
+   Function *ThrowF = nullptr;       // wasm.throw() intrinsic
+   Function *LPadIndexF = nullptr;   // wasm.landingpad.index() intrinsic
+@@ -111,8 +93,9 @@ class WasmEHPrepareImpl {
+   Function *GetExnF = nullptr;      // wasm.get.exception() intrinsic
+   Function *CatchF = nullptr;       // wasm.catch() intrinsic
+   Function *GetSelectorF = nullptr; // wasm.get.ehselector() intrinsic
+-  FunctionCallee CallPersonalityF =
+-      nullptr; // _Unwind_CallPersonality() wrapper
++  FunctionCallee PersonalityF = nullptr;
++  FunctionCallee GetWasmLPadContextF =
++      nullptr; // _Unwind_GetWasmLPadContext() wrapper
+ 
+   bool prepareThrows(Function &F);
+   bool prepareEHPads(Function &F);
+@@ -220,6 +203,7 @@ bool WasmEHPrepareImpl::prepareThrows(Function &F) {
+ bool WasmEHPrepareImpl::prepareEHPads(Function &F) {
+   Module &M = *F.getParent();
+   IRBuilder<> IRB(F.getContext());
++  LLVMContext &Ctx = M.getContext();
+ 
+   SmallVector<BasicBlock *, 16> CatchPads;
+   SmallVector<BasicBlock *, 16> CleanupPads;
+@@ -235,28 +219,17 @@ bool WasmEHPrepareImpl::prepareEHPads(Function &F) {
+   if (CatchPads.empty() && CleanupPads.empty())
+     return false;
+ 
+-  if (!F.hasPersonalityFn() ||
+-      !isScopedEHPersonality(classifyEHPersonality(F.getPersonalityFn()))) {
++  if (!F.hasPersonalityFn())
++    return false;
++
++  auto Personality = classifyEHPersonality(F.getPersonalityFn());
++
++  if (!isScopedEHPersonality(Personality)) {
+     report_fatal_error("Function '" + F.getName() +
+-                       "' does not have a correct Wasm personality function "
+-                       "'__gxx_wasm_personality_v0'");
++                       "' does not have a supported Wasm personality function");
+   }
+   assert(F.hasPersonalityFn() && "Personality function not found");
+ 
+-  // __wasm_lpad_context global variable.
+-  // This variable should be thread local. If the target does not support TLS,
+-  // we depend on CoalesceFeaturesAndStripAtomics to downgrade it to
+-  // non-thread-local ones, in which case we don't allow this object to be
+-  // linked with other objects using shared memory.
+-  LPadContextGV = M.getOrInsertGlobal("__wasm_lpad_context", LPadContextTy);
+-  LPadContextGV->setThreadLocalMode(GlobalValue::GeneralDynamicTLSModel);
+-
+-  LPadIndexField = LPadContextGV;
+-  LSDAField = IRB.CreateConstInBoundsGEP2_32(LPadContextTy, LPadContextGV, 0, 1,
+-                                             "lsda_gep");
+-  SelectorField = IRB.CreateConstInBoundsGEP2_32(LPadContextTy, LPadContextGV,
+-                                                 0, 2, "selector_gep");
+-
+   // wasm.landingpad.index() intrinsic, which is to specify landingpad index
+   LPadIndexF =
+       Intrinsic::getOrInsertDeclaration(&M, Intrinsic::wasm_landingpad_index);
+@@ -274,15 +247,30 @@ bool WasmEHPrepareImpl::prepareEHPads(Function &F) {
+   // instruction selection.
+   CatchF = Intrinsic::getOrInsertDeclaration(&M, Intrinsic::wasm_catch);
+ 
+-  // FIXME: Verify this is really supported for current module.
+-  StringRef UnwindCallPersonalityName =
+-      RTLIB::RuntimeLibcallsInfo::getLibcallImplName(
+-          RTLIB::impl__Unwind_CallPersonality);
++  auto *PersPrototype =
++      FunctionType::get(IRB.getInt32Ty(), {IRB.getPtrTy()}, false);
++  PersonalityF =
++      M.getOrInsertFunction(getEHPersonalityName(Personality), PersPrototype);
+ 
+-  // _Unwind_CallPersonality() wrapper function, which calls the personality
+-  CallPersonalityF = M.getOrInsertFunction(UnwindCallPersonalityName,
+-                                           IRB.getInt32Ty(), IRB.getPtrTy());
+-  if (Function *F = dyn_cast<Function>(CallPersonalityF.getCallee()))
++  if (Function *F = dyn_cast<Function>(PersonalityF.getCallee()))
++    F->setDoesNotThrow();
++
++  StringRef UnwindGetWasmLPadContextName =
++      RTLIB::RuntimeLibcallsInfo::getLibcallImplName(
++          RTLIB::impl__Unwind_GetWasmLPadContext);
++
++  // _Unwind_GetWasmLPadContext() wrapper function
++  //
++  // We use this function to get the address of `libunwind`'s thread-local
++  // `__wasm_lpad_context` variable for the current thread.  Note that we
++  // cannot, in general, access the `__wasm_lpad_context` directly here because,
++  // when the cooperative multithreading feature is enabled, direct,
++  // cross-library access to thread local variables is not supported.
++  auto *UnwindGetWasmLPadContextType =
++      FunctionType::get(PointerType::getUnqual(Ctx), {}, false);
++  GetWasmLPadContextF = M.getOrInsertFunction(UnwindGetWasmLPadContextName,
++                                              UnwindGetWasmLPadContextType);
++  if (Function *F = dyn_cast<Function>(GetWasmLPadContextF.getCallee()))
+     F->setDoesNotThrow();
+ 
+   unsigned Index = 0;
+@@ -352,6 +340,15 @@ void WasmEHPrepareImpl::prepareEHPad(BasicBlock *BB, bool NeedPersonality,
+   }
+   IRB.SetInsertPoint(CatchCI->getNextNode());
+ 
++  Instruction *LPadContext =
++      IRB.CreateCall(GetWasmLPadContextF, {}, OperandBundleDef("funclet", FPI));
++
++  Value *LPadIndexField = LPadContext;
++  Value *LSDAField = IRB.CreateConstInBoundsGEP2_32(LPadContextTy, LPadContext,
++                                                    0, 1, "lsda_gep");
++  Value *SelectorField = IRB.CreateConstInBoundsGEP2_32(
++      LPadContextTy, LPadContext, 0, 2, "selector_gep");
++
+   // This is to create a map of <landingpad EH label, landingpad index> in
+   // SelectionDAGISel, which is to be used in EHStreamer to emit LSDA tables.
+   // Pseudocode: wasm.landingpad.index(Index);
+@@ -367,9 +364,9 @@ void WasmEHPrepareImpl::prepareEHPad(BasicBlock *BB, bool NeedPersonality,
+   // Pseudocode: __wasm_lpad_context.lsda = wasm.lsda();
+   IRB.CreateStore(IRB.CreateCall(LSDAF), LSDAField);
+ 
+-  // Pseudocode: _Unwind_CallPersonality(exn);
+-  CallInst *PersCI = IRB.CreateCall(CallPersonalityF, CatchCI,
+-                                    OperandBundleDef("funclet", CPI));
++  // Pseudocode: personality_fn(exn);
++  CallInst *PersCI =
++      IRB.CreateCall(PersonalityF, CatchCI, OperandBundleDef("funclet", CPI));
+   PersCI->setDoesNotThrow();
+ 
+   // Pseudocode: int selector = __wasm_lpad_context.selector;
