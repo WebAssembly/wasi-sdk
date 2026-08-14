@@ -1,5 +1,5 @@
 diff --git a/lld/test/wasm/compress-relocs.s b/lld/test/wasm/compress-relocs.s
-index 37f1b3b170ff..e872b941416a 100644
+index 37f1b3b170ff7..e872b941416af 100644
 --- a/lld/test/wasm/compress-relocs.s
 +++ b/lld/test/wasm/compress-relocs.s
 @@ -47,16 +47,16 @@ test_memory_and_indirect_call_relocs:
@@ -38,7 +38,7 @@ index 37f1b3b170ff..e872b941416a 100644
  # COMPRESS:   41 03              i32.const  3
  
 diff --git a/lld/test/wasm/compress-relocs64.s b/lld/test/wasm/compress-relocs64.s
-index f3ff646cc3b1..2dd18d604df4 100644
+index f3ff646cc3b1c..2dd18d604df41 100644
 --- a/lld/test/wasm/compress-relocs64.s
 +++ b/lld/test/wasm/compress-relocs64.s
 @@ -36,12 +36,12 @@ test_memory_and_indirect_call_relocs:
@@ -73,42 +73,10 @@ index f3ff646cc3b1..2dd18d604df4 100644
  # COMPRESS:   42 03                             i64.const 3
  
 diff --git a/lld/test/wasm/cooperative-threading.s b/lld/test/wasm/cooperative-threading.s
-index 8b0f7eb1c256..7b891febbb03 100644
+index a4afb01dc2264..4ae4d464d1f90 100644
 --- a/lld/test/wasm/cooperative-threading.s
 +++ b/lld/test/wasm/cooperative-threading.s
-@@ -2,7 +2,7 @@
- # thread-context globals (__init_stack_pointer, __init_tls_base, etc.) and
- # works without --shared-memory and atomics.
- 
--# RUN: llvm-mc -filetype=obj -triple=wasm32-unknown-unknown -o %t.o %s
-+# RUN: llvm-mc -mattr=+call-indirect-overlong -filetype=obj -triple=wasm32-unknown-unknown -o %t.o %s
- # RUN: wasm-ld --cooperative-threading -no-gc-sections -o %t.wasm %t.o
- # RUN: obj2yaml %t.wasm | FileCheck %s
- # RUN: llvm-objdump -d --no-print-imm-hex --no-show-raw-insn %t.wasm | FileCheck %s --check-prefix=DIS
-@@ -11,12 +11,22 @@
- # RUN: not wasm-ld --cooperative-threading --shared-memory %t.o -o %t2.wasm 2>&1 | FileCheck %s --check-prefix=INCOMPAT
- # INCOMPAT: --cooperative-threading is incompatible with --shared-memory
- 
-+.globl __indirect_function_table
-+.tabletype __indirect_function_table, funcref
-+
- .globl         __wasm_get_tls_base
- __wasm_get_tls_base:
-   .functype   __wasm_get_tls_base () -> (i32)
-   i32.const 0
-   end_function
- 
-+.globl do_call_indirect
-+do_call_indirect:
-+  .functype do_call_indirect () -> ()
-+  i32.const 1
-+  call_indirect __indirect_function_table, () -> ()
-+  end_function
-+
- .globl _start
- _start:
-   .functype _start () -> (i32)
-@@ -57,6 +67,13 @@ foo:
+@@ -67,6 +67,13 @@ foo:
    .int32  0
    .size foo, 4
  
@@ -122,51 +90,12 @@ index 8b0f7eb1c256..7b891febbb03 100644
  .section  .custom_section.target_features,"",@
    .int8 2
    .int8 43
-@@ -66,28 +83,68 @@ foo:
-   .int8 7
-   .ascii  "atomics"
- 
-+# CHECK:      - Type:            TABLE
-+# CHECK-NEXT:   Tables:
-+# CHECK-NEXT:     - Index:           0
-+# CHECK-NEXT:       ElemType:        FUNCREF
-+
- # Memory must NOT be marked as shared.
- # CHECK:      - Type:            MEMORY
- # CHECK-NEXT:   Memories:
- # CHECK-NEXT:     - Minimum:         0x2
- # CHECK-NOT:       Shared
+@@ -93,22 +100,29 @@ foo:
+ # CHECK-NEXT:       Kind:            TABLE
+ # CHECK-NEXT:       Index:           0
  
 -# Only TLS needs a passive data segment; .data stays active and .bss gets no
 -# segment at all since memory is only instantiated once and starts zeroed.
-+# The function table is exported by default.
-+# CHECK:      - Type:            EXPORT
-+# CHECK:          - Name:            __indirect_function_table
-+# CHECK-NEXT:       Kind:            TABLE
-+# CHECK-NEXT:       Index:           0
-+
-+# Ensure __init_stack_pointer, __init_tls_base, and __tls_size are all correct.
-+# CHECK:      - Type:            GLOBAL
-+# CHECK-NEXT:   Globals:
-+# CHECK-NEXT:     - Index:           0
-+# CHECK-NEXT:       Type:            I32
-+# CHECK-NEXT:       Mutable:         false
-+# CHECK-NEXT:       InitExpr:
-+# CHECK-NEXT:         Opcode:          I32_CONST
-+# CHECK-NEXT:         Value:           65536
-+# CHECK-NEXT:     - Index:           1
-+# CHECK-NEXT:       Type:            I32
-+# CHECK-NEXT:       Mutable:         true
-+# CHECK-NEXT:       InitExpr:
-+# CHECK-NEXT:         Opcode:          I32_CONST
-+# CHECK-NEXT:         Value:           65544
-+# CHECK-NEXT:     - Index:           2
-+# CHECK-NEXT:       Type:            I32
-+# CHECK-NEXT:       Mutable:         false
-+# CHECK-NEXT:       InitExpr:
-+# CHECK-NEXT:         Opcode:          I32_CONST
-+# CHECK-NEXT:         Value:           8
-+
 +# Only TLS needs a passive data segment; .rodata and .data stay active and
 +# .bss gets no segment at all since memory is only instantiated once and
 +# starts zeroed. The TLS segment is sorted last.
@@ -181,16 +110,16 @@ index 8b0f7eb1c256..7b891febbb03 100644
 -# CHECK-NEXT:         Content:         '0100000002000000'
 -# CHECK-NEXT:       - SectionOffset:   18
 +# CHECK-NEXT:       - SectionOffset:   8
++# CHECK-NEXT:         InitFlags:       0
++# CHECK-NEXT:         Offset:
++# CHECK-NEXT:           Opcode:          I32_CONST
++# CHECK-NEXT:           Value:           65536
++# CHECK-NEXT:         Content:         '01000000'
++# CHECK-NEXT:       - SectionOffset:   19
  # CHECK-NEXT:         InitFlags:       0
  # CHECK-NEXT:         Offset:
  # CHECK-NEXT:           Opcode:          I32_CONST
 -# CHECK-NEXT:           Value:           {{[0-9]+}}
-+# CHECK-NEXT:           Value:           65536
-+# CHECK-NEXT:         Content:         '01000000'
-+# CHECK-NEXT:       - SectionOffset:   19
-+# CHECK-NEXT:         InitFlags:       0
-+# CHECK-NEXT:         Offset:
-+# CHECK-NEXT:           Opcode:          I32_CONST
 +# CHECK-NEXT:           Value:           65540
  # CHECK-NEXT:         Content:         2A000000
 +# CHECK-NEXT:       - SectionOffset:   25
@@ -199,73 +128,33 @@ index 8b0f7eb1c256..7b891febbb03 100644
  # CHECK-NEXT:   - Type:            CUSTOM
  
  # Globals should use the libcall ABI naming, not the global ABI.
-@@ -102,9 +159,14 @@ foo:
+@@ -123,9 +137,8 @@ foo:
  # CHECK-NEXT:        Name:            __tls_align
  
  # DIS-LABEL: <__wasm_init_memory>:
 -# DIS:         memory.init     0, 0
 -# DIS-NOT:     memory.fill
 -# DIS-NOT:     memory.init
-+# DIS-EMPTY:
-+# DIS-NEXT:      i32.const       65544
-+# DIS-NEXT:      i32.const       65544
-+# DIS-NEXT:      call    0
-+# DIS-NEXT:      i32.const       0
-+# DIS-NEXT:      i32.const       8
-+# DIS-NEXT:      memory.init     2, 0
-+# DIS-NEXT:      end
++# DIS:         memory.init     2, 0
++# DIS-NEXT:    end
  
  # DIS-LABEL: <_start>:
  # DIS-EMPTY:
-@@ -118,3 +180,104 @@ foo:
- # DIS-NEXT:       i32.load        0
- # DIS-NEXT:       i32.add
- # DIS-NEXT:       end
-+
-+# When the table is imported instead there is no need to also export it.
-+# RUN: wasm-ld --cooperative-threading --import-table -no-gc-sections -o %t3.wasm %t.o
-+# RUN: obj2yaml %t3.wasm | FileCheck %s --check-prefix=IMPORT-TABLE
-+
-+# When the table is imported instead there is no need to also export it.
-+# IMPORT-TABLE:      - Type:            IMPORT
-+# IMPORT-TABLE:          - Module:          env
-+# IMPORT-TABLE-NEXT:       Field:           __indirect_function_table
-+# IMPORT-TABLE-NEXT:       Kind:            TABLE
-+# IMPORT-TABLE-NOT:        Kind:            TABLE
+@@ -144,9 +157,52 @@ foo:
+ # RUN: wasm-ld --cooperative-threading --import-table -no-gc-sections -o %t3.wasm %t.o
+ # RUN: obj2yaml %t3.wasm | FileCheck %s --check-prefix=IMPORT-TABLE
+ 
+-# When the table is imported instead there is no need to also export it.
+ # IMPORT-TABLE:      - Type:            IMPORT
+ # IMPORT-TABLE:          - Module:          env
+ # IMPORT-TABLE-NEXT:       Field:           __indirect_function_table
+ # IMPORT-TABLE-NEXT:       Kind:            TABLE
+ # IMPORT-TABLE-NOT:        Kind:            TABLE
 +
 +# Test --cooperative-threading combined with PIC output.
 +# RUN: wasm-ld -shared --cooperative-threading -no-gc-sections -o %t.so %t.o
 +# RUN: obj2yaml %t.so | FileCheck %s --check-prefix=PIC
 +# RUN: llvm-objdump --disassemble-symbols=__wasm_init_memory --no-show-raw-insn --no-leading-addr %t.so | FileCheck %s --check-prefix=PIC-DIS
-+
-+# The stack pointer is imported under the libcall ABI name and
-+# __wasm_set_tls_base is imported for TLS initialization.
-+# PIC:       - Type:            IMPORT
-+# PIC:           Field:           __init_stack_pointer
-+# PIC-NEXT:      Kind:            GLOBAL
-+# PIC-NEXT:      GlobalType:      I32
-+# PIC-NEXT:      GlobalMutable:   false
-+# PIC:           Field:           __memory_base
-+# PIC:           Field:           __table_base
-+# PIC:           Field:           __wasm_set_tls_base
-+# PIC-NEXT:      Kind:            FUNCTION
-+
-+# The PIC `__init_tls_base` global (global 3) is mutable and initialized ot
-+# 0 since its final value is calculated once `__memory_base` is provided.
-+# PIC:       - Type:            GLOBAL
-+# PIC-NEXT:    Globals:
-+# PIC-NEXT:      - Index:           3
-+# PIC-NEXT:        Type:            I32
-+# PIC-NEXT:        Mutable:         true
-+# PIC-NEXT:        InitExpr:
-+# PIC-NEXT:          Opcode:          I32_CONST
-+# PIC-NEXT:          Value:           0
-+# PIC-NEXT:      - Index:           4
-+# PIC-NEXT:        Type:            I32
-+# PIC-NEXT:        Mutable:         false
-+# PIC-NEXT:        InitExpr:
-+# PIC-NEXT:          Opcode:          I32_CONST
-+# PIC-NEXT:          Value:           8
 +
 +# In PIC mode the active .rodata and .data segments are combined into a single
 +# active segment at __memory_base; the TLS segment remains passive.
@@ -284,32 +173,15 @@ index 8b0f7eb1c256..7b891febbb03 100644
 +# PIC-NEXT:        Content:         '0100000002000000'
 +# PIC-NEXT:  - Type:            CUSTOM
 +
-+# PIC:       GlobalNames:
-+# PIC-NEXT:      - Index:           0
-+# PIC-NEXT:        Name:            __init_stack_pointer
-+# PIC-NEXT:      - Index:           1
-+# PIC-NEXT:        Name:            __memory_base
-+# PIC-NEXT:      - Index:           2
-+# PIC-NEXT:        Name:            __table_base
-+# PIC-NEXT:      - Index:           3
-+# PIC-NEXT:        Name:            __init_tls_base
-+# PIC-NEXT:      - Index:           4
-+# PIC-NEXT:        Name:            __tls_size
-+# PIC-NEXT:      - Index:           5
-+# PIC-NEXT:        Name:            __tls_align
-+
 +# Memory initialization in PIC mode has a few responsibilities: it calculates
-+# the TLS address and puts it in a local, stores it into the __init_tls_base
-+# global, `__wasm_set_tls_base` is called, TLS is initialized, and then finally
-+# BSS is zero'd out.
++# the TLS address and puts it in a local, `__wasm_set_tls_base` is called,
++# TLS is initialized, and then finally BSS is zero'd out.
 +# PIC-DIS:      <__wasm_init_memory>:
 +# PIC-DIS-NEXT:   .local i32
 +# PIC-DIS-NEXT:   i32.const 8
-+# PIC-DIS-NEXT:   global.get 1
++# PIC-DIS-NEXT:   global.get {{[0-9]+}}
 +# PIC-DIS-NEXT:   i32.add
 +# PIC-DIS-NEXT:   local.tee 0
-+# PIC-DIS-NEXT:   global.set 3
-+# PIC-DIS-NEXT:   local.get 0
 +# PIC-DIS-NEXT:   call {{[0-9]+}}
 +# PIC-DIS-NEXT:   local.get 0
 +# PIC-DIS-NEXT:   i32.const 0
@@ -323,7 +195,7 @@ index 8b0f7eb1c256..7b891febbb03 100644
 +# PIC-DIS-NEXT:   memory.fill 0
 +# PIC-DIS-NEXT:   end
 diff --git a/lld/test/wasm/data-segments.ll b/lld/test/wasm/data-segments.ll
-index 7a18fd5efb65..5073e9c4cc8d 100644
+index 7a18fd5efb655..5073e9c4cc8d1 100644
 --- a/lld/test/wasm/data-segments.ll
 +++ b/lld/test/wasm/data-segments.ll
 @@ -93,7 +93,7 @@
@@ -429,7 +301,7 @@ index 7a18fd5efb65..5073e9c4cc8d 100644
 -; DIS-NEXT:          data.drop       2
  ; DIS-NEXT:         end
 diff --git a/lld/test/wasm/runtime-relocations-himem.s b/lld/test/wasm/runtime-relocations-himem.s
-index 2d39a204c790..2026e62a5af8 100644
+index 2d39a204c7904..2026e62a5af86 100644
 --- a/lld/test/wasm/runtime-relocations-himem.s
 +++ b/lld/test/wasm/runtime-relocations-himem.s
 @@ -47,14 +47,14 @@ data_sym:
@@ -450,7 +322,7 @@ index 2d39a204c790..2026e62a5af8 100644
  # CHECK-NEXT:  i32.store 0
  # CHECK-NEXT:  end
 diff --git a/lld/test/wasm/tls-non-shared-memory.s b/lld/test/wasm/tls-non-shared-memory.s
-index 0a87ade7efb2..21082a5603e7 100644
+index 0a87ade7efb2e..21082a5603e7f 100644
 --- a/lld/test/wasm/tls-non-shared-memory.s
 +++ b/lld/test/wasm/tls-non-shared-memory.s
 @@ -70,14 +70,14 @@ tls1:
@@ -512,7 +384,7 @@ index 0a87ade7efb2..21082a5603e7 100644
 -# EXT-CONST-NEXT:        Content:         2A000000
 +# EXT-CONST-NEXT:        Content:         2B000000
 diff --git a/lld/test/wasm/tls-relocations.s b/lld/test/wasm/tls-relocations.s
-index 9679074d6a0d..b5d130417774 100644
+index 9679074d6a0db..b5d1304177744 100644
 --- a/lld/test/wasm/tls-relocations.s
 +++ b/lld/test/wasm/tls-relocations.s
 @@ -64,7 +64,7 @@ tls_sym:
@@ -533,54 +405,8 @@ index 9679074d6a0d..b5d130417774 100644
  # ASM-NEXT:                 i32.add
  # ASM-NEXT:                 i32.store 0
  # ASM-NEXT:                 i32.const 12
-diff --git a/lld/wasm/Driver.cpp b/lld/wasm/Driver.cpp
-index 9a2e3a82a927..2389c8f88a01 100644
---- a/lld/wasm/Driver.cpp
-+++ b/lld/wasm/Driver.cpp
-@@ -759,6 +759,14 @@ static void setConfigs() {
-     if (ctx.arg.sharedMemory)
-       error("--cooperative-threading is incompatible with --shared-memory");
-     ctx.arg.libcallThreadContext = true;
-+
-+    // Cooperative threading requires the table is either imported or exported
-+    // or otherwise there's no way for embedders to read spawned functions from
-+    // the table. If we've gotten this far and the table isn't otherwise
-+    // imported (e.g in `isPic` mode) then export the table instead to ensure
-+    // that it's visible to the outside world.
-+    if (!ctx.arg.importTable)
-+      ctx.arg.exportTable = true;
-   }
- }
- 
-@@ -970,12 +978,22 @@ static void createSyntheticSymbols() {
-   }
- 
-   if (ctx.arg.isMultithreaded()) {
--    // TLS symbols are all hidden/dso-local
-+    // TLS symbols are all hidden/dso-local, and note that the `tlsBase` global
-+    // serves a different purpose depending on `libcallThreadContext`. If
-+    // `libcallThreadContext` is `false` it's the base address of TLS and it's
-+    // initialized fresh by each thread. If `libcallThreadContext` is `true`,
-+    // however, then it records the initial thread's TLS address at
-+    // `start`-time. In non-PIC mode this is a constant determined during
-+    // linking, but in PIC mode it's calculated during instantiation. For
-+    // simplicity this global is always mutable despite technically not being
-+    // necessary in `libcallThreadContext` non-PIC mode. Given that the global
-+    // type must match across linkage units it's easier to have it always be one
-+    // type instead of depending on flags, for example it means that `libc.a`
-+    // (not PIC) is compatible with `libc.so` (PIC) for linking.
-     auto tls_base_name =
-         ctx.arg.libcallThreadContext ? "__init_tls_base" : "__tls_base";
--    ctx.sym.tlsBase =
--        createGlobalVariable(tls_base_name, !ctx.arg.libcallThreadContext,
--                             WASM_SYMBOL_VISIBILITY_HIDDEN);
-+    ctx.sym.tlsBase = createGlobalVariable(tls_base_name, true,
-+                                           WASM_SYMBOL_VISIBILITY_HIDDEN);
-     ctx.sym.tlsSize = createGlobalVariable("__tls_size", false,
-                                            WASM_SYMBOL_VISIBILITY_HIDDEN);
-     ctx.sym.tlsAlign = createGlobalVariable("__tls_align", false,
 diff --git a/lld/wasm/InputChunks.cpp b/lld/wasm/InputChunks.cpp
-index 99623e7c9aef..79cfb7878d07 100644
+index 99623e7c9aefe..79cfb7878d074 100644
 --- a/lld/wasm/InputChunks.cpp
 +++ b/lld/wasm/InputChunks.cpp
 @@ -406,6 +406,13 @@ uint64_t InputChunk::getOffset(uint64_t offset) const {
@@ -598,7 +424,7 @@ index 99623e7c9aef..79cfb7878d07 100644
  }
  
 diff --git a/lld/wasm/OutputSections.cpp b/lld/wasm/OutputSections.cpp
-index 22c001eaa43b..d9017fefffdd 100644
+index 22c001eaa43b7..d9017fefffdd1 100644
 --- a/lld/wasm/OutputSections.cpp
 +++ b/lld/wasm/OutputSections.cpp
 @@ -104,13 +104,11 @@ void DataSection::finalizeContents() {
@@ -627,7 +453,7 @@ index 22c001eaa43b..d9017fefffdd 100644
          writeU8(os, WASM_OPCODE_GLOBAL_GET, "global get");
          writeUleb128(os, ctx.sym.memoryBase->getGlobalIndex(),
 diff --git a/lld/wasm/OutputSegment.h b/lld/wasm/OutputSegment.h
-index 701df1fecc4b..10049aecdada 100644
+index 701df1fecc4b8..05fcbacdf317b 100644
 --- a/lld/wasm/OutputSegment.h
 +++ b/lld/wasm/OutputSegment.h
 @@ -11,6 +11,7 @@
@@ -638,28 +464,24 @@ index 701df1fecc4b..10049aecdada 100644
  #include "llvm/Object/Wasm.h"
  
  namespace lld::wasm {
-@@ -46,6 +47,16 @@ public:
+@@ -46,6 +47,12 @@ class OutputSegment {
  
    // Segment header
    std::string header;
 +
-+  /// Returns whether this is destined to become a passive data segment in the
-+  /// final output.
 +  bool isPassive() const {
 +    return (initFlags & llvm::wasm::WASM_DATA_SEGMENT_IS_PASSIVE) != 0;
 +  }
 +
-+  /// Returns whether this is destined to become a active data segment in the
-+  /// final output.
 +  bool isActive() const { return !isPassive(); }
  };
  
  } // namespace lld::wasm
 diff --git a/lld/wasm/Writer.cpp b/lld/wasm/Writer.cpp
-index 7ceff0e14413..06be15029460 100644
+index 7ceff0e14413c..157af6a4ea9ac 100644
 --- a/lld/wasm/Writer.cpp
 +++ b/lld/wasm/Writer.cpp
-@@ -85,7 +85,7 @@ private:
+@@ -85,7 +85,7 @@ class Writer {
    void calculateTypes();
    void createOutputSegments();
    OutputSegment *createOutputSegment(StringRef name);
@@ -815,20 +637,8 @@ index 7ceff0e14413..06be15029460 100644
      }
  
      for (const OutputSegment *s : segments) {
-@@ -1387,18 +1416,37 @@ void Writer::createInitMemoryFunction() {
-         // When we initialize the TLS segment we also set the TLS base.
-         // This allows the runtime to use this static copy of the TLS data
+@@ -1389,16 +1418,16 @@ void Writer::createInitMemoryFunction() {
          // for the first/main thread.
-+        //
-+        // Note that for `--cooperative-threading` this additionally configures
-+        // the `__init_tls_base` global which is the initial TLS value that can
-+        // be used for all new component model tasks. For non-PIC builds this
-+        // global's statically known value is now calculated, so it's updated
-+        // here. For PIC builds the result of the address computation above is
-+        // what's stored into the global.
-+        //
-+        // Finally, note that a temporary local is used here to ensure that the
-+        // result of the addition above can be reused a number of times.
          if (ctx.arg.isMultithreaded() && s->isTLS()) {
            if (ctx.isPic) {
 -            // Cache the result of the addionion in local 0
@@ -836,17 +646,8 @@ index 7ceff0e14413..06be15029460 100644
              writeU8(os, WASM_OPCODE_LOCAL_TEE, "local.tee");
 -            writeUleb128(os, 1, "local 1");
 +            writeUleb128(os, tlsAddressLocal, "tls address local");
-+            if (ctx.arg.libcallThreadContext) {
-+              writeU8(os, WASM_OPCODE_GLOBAL_SET, "GLOBAL_SET");
-+              writeUleb128(os, ctx.sym.tlsBase->getGlobalIndex(),
-+                           "__init_tls_base");
-+              writeU8(os, WASM_OPCODE_LOCAL_GET, "local.get");
-+              writeUleb128(os, tlsAddressLocal, "tls address local");
-+            }
            } else {
              writePtrConst(os, s->startVA, is64, "destination address");
-+            if (ctx.arg.libcallThreadContext)
-+              ctx.sym.tlsBase->global->setPointerValue(s->startVA);
            }
            writeSetTLSBase(ctx, os);
            if (ctx.isPic) {
@@ -857,7 +658,7 @@ index 7ceff0e14413..06be15029460 100644
            }
          }
  
-@@ -1799,11 +1847,9 @@ void Writer::run() {
+@@ -1799,11 +1828,9 @@ void Writer::run() {
    // `__memory_base` import.  Unless we support the extended const expression we
    // can't do addition inside the constant expression, so we much combine the
    // segments into a single one that can live at `__memory_base`.
