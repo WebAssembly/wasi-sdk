@@ -22,7 +22,7 @@ is to provide builds configured to set the default target and sysroot for
 convenience.
 
 One could also use a standard Clang installation, build a sysroot from the
-sources mentioned above, and compile with `--target=wasm32-wasi
+sources mentioned above, and compile with `--target=wasm32-wasip1
 --sysroot=/path/to/sysroot`. In this scenario, one would also need the
 `libclang_rt.*.a` objects available separately in the [release
 downloads][releases] which must be extracted into
@@ -98,7 +98,8 @@ in compiling WebAssembly code. Supported CMake flags are:
 * `-DWASI_SDK_TEST_HOST_TOOLCHAIN=ON` - test the host toolchain's wasi-libc and
   sysroot libraries, don't build or use fresh libraries for tests.
 * `-DWASI_SDK_TARGETS=..` - a list of targets to build, by default all WASI
-  targets are compiled.
+  targets are compiled. The default set is listed in
+  [Supported Targets](#supported-targets).
 * `-DWASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR=ON` - install compiler-rt
   to the compiler's resource directory. might be convenient if you want to
   use the toolchain (eg. `./build/install/bin/clang`) in-place.
@@ -165,6 +166,34 @@ includes/libraries/etc. The `--sysroot=...` option is not necessary if
 `WASI_SDK_PATH` is `/opt/wasi-sdk`. For troubleshooting, one can replace the
 `--sysroot` path with a manual build of [wasi-libc].
 
+## Supported Targets
+
+The default target for the SDK's `clang` is `wasm32-wasip1`. The default
+`WASI_SDK_TARGETS` build setting includes these targets:
+
+| Target | Description |
+|---|---|
+| `wasm32-wasip1` | WASI Preview 1, and the default target. |
+| `wasm32-wasip2` | WASI Preview 2 and the component model. |
+| `wasm32-wasip3` | WASI Preview 3 and async component model support. |
+| `wasm32-wasip1-threads` | WASI Preview 1 with experimental support for spawning threads. |
+
+As of wasi-sdk 34, the previously supported `wasm32-wasi` and
+`wasm32-wasi-threads` aliases have been removed. Use `wasm32-wasip1` and
+`wasm32-wasip1-threads` instead.
+
+To build only a subset of targets, pass a semicolon-separated
+`WASI_SDK_TARGETS` value when configuring the sysroot:
+
+```shell script
+cmake -G Ninja -B build/sysroot -S . \
+    -DCMAKE_INSTALL_PREFIX=build/install \
+    -DCMAKE_TOOLCHAIN_FILE=build/install/share/cmake/wasi-sdk-p1.cmake \
+    -DWASI_SDK_TARGETS="wasm32-wasip1;wasm32-wasip2" \
+    -DCMAKE_C_COMPILER_WORKS=ON \
+    -DCMAKE_CXX_COMPILER_WORKS=ON
+```
+
 ### Integrating with a CMake build system
 
 Use a toolchain file to setup the *wasi-sdk* platform.
@@ -173,7 +202,14 @@ Use a toolchain file to setup the *wasi-sdk* platform.
 $ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk.cmake ...
 ```
 
-or the *wasi-sdk-thread* platform
+For WASI Preview 2 or Preview 3, use the corresponding toolchain file:
+
+```
+$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake ...
+$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p3.cmake ...
+```
+
+For the threaded Preview 1 target, use the *wasi-sdk-thread* platform:
 
 ```
 $ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-pthread.cmake ...
