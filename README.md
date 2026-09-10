@@ -76,7 +76,8 @@ cmake -G Ninja -B build/sysroot -S . \
     -DCMAKE_INSTALL_PREFIX=build/install \
     -DCMAKE_TOOLCHAIN_FILE=build/install/share/cmake/wasi-sdk-p2.cmake \
     -DCMAKE_C_COMPILER_WORKS=ON \
-    -DCMAKE_CXX_COMPILER_WORKS=ON
+    -DCMAKE_CXX_COMPILER_WORKS=ON \
+    -DWASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR=ON
 cmake --build build/sysroot --target install
 ```
 
