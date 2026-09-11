@@ -56,6 +56,7 @@ function(add_testcase test)
       # Add a new test executable based on `test`
       add_executable(${target_name} ${test})
       add_dependencies(build-tests ${target_name})
+      add_dependencies(${target_name} build)
 
       # Configure all the compile options necessary. For example `--target` here
       # if the target doesn't look like it's already in the name of the compiler
@@ -89,13 +90,6 @@ function(add_testcase test)
           target_link_options(${target_name} PRIVATE -fwasm-exceptions -lunwind)
         else()
           target_compile_options(${target_name} PRIVATE -fno-exceptions)
-        endif()
-        if(NOT WASI_SDK_TEST_HOST_TOOLCHAIN)
-          add_dependencies(${target_name} libcxx-${target})
-        endif()
-      else()
-        if(NOT WASI_SDK_TEST_HOST_TOOLCHAIN)
-          add_dependencies(${target_name} wasi-libc-${target})
         endif()
       endif()
 

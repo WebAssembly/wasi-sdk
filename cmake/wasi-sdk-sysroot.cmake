@@ -208,8 +208,10 @@ function(define_wasi_libc_sub sysroot target target_suffix lto)
     list(APPEND extra_cmake_args -DBUILD_SHARED=OFF)
   endif()
 
+  set(header_dir ${sysroot}/../libc-tmp-include)
   if (${sysroot} STREQUAL ${coop_threads_sysroot})
     list(APPEND extra_cmake_args -DENABLE_COOP_THREADS=ON)
+    set(header_dir ${sysroot}/include)
   endif()
 
   ExternalProject_Add(wasi-libc-${target}${target_suffix}-build
@@ -219,6 +221,7 @@ function(define_wasi_libc_sub sysroot target target_suffix lto)
       ${extra_cmake_args}
       -DTARGET_TRIPLE=${target}
       -DCMAKE_INSTALL_PREFIX=${sysroot}
+      -DCMAKE_INSTALL_INCLUDEDIR=${header_dir}
       -DCMAKE_C_FLAGS=${extra_cflags}
       -DCMAKE_ASM_FLAGS=${extra_cflags}
       -DBUILTINS_LIB=${libcompiler_rt_a}
@@ -249,8 +252,12 @@ function(define_wasi_libc target)
   endif()
 endfunction()
 
+add_custom_target(build-wasi-libc)
+add_custom_target(wasi-libc DEPENDS build-wasi-libc)
+
 foreach(target IN LISTS WASI_SDK_TARGETS)
   define_wasi_libc(${target})
+  add_dependencies(build-wasi-libc wasi-libc-${target})
 endforeach()
 
 # =============================================================================
@@ -323,9 +330,12 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     set(shared OFF)
   endif()
 
-  # FIXME(WebAssembly/wasi-libc#813) - shared libraries don't work with coop
-  # threads right now.
+
+  set(header_dir ${sysroot}/../cpp-tmp-include/${target}${exnsuffix})
   if (${sysroot} STREQUAL ${coop_threads_sysroot})
+    set(header_dir ${sysroot}/include/${target}${exnsuffix})
+    # FIXME(WebAssembly/wasi-libc#813) - shared libraries don't work with coop
+    # threads right now.
     set(shared OFF)
   endif()
 
@@ -348,7 +358,7 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
       -DCMAKE_SYSROOT=${sysroot}
       # Ensure headers are installed in a target-specific path instead of a
       # target-generic path.
-      -DCMAKE_INSTALL_INCLUDEDIR=${sysroot}/include/${target}${exnsuffix}
+      -DCMAKE_INSTALL_INCLUDEDIR=${header_dir}
       -DCMAKE_STAGING_PREFIX=${sysroot}
       -DCMAKE_POSITION_INDEPENDENT_CODE=${pic}
       -DLIBCXX_ENABLE_THREADS:BOOL=ON
@@ -390,7 +400,7 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     CMAKE_CACHE_ARGS
       -DLLVM_ENABLE_RUNTIMES:STRING=${runtimes}
     DEPENDS
-      wasi-libc-${target}
+      wasi-libc
       compiler-rt
     EXCLUDE_FROM_ALL ON
     USES_TERMINAL_CONFIGURE ON
@@ -451,9 +461,38 @@ function(define_libcxx target)
   endif()
 endfunction()
 
+add_custom_target(build-libcxx)
+add_custom_target(libcxx DEPENDS build-libcxx)
+
 foreach(target IN LISTS WASI_SDK_TARGETS)
   define_libcxx(${target})
+  add_dependencies(build-libcxx libcxx-${target})
 endforeach()
+
+# Add a top-level `build` target as well as `build-$target` targets.
+add_custom_target(build ALL)
+add_dependencies(build wasi-libc libcxx compiler-rt)
+
+# =============================================================================
+# sysroot header logic
+# =============================================================================
+
+set(dedupe_headers ${CMAKE_CURRENT_BINARY_DIR}/dedupe_headers${CMAKE_HOST_EXECUTABLE_SUFFIX})
+set(dedupe_headers_src ${CMAKE_CURRENT_SOURCE_DIR}/src/dedupe_headers.rs)
+add_custom_command(
+  OUTPUT ${dedupe_headers}
+  COMMAND rustc --edition 2024 ${dedupe_headers_src} -o ${dedupe_headers}
+  DEPENDS ${dedupe_headers_src})
+
+add_custom_target(dedupe-libc-headers
+  COMMAND ${dedupe_headers} ${wasi_sysroot}/../libc-tmp-include ${wasi_sysroot}/include
+  DEPENDS ${dedupe_headers} build-wasi-libc)
+add_dependencies(wasi-libc dedupe-libc-headers)
+
+add_custom_target(dedupe-libcxx-headers
+  COMMAND ${dedupe_headers} ${wasi_sysroot}/../cpp-tmp-include ${wasi_sysroot}/include
+  DEPENDS ${dedupe_headers} build-libcxx)
+add_dependencies(libcxx dedupe-libcxx-headers)
 
 # =============================================================================
 # misc build logic
@@ -471,14 +510,6 @@ else()
           USE_SOURCE_PERMISSIONS
           DESTINATION ${CMAKE_INSTALL_PREFIX}/clang-resource-dir)
 endif()
-
-# Add a top-level `build` target as well as `build-$target` targets.
-add_custom_target(build ALL)
-foreach(target IN LISTS WASI_SDK_TARGETS)
-  add_custom_target(build-${target})
-  add_dependencies(build-${target} libcxx-${target} wasi-libc-${target} compiler-rt)
-  add_dependencies(build build-${target})
-endforeach()
 
 # Install a `VERSION` file in the output prefix with a dump of version
 # information.
