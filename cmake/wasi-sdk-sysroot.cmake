@@ -274,7 +274,9 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     set(pic OFF)
     set(target_flags -pthread)
   else()
-    set(pic ON)
+    if(${target} MATCHES "p[23]")
+      set(pic ON)
+    endif()
     set(target_flags "")
   endif()
   if(${target_suffix} MATCHES lto)
@@ -298,12 +300,6 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
   set(exnsuffix "")
 
   if (exceptions)
-    # TODO: lots of builds fail with shared libraries and `-fPIC`. Looks like
-    # things are maybe changing in llvm/llvm-project#159143 but otherwise I'm at
-    # least not really sure what the state of shared libraries and exceptions
-    # are. For now shared libraries are disabled and supporting them is left for
-    # a future endeavor.
-    set(pic OFF)
     set(runtimes "libunwind;${runtimes}")
     list(APPEND extra_flags -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false)
     if (WASI_SDK_EXCEPTIONS STREQUAL "DUAL")
@@ -348,6 +344,7 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     ${CMAKE_SOURCE_DIR}/src/llvm-pr-168449.patch
     ${CMAKE_SOURCE_DIR}/src/llvm-pr-186054.patch
     ${CMAKE_SOURCE_DIR}/src/llvm-undo-part-of-194317.patch
+    ${CMAKE_SOURCE_DIR}/src/llvm-sysroot-pr-209282-and-pr-222747.patch
   )
   list(JOIN patches " " patches)
 

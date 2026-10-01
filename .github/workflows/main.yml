@@ -179,8 +179,13 @@ jobs:
       matrix:
         include:
           - name: default
-          - name: exceptions
-            defines: -DWASI_SDK_EXCEPTIONS=ON
+          # This one is temporarily disabled until LLVM 24 is available because
+          # we currently apply backported patches from
+          # https://github.com/llvm/llvm-project/pull/209282 which affect both
+          # the toolchain and the sysroot and which rely on each other.
+          #
+          # - name: exceptions
+          #   defines: -DWASI_SDK_EXCEPTIONS=ON
           - name: static
             defines: -DWASI_SDK_BUILD_SHARED=OFF
     steps:
