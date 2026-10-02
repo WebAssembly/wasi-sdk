@@ -92,17 +92,17 @@ function(add_testcase test)
 
         # Apply test-specific compile options and link flags.
         if(${arg_EMULATED_CLOCKS})
-          set(so_files ${so_files} "${wasi_sysroot}/lib/${target}/libwasi-emulated-process-clocks.so")
+          list(APPEND so_files "${wasi_sysroot}/lib/${target}/libwasi-emulated-process-clocks.so")
           target_compile_options(${target_name} PRIVATE -D_WASI_EMULATED_PROCESS_CLOCKS)
           target_link_options(${target_name} PRIVATE -lwasi-emulated-process-clocks)
         endif()
         if(${arg_EMULATED_MMAN})
-          set(so_files ${so_files} "${wasi_sysroot}/lib/${target}/libwasi-emulated-mman.so")
+          list(APPEND so_files "${wasi_sysroot}/lib/${target}/libwasi-emulated-mman.so")
           target_compile_options(${target_name} PRIVATE -D_WASI_EMULATED_MMAN)
           target_link_options(${target_name} PRIVATE -lwasi-emulated-mman)
         endif()
         if(${arg_EMULATED_SIGNAL})
-          set(so_files ${so_files} "${wasi_sysroot}/lib/${target}/libwasi-emulated-signal.so")
+          list(APPEND so_files "${wasi_sysroot}/lib/${target}/libwasi-emulated-signal.so")
           target_compile_options(${target_name} PRIVATE -D_WASI_EMULATED_SIGNAL)
           target_link_options(${target_name} PRIVATE -lwasi-emulated-signal)
         endif()
@@ -113,20 +113,20 @@ function(add_testcase test)
         # Apply language-specific options and dependencies.
         if(test MATCHES "cc$")
           if(WASI_SDK_EXCEPTIONS STREQUAL "DUAL")
-            set(so_files ${so_files}
+            list(APPEND so_files
               "${wasi_sysroot}/lib/${target}/eh/libc++.so"
               "${wasi_sysroot}/lib/${target}/eh/libc++abi.so")
           else()
-            set(so_files ${so_files}
+            list(APPEND so_files
               "${wasi_sysroot}/lib/${target}/libc++.so"
               "${wasi_sysroot}/lib/${target}/libc++abi.so")
           endif()
 
           if(NOT (WASI_SDK_EXCEPTIONS STREQUAL "OFF"))
             if(WASI_SDK_EXCEPTIONS STREQUAL "DUAL")
-              set(so_files ${so_files} "${wasi_sysroot}/lib/${target}/eh/libunwind.so")
+              list(APPEND so_files "${wasi_sysroot}/lib/${target}/eh/libunwind.so")
             else()
-              set(so_files ${so_files} "${wasi_sysroot}/lib/${target}/libunwind.so")
+              list(APPEND so_files "${wasi_sysroot}/lib/${target}/libunwind.so")
             endif()
 
             target_compile_options(${target_name} PRIVATE -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false)

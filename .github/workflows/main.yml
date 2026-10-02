@@ -117,7 +117,7 @@ jobs:
         run: ./ci/docker-build.sh ${{ matrix.artifact }}
         if: runner.os == 'Linux'
 
-      # Setup the VS Developoer Prompt environment variables to explicitly use
+      # Setup the VS Developer Prompt environment variables to explicitly use
       # MSVC to compile LLVM as that avoids extra runtime dependencies
       # msys/mingw might bring.
       #
