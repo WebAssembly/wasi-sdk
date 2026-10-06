@@ -216,6 +216,7 @@ list(TRANSFORM tools PREPEND --target=install- OUTPUT_VARIABLE install_targets)
 
 set(patches
   ${CMAKE_SOURCE_DIR}/src/llvm-toolchain-pr-209282-and-pr-222747.patch
+  ${CMAKE_SOURCE_DIR}/src/llvm-toolchain-webp2.patch
 )
 list(JOIN patches " " patches)
 
