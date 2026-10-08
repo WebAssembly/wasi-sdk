@@ -120,10 +120,10 @@ function(define_compiler_rt target)
   add_dependencies(compiler-rt-build compiler-rt-build-${target})
 endfunction()
 
-# The `compiler-rt` for `wasm32-wasip1` will be reused for `wasm32-wasip2` and
-# `wasm32-wasi`. The version for `wasm32-wasip1-threads` will be reused for
-# `wasm32-wasi-threads`. Different builds are needed for different codegen flags
-# and such across the threaded/not target.
+# The `compiler-rt` for `wasm32-wasip1` will be reused for `wasm32-wasip2`,
+# `wasm32-wasi`, and `wasm32-webp2`. The version for `wasm32-wasip1-threads`
+# will be reused for `wasm32-wasi-threads`. Different builds are needed for
+# different codegen flags and such across the threaded/not target.
 define_compiler_rt(wasm32-wasip1)
 define_compiler_rt(wasm32-wasip1-threads)
 
@@ -136,7 +136,7 @@ endif()
 
 # In addition to the default installation of `compiler-rt` itself also copy
 # around some headers and make copies of the `wasi` directory as `wasip1` and
-# `wasip2` and `wasip3`
+# `wasip2` and `wasip3` and `webp2`
 execute_process(
   COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
   OUTPUT_VARIABLE clang_resource_dir
@@ -154,6 +154,8 @@ add_custom_target(compiler-rt-post-build
     ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-wasi
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-wasip2
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-webp2
   # Copy the `lib/wasm32-unknown-wasip1-threads` folder to `lib/wasm32-unknown-wasi-threads`
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads ${wasi_resource_dir}/lib/wasm32-unknown-wasi-threads
@@ -174,8 +176,9 @@ function(define_wasi_libc_sub sysroot target target_suffix lto)
   set(extra_cflags_list "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags}")
 
   if(${target} MATCHES "p[23]")
-    # Always enable `-fPIC` for the `wasm32-wasip2` and `wasm32-wasip3` targets.
-    # This makes `libc.a` more flexible and usable in dynamic linking situations.
+    # Always enable `-fPIC` for the `wasm32-wasip2`, `wasm32-wasip3`, and
+    # `wasm32-webp2` targets. This makes `libc.a` more flexible and usable in
+    # dynamic linking situations.
     list(APPEND extra_cflags_list -fPIC)
   endif()
 
@@ -274,7 +277,7 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     set(pic OFF)
     set(target_flags -pthread)
   else()
-    if(${target} MATCHES "p[23]")
+    if(${target} MATCHES "p[23]") # wasip2, wasip3, webp2
       set(pic ON)
     endif()
     set(target_flags "")
@@ -345,13 +348,31 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     ${CMAKE_SOURCE_DIR}/src/llvm-pr-186054.patch
     ${CMAKE_SOURCE_DIR}/src/llvm-undo-part-of-194317.patch
     ${CMAKE_SOURCE_DIR}/src/llvm-sysroot-pr-209282-and-pr-222747.patch
+    ${CMAKE_SOURCE_DIR}/src/llvm-sysroot-webp2.patch
   )
   list(JOIN patches " " patches)
+
+  set(extra_cmake_args)
+  if(${target} MATCHES webp2)
+    # The webp2 target builds with the reactor model by default, which doesn't
+    # call main, which results in cmake's check_library_exists checks
+    # incorrectly returning true in many cases. (Basically, cmake tries to link
+    # a small program whose main() function calls the library function in
+    # question. But if main isn't called, it can be dropped at link time,
+    # causing linking to succeed, causing cmake to think the library exists!)
+    # We can fix this by just making sure that main functions don't get dropped
+    # from any executables built as part of this cmake project. (Libraries are
+    # unaffected, which is all we actually care about.)
+    list(APPEND extra_cmake_args
+      -DCMAKE_EXE_LINKER_FLAGS=-Wl,--export-if-defined=main,--export-if-defined=__main_argc_argv
+    )
+  endif()
 
   ExternalProject_Add(libcxx-${target}${target_suffix}-build
     SOURCE_DIR ${llvm_proj_dir}/runtimes
     CMAKE_ARGS
       ${default_cmake_args}
+      ${extra_cmake_args}
       -DCMAKE_SYSROOT=${sysroot}
       # Ensure headers are installed in a target-specific path instead of a
       # target-generic path.

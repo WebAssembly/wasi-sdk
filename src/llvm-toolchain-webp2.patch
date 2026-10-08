@@ -38,7 +38,7 @@ index 7c4666606d89..41cc013cf2bc 100644
  template <typename Target>
  class LLVM_LIBRARY_VISIBILITY WALITargetInfo
 diff --git a/clang/lib/Driver/ToolChains/WebAssembly.cpp b/clang/lib/Driver/ToolChains/WebAssembly.cpp
-index 7dabefbee7f7..b67b1321a4bf 100644
+index 7dabefbee7f7..32fd46ef7d16 100644
 --- a/clang/lib/Driver/ToolChains/WebAssembly.cpp
 +++ b/clang/lib/Driver/ToolChains/WebAssembly.cpp
 @@ -72,8 +72,9 @@ std::string wasm::Linker::getLinkerPath(const ArgList &Args) const {
@@ -53,6 +53,18 @@ index 7dabefbee7f7..b67b1321a4bf 100644
  }
  
  static bool WantsPthread(const llvm::Triple &Triple, const ArgList &Args) {
+@@ -139,6 +140,11 @@ void wasm::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+   const char *Crt1;
+   const char *Entry = nullptr;
+ 
++  // Web-specific builds default to the reactor exec model.
++  if (ToolChain.getTriple().isOSWasmWeb()) {
++    IsCommand = false;
++  }
++
+   // When -shared is specified, use the reactor exec model unless
+   // specified otherwise.
+   if (Args.hasArg(options::OPT_shared))
 diff --git a/clang/lib/Lex/InitHeaderSearch.cpp b/clang/lib/Lex/InitHeaderSearch.cpp
 index e894086b66e7..99bf0dba585d 100644
 --- a/clang/lib/Lex/InitHeaderSearch.cpp
@@ -66,10 +78,10 @@ index e894086b66e7..99bf0dba585d 100644
    case llvm::Triple::ZOS:
      return false;
 diff --git a/clang/test/Driver/wasm-toolchain.c b/clang/test/Driver/wasm-toolchain.c
-index c02a102fab08..3476205e1fda 100644
+index c02a102fab08..73acc14959dd 100644
 --- a/clang/test/Driver/wasm-toolchain.c
 +++ b/clang/test/Driver/wasm-toolchain.c
-@@ -297,6 +297,30 @@
+@@ -297,6 +297,35 @@
  // LINK_WASIP2_USE_WASMLD: "-cc1" {{.*}} "-o" "[[temp:[^"]*]]"
  // LINK_WASIP2_USE_WASMLD: wasm-ld{{.*}}" "-m" "wasm32" {{.*}} "[[temp]]" {{.*}}
  
@@ -79,7 +91,12 @@ index c02a102fab08..3476205e1fda 100644
 +// RUN: %clang -### -O2 --target=wasm32-webp2 %s --sysroot /foo 2>&1 \
 +// RUN:   | FileCheck -check-prefix=LINK_WEBP2 %s
 +// LINK_WEBP2: "-cc1" {{.*}} "-o" "[[temp:[^"]*]]"
-+// LINK_WEBP2: wasm-component-ld{{.*}}" "-L/foo/lib/wasm32-webp2" "crt1.o" "[[temp]]" "-lc" "{{.*[/\\]}}libclang_rt.builtins.a" "-o" "a.out"
++// LINK_WEBP2: wasm-component-ld{{.*}}" "-L/foo/lib/wasm32-webp2" "crt1-reactor.o" "--entry" "_initialize" "[[temp]]" "-lc" "{{.*[/\\]}}libclang_rt.builtins.a" "-o" "a.out"
++
++// RUN: %clang -### -O2 --target=wasm32-webp2 %s --sysroot /foo -mexec-model=command 2>&1 \
++// RUN:   | FileCheck -check-prefix=LINK_WEBP2_COMMAND %s
++// LINK_WEBP2_COMMAND: "-cc1" {{.*}} "-o" "[[temp:[^"]*]]"
++// LINK_WEBP2_COMMAND: wasm-component-ld{{.*}}" "-L/foo/lib/wasm32-webp2" "crt1.o" "[[temp]]"
 +
 +// Test that on `wasm32-webp2` the `wasm-component-ld` program is told where
 +// to find `wasm-ld` by default.
