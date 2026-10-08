@@ -27,6 +27,15 @@ if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 23.0.0)
   set(COOP_THREADS_POSSIBLE ON)
 endif()
 
+execute_process(
+  COMMAND ${CMAKE_C_COMPILER} --target=wasm32-webp2 -print-target-triple
+  OUTPUT_VARIABLE WEBP2_ACTUAL_TARGET_TRIPLE
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (NOT WEBP2_ACTUAL_TARGET_TRIPLE STREQUAL "wasm32-unknown-webp2")
+  list(REMOVE_ITEM WASI_SDK_TARGETS wasm32-webp2)
+  message(WARNING "current version of clang does not support the wasm32-webp2 target")
+endif()
+
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
@@ -58,7 +67,6 @@ endif()
 # Default arguments for builds of cmake projects (mostly LLVM-based) to forward
 # along much of our own configuration into these projects.
 set(default_cmake_args
-  -DCMAKE_SYSTEM_NAME=WASI
   -DCMAKE_SYSTEM_VERSION=1
   -DCMAKE_SYSTEM_PROCESSOR=wasm32
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -92,6 +100,7 @@ function(define_compiler_rt target)
     SOURCE_DIR "${llvm_proj_dir}/compiler-rt"
     CMAKE_ARGS
         ${default_cmake_args}
+        -DCMAKE_SYSTEM_NAME=WASI
         -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
         -DCOMPILER_RT_BAREMETAL_BUILD=ON
         -DCOMPILER_RT_BUILD_XRAY=OFF
@@ -199,6 +208,12 @@ function(define_wasi_libc_sub sysroot target target_suffix lto)
   endif()
 
   set(extra_cmake_args)
+
+  if(${target} MATCHES "wasi")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WASI)
+  elseif(${target} MATCHES "web")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WEB)
+  endif()
 
   # Configure LTO in wasi libc if it's enabled. Be sure to disable shared
   # libraries as well since that's not currently supported with LTO.
@@ -353,6 +368,13 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
   list(JOIN patches " " patches)
 
   set(extra_cmake_args)
+
+  if(${target} MATCHES "wasi")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WASI)
+  elseif(${target} MATCHES "web")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WEB)
+  endif()
+  
   if(${target} MATCHES webp2)
     # The webp2 target builds with the reactor model by default, which doesn't
     # call main, which results in cmake's check_library_exists checks
