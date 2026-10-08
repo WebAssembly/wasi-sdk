@@ -374,21 +374,6 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
   elseif(${target} MATCHES "web")
     list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WEB)
   endif()
-  
-  if(${target} MATCHES webp2)
-    # The webp2 target builds with the reactor model by default, which doesn't
-    # call main, which results in cmake's check_library_exists checks
-    # incorrectly returning true in many cases. (Basically, cmake tries to link
-    # a small program whose main() function calls the library function in
-    # question. But if main isn't called, it can be dropped at link time,
-    # causing linking to succeed, causing cmake to think the library exists!)
-    # We can fix this by just making sure that main functions don't get dropped
-    # from any executables built as part of this cmake project. (Libraries are
-    # unaffected, which is all we actually care about.)
-    list(APPEND extra_cmake_args
-      -DCMAKE_EXE_LINKER_FLAGS=-Wl,--export-if-defined=main,--export-if-defined=__main_argc_argv
-    )
-  endif()
 
   ExternalProject_Add(libcxx-${target}${target_suffix}-build
     SOURCE_DIR ${llvm_proj_dir}/runtimes
