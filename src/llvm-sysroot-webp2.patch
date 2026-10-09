@@ -1,0 +1,43 @@
+diff --git a/libcxx/include/__config b/libcxx/include/__config
+index d6caacef6691..4a6a0cfe8352 100644
+--- a/libcxx/include/__config
++++ b/libcxx/include/__config
+@@ -96,7 +96,7 @@
+ #  if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) ||                     \
+       defined(__DragonFly__)
+ #    define _LIBCPP_USING_ARC4_RANDOM
+-#  elif defined(__wasi__) || defined(__EMSCRIPTEN__)
++#  elif defined(__wasi__) || defined(__webp2__) || defined(__EMSCRIPTEN__)
+ #    define _LIBCPP_USING_GETENTROPY
+ #  elif defined(__Fuchsia__)
+ #    define _LIBCPP_USING_FUCHSIA_CPRNG
+@@ -211,6 +211,7 @@ typedef __char32_t char32_t;
+ 
+ #    if defined(__FreeBSD__) ||                                                                                        \
+         defined(__wasi__) ||                                                                                           \
++        defined(__webp2__) ||                                                                                          \
+         defined(__NetBSD__) ||                                                                                         \
+         defined(__OpenBSD__) ||                                                                                        \
+         defined(__NuttX__) ||                                                                                          \
+@@ -297,7 +298,7 @@ typedef __char32_t char32_t;
+ #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION 0
+ #  endif
+ 
+-#  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
++#  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) || defined(__webp2__) ||  \
+       _LIBCPP_HAS_MUSL_LIBC || defined(__OpenBSD__) || _LIBCPP_LIBC_LLVM_LIBC
+ #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
+ #  endif
+diff --git a/libcxx/src/include/config_elast.h b/libcxx/src/include/config_elast.h
+index daec2429de8e..399ffa6e286e 100644
+--- a/libcxx/src/include/config_elast.h
++++ b/libcxx/src/include/config_elast.h
+@@ -29,7 +29,7 @@
+ // No _LIBCPP_ELAST needed on NuttX
+ #elif defined(__Fuchsia__)
+ // No _LIBCPP_ELAST needed on Fuchsia
+-#elif defined(__wasi__)
++#elif defined(__wasi__) || defined(__webp2__)
+ // No _LIBCPP_ELAST needed on WASI
+ #elif defined(__EMSCRIPTEN__)
+ // No _LIBCPP_ELAST needed on Emscripten

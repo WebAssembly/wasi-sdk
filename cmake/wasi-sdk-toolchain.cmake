@@ -216,6 +216,7 @@ list(TRANSFORM tools PREPEND --target=install- OUTPUT_VARIABLE install_targets)
 
 set(patches
   ${CMAKE_SOURCE_DIR}/src/llvm-toolchain-pr-209282-and-pr-222747.patch
+  ${CMAKE_SOURCE_DIR}/src/llvm-toolchain-webp2.patch
 )
 list(JOIN patches " " patches)
 
@@ -277,7 +278,7 @@ install(DIRECTORY ${wasi_tmp_install}/bin ${wasi_tmp_install}/lib ${wasi_tmp_ins
 # Build logic for `wasm-component-ld` installed from Rust code.
 set(wasm_component_ld_root ${CMAKE_CURRENT_BINARY_DIR}/wasm-component-ld)
 set(wasm_component_ld ${wasm_component_ld_root}/bin/wasm-component-ld${CMAKE_EXECUTABLE_SUFFIX})
-set(wasm_component_ld_version 0.5.30)
+set(wasm_component_ld_version 0.5.31)
 if(RUST_TARGET)
   set(rust_target_flag --target=${RUST_TARGET})
 endif()
@@ -314,7 +315,9 @@ copy_misc_file(wasi-sdk-pthread.cmake cmake)
 copy_misc_file(wasi-sdk-p1.cmake cmake)
 copy_misc_file(wasi-sdk-p2.cmake cmake)
 copy_misc_file(wasi-sdk-p3.cmake cmake)
+copy_misc_file(web-sdk-p2.cmake cmake)
 copy_misc_file(cmake/Platform/WASI.cmake cmake/Platform)
+copy_misc_file(cmake/Platform/WEB.cmake cmake/Platform)
 
 function(copy_cfg_file compiler)
   set(dst ${wasi_tmp_install}/bin/${compiler}.cfg)
