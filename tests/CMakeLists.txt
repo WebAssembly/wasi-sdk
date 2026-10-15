@@ -182,6 +182,11 @@ function(add_testcase test)
           add_dependencies(${target_name} wasm-tools)
         endif()
 
+        # TODO(webp2): Wasmtime can't run webp2 components.
+        if(target MATCHES webp2)
+          continue()
+        endif()
+
         set(runner ${WASI_SDK_RUNWASI})
         set(args)
         if(${runner} MATCHES wasmtime)

@@ -27,6 +27,15 @@ if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 23.0.0)
   set(COOP_THREADS_POSSIBLE ON)
 endif()
 
+execute_process(
+  COMMAND ${CMAKE_C_COMPILER} --target=wasm32-webp2 -print-target-triple
+  OUTPUT_VARIABLE WEBP2_ACTUAL_TARGET_TRIPLE
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (NOT WEBP2_ACTUAL_TARGET_TRIPLE STREQUAL "wasm32-unknown-webp2")
+  list(REMOVE_ITEM WASI_SDK_TARGETS wasm32-webp2)
+  message(WARNING "current version of clang does not support the wasm32-webp2 target")
+endif()
+
 option(WASI_SDK_DEBUG_PREFIX_MAP "Pass `-fdebug-prefix-map` for built artifacts" ON)
 option(WASI_SDK_INCLUDE_TESTS "Whether or not to build tests by default" OFF)
 option(WASI_SDK_INSTALL_TO_CLANG_RESOURCE_DIR "Whether or not to modify the compiler's resource directory" OFF)
@@ -58,7 +67,6 @@ endif()
 # Default arguments for builds of cmake projects (mostly LLVM-based) to forward
 # along much of our own configuration into these projects.
 set(default_cmake_args
-  -DCMAKE_SYSTEM_NAME=WASI
   -DCMAKE_SYSTEM_VERSION=1
   -DCMAKE_SYSTEM_PROCESSOR=wasm32
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -92,6 +100,7 @@ function(define_compiler_rt target)
     SOURCE_DIR "${llvm_proj_dir}/compiler-rt"
     CMAKE_ARGS
         ${default_cmake_args}
+        -DCMAKE_SYSTEM_NAME=WASI
         -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
         -DCOMPILER_RT_BAREMETAL_BUILD=ON
         -DCOMPILER_RT_BUILD_XRAY=OFF
@@ -120,10 +129,10 @@ function(define_compiler_rt target)
   add_dependencies(compiler-rt-build compiler-rt-build-${target})
 endfunction()
 
-# The `compiler-rt` for `wasm32-wasip1` will be reused for `wasm32-wasip2` and
-# `wasm32-wasi`. The version for `wasm32-wasip1-threads` will be reused for
-# `wasm32-wasi-threads`. Different builds are needed for different codegen flags
-# and such across the threaded/not target.
+# The `compiler-rt` for `wasm32-wasip1` will be reused for `wasm32-wasip2`,
+# `wasm32-wasi`, and `wasm32-webp2`. The version for `wasm32-wasip1-threads`
+# will be reused for `wasm32-wasi-threads`. Different builds are needed for
+# different codegen flags and such across the threaded/not target.
 define_compiler_rt(wasm32-wasip1)
 define_compiler_rt(wasm32-wasip1-threads)
 
@@ -136,7 +145,7 @@ endif()
 
 # In addition to the default installation of `compiler-rt` itself also copy
 # around some headers and make copies of the `wasi` directory as `wasip1` and
-# `wasip2` and `wasip3`
+# `wasip2` and `wasip3` and `webp2`
 execute_process(
   COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
   OUTPUT_VARIABLE clang_resource_dir
@@ -154,6 +163,8 @@ add_custom_target(compiler-rt-post-build
     ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-wasi
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-wasip2
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${wasi_resource_dir}/lib/wasm32-unknown-wasip1 ${wasi_resource_dir}/lib/wasm32-unknown-webp2
   # Copy the `lib/wasm32-unknown-wasip1-threads` folder to `lib/wasm32-unknown-wasi-threads`
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${wasi_resource_dir}/lib/wasm32-unknown-wasip1-threads ${wasi_resource_dir}/lib/wasm32-unknown-wasi-threads
@@ -174,8 +185,9 @@ function(define_wasi_libc_sub sysroot target target_suffix lto)
   set(extra_cflags_list "${WASI_SDK_CPU_CFLAGS} ${CMAKE_C_FLAGS} ${directory_cflags}")
 
   if(${target} MATCHES "p[23]")
-    # Always enable `-fPIC` for the `wasm32-wasip2` and `wasm32-wasip3` targets.
-    # This makes `libc.a` more flexible and usable in dynamic linking situations.
+    # Always enable `-fPIC` for the `wasm32-wasip2`, `wasm32-wasip3`, and
+    # `wasm32-webp2` targets. This makes `libc.a` more flexible and usable in
+    # dynamic linking situations.
     list(APPEND extra_cflags_list -fPIC)
   endif()
 
@@ -196,6 +208,12 @@ function(define_wasi_libc_sub sysroot target target_suffix lto)
   endif()
 
   set(extra_cmake_args)
+
+  if(${target} MATCHES "wasi")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WASI)
+  elseif(${target} MATCHES "web")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WEB)
+  endif()
 
   # Configure LTO in wasi libc if it's enabled. Be sure to disable shared
   # libraries as well since that's not currently supported with LTO.
@@ -274,7 +292,7 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     set(pic OFF)
     set(target_flags -pthread)
   else()
-    if(${target} MATCHES "p[23]")
+    if(${target} MATCHES "p[23]") # wasip2, wasip3, webp2
       set(pic ON)
     endif()
     set(target_flags "")
@@ -345,13 +363,23 @@ function(define_libcxx_sub sysroot target target_suffix extra_target_flags extra
     ${CMAKE_SOURCE_DIR}/src/llvm-pr-186054.patch
     ${CMAKE_SOURCE_DIR}/src/llvm-undo-part-of-194317.patch
     ${CMAKE_SOURCE_DIR}/src/llvm-sysroot-pr-209282-and-pr-222747.patch
+    ${CMAKE_SOURCE_DIR}/src/llvm-sysroot-webp2.patch
   )
   list(JOIN patches " " patches)
+
+  set(extra_cmake_args)
+
+  if(${target} MATCHES "wasi")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WASI)
+  elseif(${target} MATCHES "web")
+    list(APPEND extra_cmake_args -DCMAKE_SYSTEM_NAME=WEB)
+  endif()
 
   ExternalProject_Add(libcxx-${target}${target_suffix}-build
     SOURCE_DIR ${llvm_proj_dir}/runtimes
     CMAKE_ARGS
       ${default_cmake_args}
+      ${extra_cmake_args}
       -DCMAKE_SYSROOT=${sysroot}
       # Ensure headers are installed in a target-specific path instead of a
       # target-generic path.
