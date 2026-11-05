@@ -200,7 +200,7 @@ cmake -G Ninja -B build/sysroot -S . \
 Use a toolchain file to setup the *wasi-sdk* platform.
 
 ```
-$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk.cmake ...
+$ cmake -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p1.cmake ...
 ```
 
 For WASI Preview 2 or Preview 3, use the corresponding toolchain file:
