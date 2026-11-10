@@ -44,7 +44,7 @@ jobs:
                 -DCMAKE_SYSTEM_PROCESSOR=riscv64
 
           - artifact: arm64-macos
-            os: macos-14
+            os: macos-26
             rust_target: aarch64-apple-darwin
             env:
               WASI_SDK_CI_TOOLCHAIN_LLVM_CMAKE_ARGS: >-
@@ -52,7 +52,7 @@ jobs:
                 -DCMAKE_OSX_ARCHITECTURES=arm64
 
           - artifact: x86_64-macos
-            os: macos-14
+            os: macos-26
             rust_target: x86_64-apple-darwin
             env:
               WASI_SDK_CI_SKIP_SYSROOT: 1
