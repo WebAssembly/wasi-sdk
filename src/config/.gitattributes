@@ -1,0 +1,3 @@
+# See https://git.savannah.gnu.org/cgit/gnulib.git/plain/lib/git-merge-changelog.c
+# for making this useful.
+ChangeLog	merge=merge-changelog
